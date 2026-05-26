@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom'
 import AboutSphere from '../components/AboutSphere'
 import CTATorus from '../components/CTATorus'
 import { useHomeAnimations } from '../lib/animations'
-import heroVideoSrc from '/assets/hero-video.mp4'
 import styles from './Home.module.css'
+
+const heroVideoSrc = 'https://res.cloudinary.com/dcaxxjahn/video/upload/v1779829618/14842162_3840_2160_30fps_mdfapw.mp4'
 
 /* ─── Hero ─── */
 function Hero() {
