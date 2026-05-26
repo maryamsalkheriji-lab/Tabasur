@@ -10,14 +10,11 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL  || ''
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://hmxnubgqtygipxuxyuqt.supabase.co'
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhteG51YmdxdHlnaXB4dXh5dXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3MzM0MTQsImV4cCI6MjA5NTMwOTQxNH0.2n8P96CiXPiwgOrMznTAv7aUUwVdzH3v3fxJTSfWNRI'
 
-export const isSupabaseActive = supabaseUrl.startsWith('http')
-
-export const supabase = isSupabaseActive
-  ? createClient(supabaseUrl, supabaseKey)
-  : null
+export const isSupabaseActive = true
+export const supabase = createClient(supabaseUrl, supabaseKey)
 
 // ============================================
 // SQL — شغّله في SQL Editor داخل Supabase:
