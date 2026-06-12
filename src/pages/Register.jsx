@@ -36,6 +36,28 @@ async function submitToSupabase(payload) {
   }
 }
 
+async function sendRegistrationEmail({ email, fullName, receiptId }) {
+  try {
+    const response = await fetch('/api/send-registration-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        fullName,
+        receiptId,
+        kind: 'participant',
+        origin: window.location.origin,
+      }),
+    })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok || data.ok === false) {
+      console.warn('Registration email was not sent:', data)
+    }
+  } catch (error) {
+    console.warn('Registration email was not sent:', error)
+  }
+}
+
 /* ─── Field wrapper ─── */
 function Field({ id, label, required, hint, error, invalid, children }) {
   return (
@@ -58,7 +80,7 @@ export default function Register() {
 
   const [form, setForm] = useState({
     fullName: '', city: '', mobile: '', email: '',
-    specialty: '', experience: '', aiExperience: '', portfolio: '', notes: ''
+    specialty: '', experience: '', aiExperience: '', portfolio: '', socialAccount: '', notes: ''
   })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -98,10 +120,18 @@ export default function Register() {
     // أدوات AI — إجبارية
     if (!form.aiExperience)
       errs.aiExperience = 'الرجاء اختيار إجابة'
-    // رابط الأعمال — اختياري، لكن إذا أُدخل يجب أن يكون صحيحاً
-    if (form.portfolio && form.portfolio.trim()) {
+    // رابط الأعمال — إجباري
+    if (!form.portfolio || !form.portfolio.trim()) {
+      errs.portfolio = 'الرجاء إدخال رابط أعمالك'
+    } else {
       try { new URL(form.portfolio) } catch (_) {
-        errs.portfolio = 'الرجاء إدخال رابط صحيح يبدأ بـ https://'
+        errs.portfolio = 'الرجاء إدخال رابط أعمال صحيح يبدأ بـ https://'
+      }
+    }
+    // رابط الحساب — اختياري، لكن إذا أُدخل يجب أن يكون صحيحاً
+    if (form.socialAccount && form.socialAccount.trim()) {
+      try { new URL(form.socialAccount) } catch (_) {
+        errs.socialAccount = 'الرجاء إدخال رابط حساب صحيح يبدأ بـ https://'
       }
     }
     // دافع الانضمام — إجباري
@@ -127,13 +157,20 @@ export default function Register() {
       experience:    form.experience || null,
       ai_experience: form.aiExperience || null,
       portfolio:     form.portfolio || null,
+      social_account: form.socialAccount || null,
       notes:      form.notes,
       created_at: new Date().toISOString()
     })
 
     setLoading(false)
     if (result.ok) {
-      setReceiptId(makeReceipt())
+      const nextReceiptId = makeReceipt()
+      setReceiptId(nextReceiptId)
+      sendRegistrationEmail({
+        email: form.email,
+        fullName: form.fullName,
+        receiptId: nextReceiptId,
+      })
       gsap.to('.card-form-view', {
         opacity: 0, y: -12, duration: 0.5, ease: 'power2.in',
         onComplete: () => setSuccess(true)
@@ -147,7 +184,7 @@ export default function Register() {
   }
 
   function resetForm() {
-    setForm({ fullName:'', city:'', mobile:'', email:'', specialty:'', experience:'', aiExperience:'', portfolio:'', notes:'' })
+    setForm({ fullName:'', city:'', mobile:'', email:'', specialty:'', experience:'', aiExperience:'', portfolio:'', socialAccount:'', notes:'' })
     setErrors({})
     setFormError('')
     setSuccess(false)
@@ -161,7 +198,7 @@ export default function Register() {
         <Link className={styles.brand} to="/">
           <span className={styles.brandMark}><img src="/assets/tabsur-mark.png" alt="" /></span>
           <span className={styles.brandWord}>
-            <span className={styles.ar}>تبصُّر</span>
+            <span className={styles.ar}>تَبصَّر</span>
             <span className={styles.en}>TABSUR · INSIGHT</span>
           </span>
         </Link>
@@ -179,7 +216,7 @@ export default function Register() {
         {/* ─── Intro ─── */}
         <aside className={`${styles.intro} fade-up`}>
           <div className={styles.introEyebrow}>التسجيل · دفعة ٢٠٢٦</div>
-          <h1>انضمّ إلى <span className={styles.accent}>تبصُّر</span></h1>
+          <h1>انضمّ إلى <span className={styles.accent}>تَبصَّر</span></h1>
           <p>ثلاثون مقعدًا فقط، نختار من خلالها أصواتًا بصريّة جديدة لتوثيق المدينة المنورة. أكمل النموذج، وسنتواصل معك خلال أسبوع.</p>
 
           <div className={styles.meta}>
@@ -193,11 +230,6 @@ export default function Register() {
                 <span>{r.text}</span>
               </div>
             ))}
-          </div>
-
-          <div className={styles.seal}>
-            <span className={styles.dot} />
-            بدون رسوم · إقامة وإعاشة مشمولة
           </div>
 
           {/* حالة Supabase */}
@@ -302,17 +334,27 @@ export default function Register() {
                   </div>
                 </Field>
 
-                <Field id="portfolio" label="رابط أعمالك أو حسابك"
-                  hint="اختياري — أي رابط يعكس أسلوبك البصري (Instagram، Behance، موقع شخصي...)"
+                <div className="field-row">
+                <Field id="portfolio" label="رابط الأعمال" required
+                  hint="إجباري — رابط يعرض نماذج من أعمالك مثل Behance أو Drive أو موقع شخصي"
                   invalid={!!errors.portfolio} error={errors.portfolio}>
                   <input className="input" id="portfolio" name="portfolio" type="url"
-                    placeholder="https://instagram.com/yourname"
+                    placeholder="https://behance.net/yourname"
                     value={form.portfolio} onChange={handleChange} />
                 </Field>
 
+                <Field id="socialAccount" label="رابط الحساب"
+                  hint="اختياري — حسابك في Instagram أو X أو TikTok أو LinkedIn"
+                  invalid={!!errors.socialAccount} error={errors.socialAccount}>
+                  <input className="input" id="socialAccount" name="socialAccount" type="url"
+                    placeholder="https://instagram.com/yourname"
+                    value={form.socialAccount} onChange={handleChange} />
+                </Field>
+                </div>
+
                 <Field id="notes" label="دافعك للانضمام" required invalid={!!errors.notes} error="الرجاء كتابة دافعك للانضمام">
                   <textarea id="notes" name="notes" rows={4}
-                    placeholder="اكتب لنا في سطرين: لماذا تبصُّر؟ وماذا تتوقّع أن تخرج به؟"
+                    placeholder="اكتب لنا في سطرين: لماذا تَبصَّر؟ وماذا تتوقّع أن تخرج به؟"
                     value={form.notes} onChange={handleChange} />
                 </Field>
 
@@ -347,7 +389,7 @@ export default function Register() {
 
               {/* النص */}
               <p className={styles.successMsg}>
-                وصل طلبك إلى فريق <strong>تبصُّر</strong>، وأنت الآن خطوةً أقرب نحو تجربة لن تنساها.
+                وصل طلبك إلى فريق <strong>تَبصَّر</strong>، وأنت الآن خطوةً أقرب نحو تجربة لن تنساها.
                 سنراجع أعمالك ونتواصل معك خلال أسبوع على البريد أو الجوال.
               </p>
 
@@ -383,7 +425,7 @@ export default function Register() {
       </main>
 
       <footer className={styles.footer}>
-        © ٢٠٢٦ تبصُّر · حيث تلتقي العدسة بالتاريخ · بشراكة أمانة المدينة المنوّرة × مُكعّب
+        © ٢٠٢٦ تَبصَّر · حيث تلتقي العدسة بالتاريخ · بشراكة أمانة المدينة المنوّرة × مُكعّب
       </footer>
     </div>
   )

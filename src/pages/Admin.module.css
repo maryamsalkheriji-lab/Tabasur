@@ -6,6 +6,39 @@
   font-family: "Cairo", system-ui, sans-serif;
 }
 
+/* ── Auth ── */
+.authPage {
+  min-height:100svh;display:grid;place-items:center;padding:24px;
+  background:
+    radial-gradient(circle at 70% 20%, rgba(52,168,118,0.16), transparent 34%),
+    radial-gradient(circle at 20% 80%, rgba(156,141,184,0.14), transparent 34%),
+    var(--bg);
+}
+.authCard {
+  width:min(100%,420px);padding:34px 30px;border-radius:22px;background:rgba(255,255,255,0.92);
+  border:1px solid var(--rule);box-shadow:var(--shadow-card);display:flex;flex-direction:column;gap:14px;
+  align-items:stretch;text-align:center;
+}
+.authMark {
+  width:64px;height:64px;border-radius:16px;background:var(--green-500);display:grid;place-items:center;
+  overflow:hidden;align-self:center;box-shadow:0 14px 34px -16px rgba(52,168,118,0.65);
+}
+.authMark img { width:100%;height:100%;object-fit:contain; }
+.authEyebrow { color:var(--green-700);font-size:12px;font-weight:800;letter-spacing:0.18em; }
+.authCard h1 { font-size:28px;color:var(--ink-900);line-height:1.15; }
+.authCard p { color:var(--ink-600);font-size:14px;line-height:1.7;margin-bottom:4px; }
+.authInput {
+  width:100%;border:1.5px solid var(--ink-200);background:var(--paper-tint);border-radius:12px;
+  padding:14px 16px;font:inherit;color:var(--ink-900);outline:none;transition:border-color .2s, box-shadow .2s, background .2s;
+}
+.authInput:focus { border-color:var(--green-500);background:#fff;box-shadow:0 0 0 4px rgba(52,168,118,0.14); }
+.authError { color:var(--coral-700);background:var(--coral-100);border:1px solid var(--coral-200);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700; }
+.authButton {
+  padding:13px 18px;border-radius:999px;background:var(--green-600);color:#fff;font-weight:800;
+  transition:background .2s, transform .2s;
+}
+.authButton:hover { background:var(--green-700);transform:translateY(-2px); }
+
 /* ── Header ── */
 .header {
   position: sticky; top: 0; z-index: 20;
@@ -41,6 +74,11 @@
 .exportBtn  { background:var(--green-600); color:#fff; box-shadow:0 10px 30px -10px rgba(52,168,118,.5); }
 .exportBtn:hover  { transform:translateY(-2px); background:var(--green-700); }
 .exportBtn:disabled, .refreshBtn:disabled { opacity:.55; cursor:not-allowed; transform:none; }
+.logoutBtn {
+  padding:10px 16px;border-radius:999px;background:var(--coral-100);color:var(--coral-700);
+  font-size:13px;font-weight:700;border:1px solid var(--coral-200);
+}
+.logoutBtn:hover { background:var(--coral-500);color:#fff;border-color:transparent; }
 
 /* Brand strip */
 .strip { height:6px; display:flex; }
@@ -49,7 +87,32 @@
 .m { flex:20; background:var(--mauve-500); }
 
 /* ── Body ── */
-.body { flex:1; padding:clamp(20px,3vw,40px) clamp(16px,3vw,40px); display:flex; flex-direction:column; gap:24px; max-width:1600px; margin:0 auto; width:100%; }
+.adminLayout {
+  flex:1;display:grid;grid-template-columns:1fr;gap:18px;width:100%;max-width:1680px;margin:0 auto;
+  padding:clamp(18px,3vw,34px) clamp(16px,3vw,40px);
+}
+@media (min-width:980px) {
+  .adminLayout { grid-template-columns:260px minmax(0,1fr);align-items:start; }
+}
+.sidebar {
+  background:var(--paper);border:1px solid var(--rule);border-radius:18px;box-shadow:var(--shadow-soft);
+  padding:12px;display:grid;gap:8px;position:sticky;top:88px;
+}
+.sideItem {
+  display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:10px;width:100%;
+  padding:12px;border-radius:12px;color:var(--ink-700);font-weight:800;text-align:right;
+  transition:background .2s, color .2s, transform .2s;
+}
+.sideItem:hover { background:var(--bg-alt);transform:translateY(-1px); }
+.sideItemActive { background:var(--green-100);color:var(--green-700); }
+.sideIcon {
+  width:34px;height:34px;border-radius:10px;background:rgba(52,168,118,0.10);display:grid;place-items:center;color:currentColor;
+}
+.sideItem strong {
+  min-width:28px;height:24px;border-radius:999px;background:rgba(255,255,255,0.72);
+  display:grid;place-items:center;font-size:12px;color:var(--ink-700);
+}
+.body { display:flex;flex-direction:column;gap:24px;min-width:0;width:100%; }
 
 /* ── Stats ── */
 .statsRow { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }

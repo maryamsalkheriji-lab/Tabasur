@@ -4,6 +4,12 @@
   flex-direction: column;
   background: var(--bg);
 }
+.sponsorPage {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(52,168,118,0.10), transparent 28%),
+    radial-gradient(circle at 14% 82%, rgba(156,141,184,0.10), transparent 30%),
+    var(--bg);
+}
 
 /* Nav */
 .nav {
@@ -25,9 +31,9 @@
   box-shadow: 0 8px 24px -10px rgba(52,168,118,0.5); overflow: hidden; flex: none;
 }
 .brandMark img { width: 100%; height: 100%; object-fit: contain; }
-.brandWord { display: flex; flex-direction: column; line-height: 1; }
+.brandWord { display: flex; flex-direction: column; line-height: 1.12; gap: 7px; }
 .ar { font-size: 22px; font-weight: 900; color: var(--ink-900); }
-.en { font-size: 9px; letter-spacing: 0.30em; color: var(--green-600); font-weight: 700; margin-top: 3px; }
+.en { font-size: 9px; letter-spacing: 0.30em; color: var(--green-600); font-weight: 700; margin-top: 0; line-height: 1.2; }
 .navBack {
   font-size: 13px; color: var(--ink-700);
   display: inline-flex; align-items: center; gap: 8px;
@@ -55,6 +61,16 @@
     gap: 64px;
     max-width: 1280px; margin: 0 auto; width: 100%;
     padding-top: clamp(40px,7vw,80px);
+  }
+}
+.sponsorShell {
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .sponsorShell {
+    grid-template-columns: minmax(420px, 0.92fr) minmax(520px, 1.08fr);
+    max-width: 1180px;
+    gap: clamp(48px,6vw,84px);
   }
 }
 
@@ -100,6 +116,13 @@
   background: var(--paper); border: 1px solid var(--rule);
   border-radius: 24px; padding: clamp(28px,4vw,48px);
   box-shadow: var(--shadow-card); overflow: hidden;
+}
+.sponsorCard {
+  max-width: 620px;
+  justify-self: stretch;
+}
+@media (min-width: 1024px) {
+  .sponsorCard { justify-self: end; }
 }
 .card::before {
   content: ""; position: absolute; top: 0; left: 0; right: 0; height: 5px;
@@ -194,4 +217,83 @@
   border-top: 1px solid var(--rule);
   background: var(--bg-alt);
   letter-spacing: 0.04em;
+}
+
+@media (max-width: 760px) {
+  .nav {
+    padding: 12px 18px;
+    gap: 12px;
+  }
+  .brandMark {
+    width: 38px;
+    height: 38px;
+  }
+  .ar {
+    font-size: 18px;
+  }
+  .en {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+  }
+  .navBack {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .shell,
+  .sponsorShell {
+    padding: 28px 18px 44px;
+    gap: 28px;
+  }
+  .intro {
+    padding: 0;
+  }
+  .introEyebrow {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    margin-bottom: 12px;
+  }
+  .intro h1 {
+    font-size: clamp(38px, 12vw, 54px);
+    line-height: 1.08;
+  }
+  .intro p {
+    font-size: 15px;
+    line-height: 1.8;
+    max-width: 100%;
+  }
+  .meta {
+    margin-top: 24px;
+    gap: 12px;
+  }
+  .metaRow {
+    align-items: flex-start;
+    font-size: 13px;
+  }
+  .card,
+  .sponsorCard {
+    max-width: none;
+    width: 100%;
+    border-radius: 18px;
+    padding: 24px 18px;
+  }
+  .cardHead {
+    align-items: flex-start;
+  }
+  .cardHead h2 {
+    font-size: 26px;
+  }
+  .step {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+  .actions {
+    align-items: stretch;
+  }
+  .actions :global(.btn) {
+    width: 100%;
+    justify-content: center;
+  }
+  .successQuote {
+    padding: 16px;
+  }
 }

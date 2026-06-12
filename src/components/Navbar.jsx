@@ -23,6 +23,7 @@ export default function Navbar() {
         <a href="/#who"      onClick={() => setMenuOpen(false)}>لمن</a>
         <a href="/#timeline" onClick={() => setMenuOpen(false)}>الأيام</a>
         <a href="/#partners" onClick={() => setMenuOpen(false)}>الشركاء</a>
+        <a href="/#sponsors" onClick={() => setMenuOpen(false)}>الرعاة</a>
       </div>
 
       <div className={styles.navRight}>

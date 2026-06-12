@@ -18,7 +18,7 @@ function fmtDate(iso) {
 }
 
 function exportCSV(rows) {
-  const headers = ['#','الاسم','البريد','الجوال','المدينة','التخصص','الخبرة','أدوات AI','رابط الأعمال','الملاحظات','تاريخ التسجيل']
+  const headers = ['#','الاسم','البريد','الجوال','المدينة','التخصص','الخبرة','أدوات AI','رابط الأعمال','رابط الحساب','الملاحظات','تاريخ التسجيل']
   const esc = v => `"${String(v||'').replace(/"/g,'""')}"`
   const lines = [
     headers.join(','),
@@ -27,7 +27,7 @@ function exportCSV(rows) {
       esc(SPECIALTY_LABELS[r.specialty]||r.specialty),
       esc(EXP_LABELS[r.experience]||r.experience||''),
       esc(AI_LABELS[r.ai_experience]||r.ai_experience||''),
-      esc(r.portfolio||''), esc(r.notes||''), esc(fmtDate(r.created_at)),
+      esc(r.portfolio||''), esc(r.social_account||''), esc(r.notes||''), esc(fmtDate(r.created_at)),
     ].join(','))
   ]
   const blob = new Blob(['\uFEFF'+lines.join('\n')], {type:'text/csv;charset=utf-8'})
@@ -35,6 +35,29 @@ function exportCSV(rows) {
   const a = document.createElement('a')
   a.href = url
   a.download = `tabasur-registrations-${new Date().toISOString().slice(0,10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function exportSponsorsCSV(rows) {
+  const headers = ['#','اسم الجهة','اسم المسؤول','البريد','رقم المسؤول','تاريخ التسجيل']
+  const esc = v => `"${String(v||'').replace(/"/g,'""')}"`
+  const lines = [
+    headers.join(','),
+    ...rows.map((r,i) => [
+      i+1,
+      esc(r.organization_name),
+      esc(r.contact_name),
+      esc(r.contact_email),
+      esc(r.contact_mobile),
+      esc(fmtDate(r.created_at)),
+    ].join(','))
+  ]
+  const blob = new Blob(['\uFEFF'+lines.join('\n')], {type:'text/csv;charset=utf-8'})
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `tabasur-sponsors-${new Date().toISOString().slice(0,10)}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -126,11 +149,20 @@ function NoSupabaseNotice() {
 }
 
 const PER_PAGE = 10
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'tabasur-admin'
 
 export default function Admin() {
+  const [authorized, setAuthorized] = useState(() => sessionStorage.getItem('tabasur_admin_auth') === 'true')
+  const [password, setPassword] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [activeTab, setActiveTab] = useState('participants')
   const [rows, setRows]         = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
+  const [sponsorRows, setSponsorRows] = useState([])
+  const [sponsorLoading, setSponsorLoading] = useState(true)
+  const [sponsorError, setSponsorError] = useState('')
+  const [sponsorSearch, setSponsorSearch] = useState('')
   const [search, setSearch]     = useState('')
   const [filterSpec, setFilterSpec] = useState('')
   const [filterAI, setFilterAI] = useState('')
@@ -139,7 +171,7 @@ export default function Admin() {
   const [selected, setSelected] = useState(null)
   const [page, setPage]         = useState(1)
 
-  const load = useCallback(async () => {
+  const loadParticipants = useCallback(async () => {
     setLoading(true)
     setError('')
     if (!isSupabaseActive) {
@@ -155,7 +187,47 @@ export default function Admin() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  const loadSponsors = useCallback(async () => {
+    setSponsorLoading(true)
+    setSponsorError('')
+    if (!isSupabaseActive) {
+      setSponsorLoading(false)
+      return
+    }
+    const { data, error: err } = await supabase
+      .from('sponsor_registrations')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (err) setSponsorError(err.message)
+    else setSponsorRows(data || [])
+    setSponsorLoading(false)
+  }, [])
+
+  const load = useCallback(() => {
+    loadParticipants()
+    loadSponsors()
+  }, [loadParticipants, loadSponsors])
+
+  useEffect(() => {
+    if (authorized) load()
+  }, [authorized, load])
+
+  function handleLogin(e) {
+    e.preventDefault()
+    if (password === ADMIN_PASSWORD) {
+      sessionStorage.setItem('tabasur_admin_auth', 'true')
+      setAuthorized(true)
+      setAuthError('')
+    } else {
+      setAuthError('كلمة المرور غير صحيحة')
+    }
+  }
+
+  function logout() {
+    sessionStorage.removeItem('tabasur_admin_auth')
+    setAuthorized(false)
+    setPassword('')
+  }
 
   /* Filter + sort */
   const filtered = rows
@@ -171,6 +243,12 @@ export default function Admin() {
       if (sortKey === 'created_at') { va = new Date(va); vb = new Date(vb) }
       return sortDir === 'asc' ? (va<vb?-1:va>vb?1:0) : (va>vb?-1:va<vb?1:0)
     })
+
+  const filteredSponsors = sponsorRows.filter(r => {
+    const q = sponsorSearch.toLowerCase()
+    return !q || [r.organization_name, r.contact_name, r.contact_email, r.contact_mobile]
+      .some(v => v?.toLowerCase().includes(q))
+  })
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE)
   const paged = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE)
@@ -216,6 +294,31 @@ export default function Admin() {
     </span>
   )
 
+  if (!authorized) {
+    return (
+      <div className={styles.authPage}>
+        <form className={styles.authCard} onSubmit={handleLogin}>
+          <div className={styles.authMark}>
+            <img src="/assets/tabsur-mark.png" alt="" />
+          </div>
+          <span className={styles.authEyebrow}>ADMIN ACCESS</span>
+          <h1>لوحة إدارة تَبصَّر</h1>
+          <p>أدخل كلمة المرور للوصول إلى بيانات المشاركين والرعاة.</p>
+          <input
+            className={styles.authInput}
+            type="password"
+            value={password}
+            onChange={e => { setPassword(e.target.value); setAuthError('') }}
+            placeholder="كلمة المرور"
+            autoFocus
+          />
+          {authError && <div className={styles.authError}>{authError}</div>}
+          <button className={styles.authButton} type="submit">دخول اللوحة</button>
+        </form>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.page}>
 
@@ -226,8 +329,8 @@ export default function Admin() {
             <img src="/assets/tabsur-mark.png" alt="" />
           </div>
           <div>
-            <div className={styles.headerTitle}>لوحة إدارة تبصُّر</div>
-            <div className={styles.headerSub}>ADMIN DASHBOARD · TABSUR CAMP</div>
+            <div className={styles.headerTitle}>لوحة إدارة تَبصَّر</div>
+            <div className={styles.headerSub}>{activeTab === 'participants' ? 'PARTICIPANTS' : 'SPONSORS'} · ADMIN DASHBOARD</div>
           </div>
         </div>
         <div className={styles.headerActions}>
@@ -237,12 +340,17 @@ export default function Admin() {
             </svg>
             تحديث
           </button>
-          <button className={styles.exportBtn} onClick={() => exportCSV(filtered)} disabled={!isSupabaseActive || filtered.length===0}>
+          <button
+            className={styles.exportBtn}
+            onClick={() => activeTab === 'participants' ? exportCSV(filtered) : exportSponsorsCSV(filteredSponsors)}
+            disabled={!isSupabaseActive || (activeTab === 'participants' ? filtered.length===0 : filteredSponsors.length===0)}
+          >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
             تصدير Excel
           </button>
+          <button className={styles.logoutBtn} onClick={logout}>خروج</button>
         </div>
       </header>
 
@@ -250,8 +358,36 @@ export default function Admin() {
         <span className={styles.g}/><span className={styles.c}/><span className={styles.m}/>
       </div>
 
-      {/* Body */}
-      <div className={styles.body}>
+      <div className={styles.adminLayout}>
+        <aside className={styles.sidebar}>
+          <button
+            className={`${styles.sideItem} ${activeTab === 'participants' ? styles.sideItemActive : ''}`}
+            onClick={() => setActiveTab('participants')}
+          >
+            <span className={styles.sideIcon}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/>
+              </svg>
+            </span>
+            <span>المشاركين</span>
+            <strong>{rows.length}</strong>
+          </button>
+          <button
+            className={`${styles.sideItem} ${activeTab === 'sponsors' ? styles.sideItemActive : ''}`}
+            onClick={() => setActiveTab('sponsors')}
+          >
+            <span className={styles.sideIcon}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+                <path d="M4 18h16M6 18V9l6-4 6 4v9"/><path d="M9 18v-6h6v6"/>
+              </svg>
+            </span>
+            <span>الرعاة</span>
+            <strong>{sponsorRows.length}</strong>
+          </button>
+        </aside>
+
+        {/* Body */}
+        <main className={styles.body}>
 
         {/* Supabase غير مربوط */}
         {!isSupabaseActive && <NoSupabaseNotice />}
@@ -264,7 +400,7 @@ export default function Admin() {
         )}
 
         {/* Stats */}
-        {isSupabaseActive && (
+        {isSupabaseActive && activeTab === 'participants' && (
           <>
             <div className={styles.statsRow}>
               <StatCard label="إجمالي المسجّلين" value={loading ? '...' : total}
@@ -477,6 +613,12 @@ export default function Admin() {
                       <a href={selected.portfolio} target="_blank" rel="noreferrer" className={styles.detailLink}>{selected.portfolio}</a>
                     </div>
                   )}
+                  {selected.social_account && (
+                    <div className={styles.detailRow}>
+                      <span className={styles.detailLabel}>رابط الحساب</span>
+                      <a href={selected.social_account} target="_blank" rel="noreferrer" className={styles.detailLink}>{selected.social_account}</a>
+                    </div>
+                  )}
                   {selected.notes && (
                     <div className={`${styles.detailRow} ${styles.detailRowFull}`}>
                       <span className={styles.detailLabel}>دافع الانضمام</span>
@@ -488,10 +630,108 @@ export default function Admin() {
             )}
           </>
         )}
+
+        {isSupabaseActive && activeTab === 'sponsors' && (
+          <>
+            {sponsorError && (
+              <div className={styles.errorBanner}>
+                <strong>خطأ في تحميل الرعاة:</strong> {sponsorError}
+              </div>
+            )}
+
+            <div className={styles.statsRow}>
+              <StatCard label="طلبات الرعاية" value={sponsorLoading ? '...' : sponsorRows.length}
+                sub={sponsorRows.length ? 'جهات مسجلة' : 'لا توجد طلبات بعد'}
+                accent="var(--green-600)"
+                icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 18h16M6 18V9l6-4 6 4v9"/><path d="M9 18v-6h6v6"/></svg>}
+              />
+              <StatCard label="آخر طلب" value={sponsorLoading ? '...' : (sponsorRows[0] ? fmtDate(sponsorRows[0].created_at) : '—')}
+                sub={sponsorRows[0]?.organization_name || ''}
+                accent="var(--mauve-600)"
+                icon={<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>}
+              />
+            </div>
+
+            <div className={styles.tableCard}>
+              <div className={styles.tableHead}>
+                <div className={styles.tableTitle}>
+                  <span className={styles.chartEyebrow}>سجلات الرعاة</span>
+                  <span className={styles.tableCount}>{filteredSponsors.length} نتيجة</span>
+                </div>
+                <div className={styles.filters}>
+                  <div className={styles.searchWrap}>
+                    <svg className={styles.searchIcon} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                      <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    <input className={styles.searchInput}
+                      placeholder="ابحث باسم الجهة أو المسؤول أو البريد..."
+                      value={sponsorSearch}
+                      onChange={e => setSponsorSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {sponsorLoading ? (
+                <div className={styles.loadingState}>
+                  <div className={styles.spinner}/>
+                  <span>جاري تحميل بيانات الرعاة...</span>
+                </div>
+              ) : sponsorRows.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{color:'var(--ink-300)'}}>
+                    <path d="M4 18h16M6 18V9l6-4 6 4v9"/><path d="M9 18v-6h6v6"/>
+                  </svg>
+                  <span>لا توجد طلبات رعاية بعد</span>
+                  <p>ستظهر طلبات الرعاة هنا بعد إرسال نموذج تسجيل الرعاة</p>
+                </div>
+              ) : filteredSponsors.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <span>لا توجد نتائج مطابقة</span>
+                </div>
+              ) : (
+                <div className={styles.tableWrap}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>اسم الجهة</th>
+                        <th>اسم المسؤول</th>
+                        <th>البريد</th>
+                        <th>رقم المسؤول</th>
+                        <th>تاريخ التسجيل</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSponsors.map((r,i) => (
+                        <tr key={r.id || `${r.contact_email}-${i}`}>
+                          <td className={styles.num}>{i+1}</td>
+                          <td>
+                            <div className={styles.nameCell}>
+                              <div className={styles.avatar} style={{background:'var(--green-600)'}}>
+                                {(r.organization_name||'؟')[0]}
+                              </div>
+                              <span className={styles.nameText}>{r.organization_name}</span>
+                            </div>
+                          </td>
+                          <td>{r.contact_name}</td>
+                          <td className={styles.mono}>{r.contact_email}</td>
+                          <td className={styles.mono}>{r.contact_mobile}</td>
+                          <td className={styles.dateCell}>{fmtDate(r.created_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+        </main>
       </div>
 
       <footer className={styles.footer}>
-        لوحة الإدارة · تبصُّر {new Date().getFullYear()} · للاستخدام الداخلي فقط
+        لوحة الإدارة · تَبصَّر {new Date().getFullYear()} · للاستخدام الداخلي فقط
       </footer>
     </div>
   )

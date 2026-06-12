@@ -12,7 +12,7 @@ export default function Footer() {
                 <img src="/assets/tabsur-mark.png" alt="" />
               </span>
               <span className={styles.brandWord}>
-                <span className={styles.ar}>تبصُّر</span>
+                <span className={styles.ar}>تَبصَّر</span>
                 <span className={styles.en}>TABSUR · INSIGHT</span>
               </span>
             </Link>
@@ -38,7 +38,7 @@ export default function Footer() {
           </div>
         </div>
         <div className={styles.bottom}>
-          <span>© ٢٠٢٦ تبصُّر · جميع الحقوق محفوظة</span>
+          <span>© ٢٠٢٦ تَبصَّر · جميع الحقوق محفوظة</span>
           <div className={styles.credits}>
             <span>بشراكة</span>
             <span className={styles.chip}>أمانة المدينة المنوّرة</span>
