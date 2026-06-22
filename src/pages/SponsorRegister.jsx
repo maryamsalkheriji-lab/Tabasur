@@ -157,9 +157,9 @@ export default function SponsorRegister() {
       <BgParticles />
       <nav className={styles.nav}>
         <Link className={styles.brand} to="/">
-          <span className={styles.brandMark}><img src="/assets/tabsur-mark.png" alt="" /></span>
+          <span className={styles.brandMark}><img src="/assets/tabsur-mark-clean.svg" alt="" /></span>
           <span className={styles.brandWord}>
-            <span className={styles.ar}>تَبصَّر</span>
+            <span className={styles.ar}>معسكر تَبصِّر</span>
             <span className={styles.en}>SPONSOR REGISTRATION</span>
           </span>
         </Link>
@@ -177,7 +177,7 @@ export default function SponsorRegister() {
         <aside className={`${styles.intro} fade-up`}>
           <div className={styles.introEyebrow}>SPONSORS · TABSUR</div>
           <h1>تسجيل <span className={styles.accent}>الرعاة</span></h1>
-          <p>هذا النموذج مخصص للجهات الراغبة في رعاية معسكر تَبصَّر أو التواصل حول فرص الشراكة والدعم.</p>
+          <p>هذا النموذج مخصص للجهات الراغبة في رعاية معسكر تَبصِّر أو التواصل حول فرص الشراكة والدعم.</p>
 
           <div className={styles.meta}>
             <div className={styles.metaRow}>

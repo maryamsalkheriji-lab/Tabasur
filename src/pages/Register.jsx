@@ -196,9 +196,9 @@ export default function Register() {
       {/* ─── Nav ─── */}
       <nav className={styles.nav}>
         <Link className={styles.brand} to="/">
-          <span className={styles.brandMark}><img src="/assets/tabsur-mark.png" alt="" /></span>
+          <span className={styles.brandMark}><img src="/assets/tabsur-mark-clean.svg" alt="" /></span>
           <span className={styles.brandWord}>
-            <span className={styles.ar}>تَبصَّر</span>
+            <span className={styles.ar}>معسكر تَبصِّر</span>
             <span className={styles.en}>TABSUR · INSIGHT</span>
           </span>
         </Link>
@@ -216,13 +216,13 @@ export default function Register() {
         {/* ─── Intro ─── */}
         <aside className={`${styles.intro} fade-up`}>
           <div className={styles.introEyebrow}>التسجيل · دفعة ٢٠٢٦</div>
-          <h1>انضمّ إلى <span className={styles.accent}>تَبصَّر</span></h1>
+          <h1>انضمّ إلى <span className={styles.accent}>تَبصِّر</span></h1>
           <p>ثلاثون مقعدًا فقط، نختار من خلالها أصواتًا بصريّة جديدة لتوثيق المدينة المنورة. أكمل النموذج، وسنتواصل معك خلال أسبوع.</p>
 
           <div className={styles.meta}>
             {[
               { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2C7.5 2 4 5.5 4 10c0 6 8 12 8 12s8-6 8-12c0-4.5-3.5-8-8-8z"/><circle cx="12" cy="10" r="3"/></svg>, text: <><strong>المدينة المنورة</strong> · المملكة العربية السعودية</> },
-              { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>, text: <><strong>١٢ – ١٥ شعبان ١٤٤٧ هـ</strong> · أربعة أيام</> },
+              { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>, text: <><strong>النسخة الأولى</strong> · أربعة أيام مكثفة</> },
               { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>, text: <><strong>التسجيل مفتوح</strong> حتى ١٥ رجب ١٤٤٧ هـ</> },
             ].map((r, i) => (
               <div key={i} className={styles.metaRow}>
@@ -354,7 +354,7 @@ export default function Register() {
 
                 <Field id="notes" label="دافعك للانضمام" required invalid={!!errors.notes} error="الرجاء كتابة دافعك للانضمام">
                   <textarea id="notes" name="notes" rows={4}
-                    placeholder="اكتب لنا في سطرين: لماذا تَبصَّر؟ وماذا تتوقّع أن تخرج به؟"
+                    placeholder="اكتب لنا في سطرين: لماذا تَبصِّر؟ وماذا تتوقّع أن تخرج به؟"
                     value={form.notes} onChange={handleChange} />
                 </Field>
 
@@ -389,7 +389,7 @@ export default function Register() {
 
               {/* النص */}
               <p className={styles.successMsg}>
-                وصل طلبك إلى فريق <strong>تَبصَّر</strong>، وأنت الآن خطوةً أقرب نحو تجربة لن تنساها.
+                وصل طلبك إلى فريق <strong>تَبصِّر</strong>، وأنت الآن خطوةً أقرب نحو تجربة لن تنساها.
                 سنراجع أعمالك ونتواصل معك خلال أسبوع على البريد أو الجوال.
               </p>
 
@@ -425,7 +425,7 @@ export default function Register() {
       </main>
 
       <footer className={styles.footer}>
-        © ٢٠٢٦ تَبصَّر · حيث تلتقي العدسة بالتاريخ · بشراكة أمانة المدينة المنوّرة × مُكعّب
+        © ٢٠٢٦ تَبصِّر · حيث تلتقي العدسة بالتاريخ · بشراكة أمانة المدينة المنوّرة × مُكعّب
       </footer>
     </div>
   )

@@ -17,9 +17,9 @@ import Globe from 'react-globe.gl'
 
 // ——— الموقع وألوان الهوية ———
 const MED = { lat: 24.4672, lng: 39.6111 } // المدينة المنورة
-const NAVY = '#1F3D52'
-const GREEN = '#34A876'
-const GOLD = '#E0A24B'
+const NAVY = '#45382E'
+const GREEN = '#706A3F'
+const GOLD = '#D2AE84'
 
 // مراجع بيانات ثابتة — لا تُعاد صياغتها مع كل render
 // (وإلا يعيد react-globe.gl بناء علامة المدينة ويفقد حالتها)
@@ -41,11 +41,11 @@ const REDUCE =
 // ——— أنماط علامة المدينة (تُحقن مرة واحدة) ———
 const MARKER_CSS = `
 .agm-mk{position:relative;pointer-events:none;display:flex;flex-direction:column;align-items:center;opacity:0;transition:opacity .7s ease;font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;direction:rtl;}
-.agm-card{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.96);border:1px solid rgba(52,168,118,.28);border-radius:13px;padding:8px 12px 8px 10px;box-shadow:0 14px 30px rgba(18,42,56,.32);white-space:nowrap;}
+.agm-card{display:flex;align-items:center;gap:10px;background:rgba(255,253,252,.96);border:1px solid rgba(112,106,63,.30);border-radius:13px;padding:8px 12px 8px 10px;box-shadow:0 14px 30px rgba(45,37,30,.30);white-space:nowrap;}
 .agm-glyph{width:30px;height:30px;flex:0 0 auto;position:relative;display:grid;place-items:end center;}
 .agm-glyph .dome{width:18px;height:9px;background:${GREEN};border-radius:9px 9px 0 0;position:relative;z-index:2;}
 .agm-glyph .finial{position:absolute;left:50%;top:1px;transform:translateX(-50%);width:3px;height:5px;border-radius:2px;background:${GOLD};z-index:3;}
-.agm-glyph .base{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:24px;height:9px;background:rgba(31,61,82,.16);border-radius:2px;z-index:1;}
+.agm-glyph .base{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:24px;height:9px;background:rgba(69,56,46,.16);border-radius:2px;z-index:1;}
 .agm-glyph .min{position:absolute;bottom:0;width:3px;height:18px;border-radius:2px 2px 0 0;background:${GREEN};opacity:.85;z-index:1;}
 .agm-glyph .min.l{left:1px;}
 .agm-glyph .min.r{right:1px;}
@@ -53,8 +53,8 @@ const MARKER_CSS = `
 .agm-txt{display:flex;flex-direction:column;gap:1px;}
 .agm-txt .t1{font-size:13px;font-weight:700;color:${NAVY};line-height:1;}
 .agm-txt .t2{font-size:10px;font-weight:500;color:${GREEN};line-height:1;font-family:'IBM Plex Mono',monospace;letter-spacing:.02em;}
-.agm-line{width:1.5px;height:26px;margin-top:5px;background:linear-gradient(to bottom, rgba(224,162,75,.9), rgba(224,162,75,0));}
-.agm-foot{width:9px;height:9px;border-radius:50%;background:${GOLD};box-shadow:0 0 0 4px rgba(224,162,75,.22), 0 0 16px 3px rgba(224,162,75,.6);}
+.agm-line{width:1.5px;height:26px;margin-top:5px;background:linear-gradient(to bottom, rgba(210,174,132,.9), rgba(210,174,132,0));}
+.agm-foot{width:9px;height:9px;border-radius:50%;background:${GOLD};box-shadow:0 0 0 4px rgba(210,174,132,.24), 0 0 16px 3px rgba(210,174,132,.58);}
 /* فراغ سفلي يبقي النقطة المتوهجة في منتصف العلامة، كي تستقر تماماً على المدينة */
 .agm-spacer{height:80px;width:1px;}
 `
@@ -184,16 +184,16 @@ export default function AboutGlobe() {
         globeImageUrl={TEX}
         bumpImageUrl={BUMP}
         showAtmosphere
-        atmosphereColor="#5fc79a"
+        atmosphereColor="#8d8658"
         atmosphereAltitude={0.18}
         ringsData={RINGS}
-        ringColor={() => (t) => `rgba(52,168,118,${1 - t})`}
+        ringColor={() => (t) => `rgba(112,106,63,${1 - t})`}
         ringMaxRadius={5.5}
         ringPropagationSpeed={2.4}
         ringRepeatPeriod={850}
         ringAltitude={0.006}
         arcsData={ARCS}
-        arcColor={() => ['rgba(224,162,75,0)', 'rgba(224,162,75,.85)']}
+        arcColor={() => ['rgba(210,174,132,0)', 'rgba(210,174,132,.88)']}
         arcStroke={0.5}
         arcDashLength={0.45}
         arcDashGap={0.25}

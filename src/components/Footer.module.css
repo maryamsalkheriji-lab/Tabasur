@@ -26,11 +26,11 @@
   text-decoration: none;
 }
 .brandMark {
-  width: 44px; height: 44px; border-radius: 10px;
-  background: var(--green-500); display: grid; place-items: center;
-  box-shadow: 0 8px 24px -10px rgba(52,168,118,0.5); overflow: hidden; flex: none;
+  width: 48px; height: 58px; border-radius: 6px;
+  background: #FBF4EA; display: grid; place-items: center;
+  box-shadow: none; overflow: hidden; flex: none;
 }
-.brandMark img { width: 100%; height: 100%; object-fit: contain; }
+.brandMark img { width:100%;height:100%;object-fit:contain; }
 .brandWord { display: flex; flex-direction: column; line-height: 1.12; gap: 7px; }
 .ar { font-size: 22px; font-weight: 900; color: var(--ink-900); }
 .en { font-size: 9px; letter-spacing: 0.30em; color: var(--green-600); font-weight: 700; margin-top: 0; line-height: 1.2; }

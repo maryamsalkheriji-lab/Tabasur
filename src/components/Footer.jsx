@@ -9,22 +9,23 @@ export default function Footer() {
           <div className={styles.brand}>
             <Link className={styles.brandLink} to="/">
               <span className={styles.brandMark}>
-                <img src="/assets/tabsur-mark.png" alt="" />
+                <img src="/assets/tabsur-mark-clean.svg" alt="" />
               </span>
               <span className={styles.brandWord}>
-                <span className={styles.ar}>تَبصَّر</span>
+                <span className={styles.ar}>معسكر تَبصِّر</span>
                 <span className={styles.en}>TABSUR · INSIGHT</span>
               </span>
             </Link>
-            <p className={styles.tagline}>حيث تلتقي العدسة بالتاريخ.</p>
-            <p className={styles.desc}>معسكر بصري سنوي يُقام في المدينة المنورة، يُعنى بتوثيق المعالم الخفيّة بثلاث عدسات: التصوير، التصميم، والذكاء الاصطناعي.</p>
+            <p className={styles.tagline}>نحكي قصة التحوّل كما عاشها الناس.</p>
+            <p className={styles.desc}>معسكر إنتاجي مكثف يعيد تقديم المدينة المنورة بصريًا، بدمج تسويق المدن والذكاء الاصطناعي وصناعة المحتوى.</p>
           </div>
           <div className={styles.col}>
             <h5>اكتشف</h5>
             <ul>
               <li><a href="/#about">عن المعسكر</a></li>
-              <li><a href="/#pillars">المحاور</a></li>
+              <li><a href="/#pillars">مسارات التحدّي</a></li>
               <li><a href="/#timeline">المسار</a></li>
+              <li><a href="/#outputs">المخرجات</a></li>
               <li><Link to="/register">التسجيل</Link></li>
             </ul>
           </div>
@@ -38,7 +39,7 @@ export default function Footer() {
           </div>
         </div>
         <div className={styles.bottom}>
-          <span>© ٢٠٢٦ تَبصَّر · جميع الحقوق محفوظة</span>
+          <span>© ٢٠٢٦ تَبصِّر · جميع الحقوق محفوظة</span>
           <div className={styles.credits}>
             <span>بشراكة</span>
             <span className={styles.chip}>أمانة المدينة المنوّرة</span>

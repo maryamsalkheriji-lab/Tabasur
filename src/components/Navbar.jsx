@@ -9,17 +9,17 @@ export default function Navbar() {
     <nav className={styles.nav}>
       <Link className={styles.brand} to="/" onClick={() => setMenuOpen(false)}>
         <span className={styles.brandMark}>
-          <img src="/assets/tabsur-mark.png" alt="" loading="eager" />
+          <img src="/assets/tabsur-mark-clean.svg" alt="" loading="eager" />
         </span>
         <span className={styles.brandWord}>
-          <span className={styles.ar}>معسكر المحتوى الإبداعي</span>
-          <span className={styles.en}>TABSUR · CREATIVE CONTENT CAMP</span>
+          <span className={styles.ar}>معسكر تَبصِّر</span>
+          <span className={styles.en}>TABSUR · CITY MARKETING CAMP</span>
         </span>
       </Link>
 
       <div className={`${styles.navLinks} ${menuOpen ? styles.navOpen : ''}`}>
         <a href="/#about"    onClick={() => setMenuOpen(false)}>المعسكر</a>
-        <a href="/#pillars"  onClick={() => setMenuOpen(false)}>المحاور</a>
+        <a href="/#pillars"  onClick={() => setMenuOpen(false)}>المسارات</a>
         <a href="/#who"      onClick={() => setMenuOpen(false)}>لمن</a>
         <a href="/#timeline" onClick={() => setMenuOpen(false)}>الأيام</a>
         <a href="/#partners" onClick={() => setMenuOpen(false)}>الشركاء</a>

@@ -299,10 +299,10 @@ export default function Admin() {
       <div className={styles.authPage}>
         <form className={styles.authCard} onSubmit={handleLogin}>
           <div className={styles.authMark}>
-            <img src="/assets/tabsur-mark.png" alt="" />
+            <img src="/assets/tabsur-mark-clean.svg" alt="" />
           </div>
           <span className={styles.authEyebrow}>ADMIN ACCESS</span>
-          <h1>لوحة إدارة تَبصَّر</h1>
+          <h1>لوحة إدارة تَبصِّر</h1>
           <p>أدخل كلمة المرور للوصول إلى بيانات المشاركين والرعاة.</p>
           <input
             className={styles.authInput}
@@ -326,10 +326,10 @@ export default function Admin() {
       <header className={styles.header}>
         <div className={styles.headerBrand}>
           <div className={styles.headerMark}>
-            <img src="/assets/tabsur-mark.png" alt="" />
+            <img src="/assets/tabsur-mark-clean.svg" alt="" />
           </div>
           <div>
-            <div className={styles.headerTitle}>لوحة إدارة تَبصَّر</div>
+            <div className={styles.headerTitle}>لوحة إدارة تَبصِّر</div>
             <div className={styles.headerSub}>{activeTab === 'participants' ? 'PARTICIPANTS' : 'SPONSORS'} · ADMIN DASHBOARD</div>
           </div>
         </div>
@@ -731,7 +731,7 @@ export default function Admin() {
       </div>
 
       <footer className={styles.footer}>
-        لوحة الإدارة · تَبصَّر {new Date().getFullYear()} · للاستخدام الداخلي فقط
+        لوحة الإدارة · تَبصِّر {new Date().getFullYear()} · للاستخدام الداخلي فقط
       </footer>
     </div>
   )

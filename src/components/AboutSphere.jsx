@@ -42,13 +42,13 @@ function createEarthTexture() {
   const ctx = canvas.getContext('2d')
 
   const ocean = ctx.createLinearGradient(0, 0, width, height)
-  ocean.addColorStop(0, '#dfeee9')
-  ocean.addColorStop(0.45, '#b9d7d3')
-  ocean.addColorStop(1, '#7fb0a9')
+  ocean.addColorStop(0, '#eee9d8')
+  ocean.addColorStop(0.45, '#c9c39f')
+  ocean.addColorStop(1, '#8d8658')
   ctx.fillStyle = ocean
   ctx.fillRect(0, 0, width, height)
 
-  ctx.fillStyle = 'rgba(244, 236, 211, 0.94)'
+  ctx.fillStyle = 'rgba(241, 223, 199, 0.94)'
   const landMasses = [
     [[-170, 72], [-132, 72], [-102, 58], [-82, 48], [-70, 26], [-86, 14], [-112, 18], [-130, 32], [-154, 54]],
     [[-82, 12], [-62, 8], [-48, -10], [-52, -34], [-66, -54], [-78, -42], [-72, -18]],
@@ -60,7 +60,7 @@ function createEarthTexture() {
   ]
   landMasses.forEach(points => drawLand(ctx, points, width, height))
 
-  ctx.strokeStyle = 'rgba(31, 61, 82, 0.16)'
+  ctx.strokeStyle = 'rgba(69, 56, 46, 0.16)'
   ctx.lineWidth = 1
   for (let lon = -180; lon <= 180; lon += 30) {
     const x = ((lon + 180) / 360) * width
@@ -80,9 +80,9 @@ function createEarthTexture() {
   const madinahX = ((MADINAH.lon + 180) / 360) * width
   const madinahY = ((90 - MADINAH.lat) / 180) * height
   const glow = ctx.createRadialGradient(madinahX, madinahY, 0, madinahX, madinahY, 70)
-  glow.addColorStop(0, 'rgba(201, 97, 78, 0.95)')
-  glow.addColorStop(0.26, 'rgba(201, 97, 78, 0.28)')
-  glow.addColorStop(1, 'rgba(201, 97, 78, 0)')
+  glow.addColorStop(0, 'rgba(152, 99, 75, 0.95)')
+  glow.addColorStop(0.26, 'rgba(152, 99, 75, 0.28)')
+  glow.addColorStop(1, 'rgba(152, 99, 75, 0)')
   ctx.fillStyle = glow
   ctx.fillRect(madinahX - 80, madinahY - 80, 160, 160)
 
