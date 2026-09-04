@@ -17,14 +17,14 @@ export default function CTATorus() {
     camera.position.z = 7
 
     const t1 = new THREE.Mesh(
-      new THREE.TorusGeometry(2.4, 0.55, 24, 120),
-      new THREE.MeshBasicMaterial({ color: BRAND.green, wireframe: true, transparent: true, opacity: 0.55 })
+      new THREE.TorusGeometry(2.85, 0.62, 24, 128),
+      new THREE.MeshBasicMaterial({ color: BRAND.green, wireframe: true, transparent: true, opacity: 0.50 })
     )
     scene.add(t1)
 
     const t2 = new THREE.Mesh(
-      new THREE.TorusGeometry(1.6, 0.25, 16, 80),
-      new THREE.MeshBasicMaterial({ color: BRAND.coral, wireframe: true, transparent: true, opacity: 0.35 })
+      new THREE.TorusGeometry(1.9, 0.30, 16, 90),
+      new THREE.MeshBasicMaterial({ color: BRAND.coral, wireframe: true, transparent: true, opacity: 0.30 })
     )
     scene.add(t2)
 

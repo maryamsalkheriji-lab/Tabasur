@@ -1,7 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = 'https://hmxnubgqtygipxuxyuqt.supabase.co'
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhteG51YmdxdHlnaXB4dXh5dXF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk3MzM0MTQsImV4cCI6MjA5NTMwOTQxNH0.2n8P96CiXPiwgOrMznTAv7aUUwVdzH3v3fxJTSfWNRI'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const isSupabaseActive = true
-export const supabase = createClient(supabaseUrl, supabaseKey)
+export const isSupabaseActive = Boolean(supabaseUrl && supabaseKey)
+export const supabase = isSupabaseActive
+  ? createClient(supabaseUrl, supabaseKey)
+  : null
+
+export function formatSupabaseError(error) {
+  const message = error?.message || String(error || '')
+
+  if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
+    return 'تعذر الاتصال بـ Supabase. تأكدي من متغيرات VITE_SUPABASE_URL و VITE_SUPABASE_ANON_KEY في Vercel ثم اعملي Redeploy.'
+  }
+
+  return message || 'حدث خطأ غير معروف في الاتصال بقاعدة البيانات.'
+}

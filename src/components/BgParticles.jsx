@@ -40,7 +40,7 @@ export default function BgParticles() {
     const geom = new THREE.BufferGeometry()
     geom.setAttribute('position', new THREE.BufferAttribute(positions, 3))
     geom.setAttribute('color',    new THREE.BufferAttribute(colors, 3))
-    const mat = new THREE.PointsMaterial({ size: 0.45, vertexColors: true, transparent: true, opacity: 0.75, sizeAttenuation: true, depthWrite: false })
+    const mat = new THREE.PointsMaterial({ size: 0.72, vertexColors: true, transparent: true, opacity: 0.72, sizeAttenuation: true, depthWrite: false })
     const points = new THREE.Points(geom, mat)
     scene.add(points)
 

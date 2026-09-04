@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase, isSupabaseActive } from '../lib/supabase'
+import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase'
 import styles from './Admin.module.css'
 
 /* ─── Helpers ─── */
@@ -178,12 +178,16 @@ export default function Admin() {
       setLoading(false)
       return
     }
-    const { data, error: err } = await supabase
-      .from('registrations')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (err) setError(err.message)
-    else setRows(data || [])
+    try {
+      const { data, error: err } = await supabase
+        .from('registrations')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (err) setError(formatSupabaseError(err))
+      else setRows(data || [])
+    } catch (err) {
+      setError(formatSupabaseError(err))
+    }
     setLoading(false)
   }, [])
 
@@ -194,12 +198,16 @@ export default function Admin() {
       setSponsorLoading(false)
       return
     }
-    const { data, error: err } = await supabase
-      .from('sponsor_registrations')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (err) setSponsorError(err.message)
-    else setSponsorRows(data || [])
+    try {
+      const { data, error: err } = await supabase
+        .from('sponsor_registrations')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (err) setSponsorError(formatSupabaseError(err))
+      else setSponsorRows(data || [])
+    } catch (err) {
+      setSponsorError(formatSupabaseError(err))
+    }
     setSponsorLoading(false)
   }, [])
 
@@ -299,7 +307,7 @@ export default function Admin() {
       <div className={styles.authPage}>
         <form className={styles.authCard} onSubmit={handleLogin}>
           <div className={styles.authMark}>
-            <img src="/assets/tabsur-mark-clean.svg" alt="" />
+            <img src="/assets/tabsur-mark.png" alt="" />
           </div>
           <span className={styles.authEyebrow}>ADMIN ACCESS</span>
           <h1>لوحة إدارة تَبصِّر</h1>
@@ -326,7 +334,7 @@ export default function Admin() {
       <header className={styles.header}>
         <div className={styles.headerBrand}>
           <div className={styles.headerMark}>
-            <img src="/assets/tabsur-mark-clean.svg" alt="" />
+            <img src="/assets/tabsur-mark.png" alt="" />
           </div>
           <div>
             <div className={styles.headerTitle}>لوحة إدارة تَبصِّر</div>

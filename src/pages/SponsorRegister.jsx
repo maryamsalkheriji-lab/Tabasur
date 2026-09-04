@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase, isSupabaseActive } from '../lib/supabase'
+import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase'
 import BgParticles from '../components/BgParticles'
 import { useRegisterAnimations, gsap } from '../lib/animations'
 import styles from './Register.module.css'
@@ -26,9 +26,9 @@ async function submitSponsor(payload) {
     if (error.code === '23505' || /duplicate/i.test(error.message || '')) {
       return { ok: false, duplicate: true }
     }
-    return { ok: false, message: error.message || 'خطأ في الخادم' }
-  } catch (_) {
-    return { ok: false, message: 'تعذّر الاتصال بالخادم' }
+    return { ok: false, message: formatSupabaseError(error) }
+  } catch (error) {
+    return { ok: false, message: formatSupabaseError(error) }
   }
 }
 
@@ -157,7 +157,7 @@ export default function SponsorRegister() {
       <BgParticles />
       <nav className={styles.nav}>
         <Link className={styles.brand} to="/">
-          <span className={styles.brandMark}><img src="/assets/tabsur-mark-clean.svg" alt="" /></span>
+          <span className={styles.brandMark}><img src="/assets/tabsur-mark.png" alt="" /></span>
           <span className={styles.brandWord}>
             <span className={styles.ar}>معسكر تَبصِّر</span>
             <span className={styles.en}>SPONSOR REGISTRATION</span>

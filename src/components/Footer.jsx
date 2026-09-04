@@ -9,7 +9,7 @@ export default function Footer() {
           <div className={styles.brand}>
             <Link className={styles.brandLink} to="/">
               <span className={styles.brandMark}>
-                <img src="/assets/tabsur-mark-clean.svg" alt="" />
+                <img src="/assets/tabsur-mark.png" alt="" />
               </span>
               <span className={styles.brandWord}>
                 <span className={styles.ar}>معسكر تَبصِّر</span>
