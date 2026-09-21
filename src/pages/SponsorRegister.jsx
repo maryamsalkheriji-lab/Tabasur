@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase'
 import BgParticles from '../components/BgParticles'
+import RegistrationEmailStatus from '../components/RegistrationEmailStatus'
 import { useRegisterAnimations, gsap } from '../lib/animations'
 import styles from './Register.module.css'
 
@@ -32,26 +33,6 @@ async function submitSponsor(payload) {
   }
 }
 
-async function sendSponsorEmail({ email, fullName }) {
-  try {
-    const response = await fetch('/api/send-registration-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        fullName,
-        kind: 'sponsor',
-        origin: window.location.origin,
-      }),
-    })
-    const data = await response.json().catch(() => ({}))
-    if (!response.ok || data.ok === false) {
-      console.warn('Sponsor email was not sent:', data)
-    }
-  } catch (error) {
-    console.warn('Sponsor email was not sent:', error)
-  }
-}
 
 function Field({ id, label, required, hint, error, invalid, children }) {
   return (
@@ -79,6 +60,7 @@ export default function SponsorRegister() {
   const [loading, setLoading] = useState(false)
   const [formError, setFormError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [simulated, setSimulated] = useState(false)
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -133,10 +115,8 @@ export default function SponsorRegister() {
 
     setLoading(false)
     if (result.ok) {
-      sendSponsorEmail({
-        email: form.email,
-        fullName: form.contactName,
-      })
+      setSimulated(Boolean(result.simulated))
+
       gsap.to('.card-form-view', {
         opacity: 0,
         y: -12,
@@ -156,14 +136,14 @@ export default function SponsorRegister() {
     <div className={`${styles.page} ${styles.sponsorPage}`}>
       <BgParticles />
       <nav className={styles.nav}>
-        <Link className={styles.brand} to="/">
+        <Link className={styles.brand} to="/tabsur">
           <span className={styles.brandMark}><img src="/assets/tabsur-mark.png" alt="" /></span>
           <span className={styles.brandWord}>
-            <span className={styles.ar}>معسكر تَبصِّر</span>
+            <span className={styles.ar}>معسكر تَبصَّر</span>
             <span className={styles.en}>SPONSOR REGISTRATION</span>
           </span>
         </Link>
-        <Link className={styles.navBack} to="/#sponsors">
+        <Link className={styles.navBack} to="/tabsur#sponsors">
           <span>قسم الرعاة</span>
           <span className={styles.arrow}>→</span>
         </Link>
@@ -177,7 +157,7 @@ export default function SponsorRegister() {
         <aside className={`${styles.intro} fade-up`}>
           <div className={styles.introEyebrow}>SPONSORS · TABSUR</div>
           <h1>تسجيل <span className={styles.accent}>الرعاة</span></h1>
-          <p>هذا النموذج مخصص للجهات الراغبة في رعاية معسكر تَبصِّر أو التواصل حول فرص الشراكة والدعم.</p>
+          <p>هذا النموذج مخصص للجهات الراغبة في رعاية معسكر تَبصَّر أو التواصل حول فرص الشراكة والدعم.</p>
 
           <div className={styles.meta}>
             <div className={styles.metaRow}>
@@ -249,8 +229,9 @@ export default function SponsorRegister() {
               </div>
               <h2 className={styles.successTitle}>وصل طلب الرعاية</h2>
               <p className={styles.successMsg}>شكرًا لكم. سنراجع بيانات الجهة ونتواصل مع الشخص المسؤول قريبًا لمناقشة فرص الرعاية.</p>
+              <RegistrationEmailStatus email={form.email} fullName={form.contactName} kind="sponsor" simulated={simulated} />
               <div className={styles.successActions}>
-                <Link className="btn btn-primary" to="/">العودة للرئيسية</Link>
+                <Link className="btn btn-primary" to="/tabsur">العودة للرئيسية</Link>
               </div>
             </div>
           )}

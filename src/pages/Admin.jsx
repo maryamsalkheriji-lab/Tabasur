@@ -10,7 +10,7 @@ const SPECIALTY_LABELS = {
 }
 const AI_LABELS  = { yes:'نعم', sometimes:'أحياناً', no:'لا' }
 const AI_COLORS  = { yes:'var(--green-600)', sometimes:'var(--gold-500)', no:'var(--coral-500)' }
-const EXP_LABELS = { '0-1':'< سنة','1-3':'١–٣','3-5':'٣–٥','5-10':'٥–١٠','10+':'+١٠' }
+const EXP_LABELS = { '0-1':'< سنة','1-3':'1–3','3-5':'3–5','5-10':'5–10','10+':'+10' }
 
 function fmtDate(iso) {
   if (!iso) return '—'
@@ -310,7 +310,7 @@ export default function Admin() {
             <img src="/assets/tabsur-mark.png" alt="" />
           </div>
           <span className={styles.authEyebrow}>ADMIN ACCESS</span>
-          <h1>لوحة إدارة تَبصِّر</h1>
+          <h1>لوحة إدارة تَبصَّر</h1>
           <p>أدخل كلمة المرور للوصول إلى بيانات المشاركين والرعاة.</p>
           <input
             className={styles.authInput}
@@ -337,7 +337,7 @@ export default function Admin() {
             <img src="/assets/tabsur-mark.png" alt="" />
           </div>
           <div>
-            <div className={styles.headerTitle}>لوحة إدارة تَبصِّر</div>
+            <div className={styles.headerTitle}>لوحة إدارة تَبصَّر</div>
             <div className={styles.headerSub}>{activeTab === 'participants' ? 'PARTICIPANTS' : 'SPONSORS'} · ADMIN DASHBOARD</div>
           </div>
         </div>
@@ -457,7 +457,7 @@ export default function Admin() {
                   <BarChart data={cityDist} colorVar="var(--mauve-500)" />
                 </div>
                 <div className={`${styles.chartCard} ${styles.chartCardWide}`}>
-                  <span className={styles.chartEyebrow}>التسجيلات — آخر ١٤ يوماً</span>
+                  <span className={styles.chartEyebrow}>التسجيلات — آخر 14 يوماً</span>
                   <div className={styles.timeline}>
                     {last14.map((d,i) => (
                       <div key={i} className={styles.timelineCol}>
@@ -739,7 +739,7 @@ export default function Admin() {
       </div>
 
       <footer className={styles.footer}>
-        لوحة الإدارة · تَبصِّر {new Date().getFullYear()} · للاستخدام الداخلي فقط
+        لوحة الإدارة · تَبصَّر {new Date().getFullYear()} · للاستخدام الداخلي فقط
       </footer>
     </div>
   )

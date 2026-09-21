@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { registrationEmailPlugin } from './server/registration-email-plugin.js'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), registrationEmailPlugin()],
   build: {
     outDir: 'dist',
     rollupOptions: {

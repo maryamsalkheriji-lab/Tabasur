@@ -7,12 +7,12 @@ export default function Footer() {
       <div className="container">
         <div className={styles.grid}>
           <div className={styles.brand}>
-            <Link className={styles.brandLink} to="/">
+            <Link className={styles.brandLink} to="/tabsur">
               <span className={styles.brandMark}>
                 <img src="/assets/tabsur-mark.png" alt="" />
               </span>
               <span className={styles.brandWord}>
-                <span className={styles.ar}>معسكر تَبصِّر</span>
+                <span className={styles.ar}>معسكر تَبصَّر</span>
                 <span className={styles.en}>TABSUR · INSIGHT</span>
               </span>
             </Link>
@@ -22,10 +22,10 @@ export default function Footer() {
           <div className={styles.col}>
             <h5>اكتشف</h5>
             <ul>
-              <li><a href="/#about">عن المعسكر</a></li>
-              <li><a href="/#pillars">مسارات التحدّي</a></li>
-              <li><a href="/#timeline">المسار</a></li>
-              <li><a href="/#outputs">المخرجات</a></li>
+              <li><a href="/tabsur#about">عن المعسكر</a></li>
+              <li><a href="/tabsur#pillars">مسارات التحدّي</a></li>
+              <li><a href="/tabsur#timeline">المسار</a></li>
+              <li><a href="/tabsur#outputs">المخرجات</a></li>
               <li><Link to="/register">التسجيل</Link></li>
             </ul>
           </div>
@@ -39,12 +39,12 @@ export default function Footer() {
           </div>
         </div>
         <div className={styles.bottom}>
-          <span>© ٢٠٢٦ تَبصِّر · جميع الحقوق محفوظة</span>
+          <span>© 2026 تَبصَّر · جميع الحقوق محفوظة</span>
           <div className={styles.credits}>
-            <span>بشراكة</span>
-            <span className={styles.chip}>أمانة المدينة المنوّرة</span>
-            <span>×</span>
-            <span className={styles.chip}>مُكعّب</span>
+            <span>تنظيم</span>
+            <span className={styles.chip}>أمانة منطقة المدينة المنورة</span>
+            <span>تنفيذ</span>
+            <span className={styles.chip}>كيوبكس</span>
           </div>
         </div>
       </div>

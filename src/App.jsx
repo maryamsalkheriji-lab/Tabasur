@@ -1,6 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
-import Navbar from './components/Navbar'
-import Footer from './components/Footer'
+import TabsurLayout from './components/TabsurLayout'
 import CubeX from './pages/CubeX'
 import Home from './pages/Home'
 import Register from './pages/Register'
@@ -22,19 +21,15 @@ export default function App() {
       {/* ─── صفحة الأدمن: مستقلة بالكامل ─── */}
       <Route path="/admin" element={<Admin />} />
 
-      {/* ─── معسكر تَبصِّر: الموقع الحالي، صار تحت /tabsur ─── */}
+      {/* ─── معسكر تَبصَّر: الموقع الحالي، صار تحت /tabsur ─── */}
       <Route
         path="/tabsur/*"
         element={
-          <>
-            <Navbar />
-            <main>
+          <TabsurLayout>
               <Routes>
                 <Route path="/" element={<Home />} />
               </Routes>
-            </main>
-            <Footer />
-          </>
+          </TabsurLayout>
         }
       />
     </Routes>

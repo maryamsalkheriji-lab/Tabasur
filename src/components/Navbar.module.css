@@ -5,7 +5,7 @@
   padding: 14px clamp(20px,4vw,48px);
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   backdrop-filter: blur(18px) saturate(140%);
-  background: rgba(248,244,237,0.91);
+  background: var(--nav-surface, rgba(248,244,237,0.91));
   border-bottom: 1px solid var(--rule);
 }
 
@@ -15,22 +15,21 @@
   font-weight: 800; color: var(--ink-900); text-decoration: none; flex: none;
 }
 .brandMark {
-  width: 52px; height: 62px; border-radius: 10px; background: var(--paper);
+  width: 52px; height: 62px;
   display: grid; place-items: center;
-  padding: 3px;
-  border: 1.5px solid var(--green-300);
-  box-shadow: 0 10px 24px -18px rgba(52,168,118,.42);
-  overflow: hidden; flex: none;
+  flex: none;
 }
-.brandMark img { width:100%;height:100%;object-fit:contain;border-radius:7px; }
-.brandWord { display:flex; flex-direction:column; line-height:1.12; gap:8px; }
+.brandMark img { width:100%;height:100%;object-fit:contain; }
+.brand .brandMark { width:38px;height:46px;overflow:hidden; }
+.brand .brandMark img { transform:scale(1.06); }
+.brandWord { display:flex; flex-direction:column; line-height:1.12; gap:8px; font-weight:800; min-width:0; }
 .ar { font-size: clamp(12px,1.4vw,18px); font-weight:900; color:var(--ink-500); letter-spacing:0; white-space:nowrap; }
 .en { font-size:9px; letter-spacing:0.25em; color:var(--ink-400); font-weight:700; line-height:1.2; }
 
 /* Nav links — desktop */
 .navLinks {
   display: none;
-  gap: 28px;
+  gap: clamp(14px,1.6vw,24px);
   font-size: 14px; color: var(--ink-700); font-weight: 500;
   align-items: center;
 }
@@ -47,7 +46,7 @@
 }
 .adminLink:hover { background: var(--mauve-500) !important; color: #fff !important; }
 
-@media (min-width: 880px) { .navLinks { display: flex; } }
+@media (min-width: 1280px) { .navLinks { display: flex; } }
 
 /* Right side */
 .navRight { display: flex; align-items: center; gap: 10px; }
@@ -76,15 +75,15 @@
 .burgerLineMid { opacity: 0 !important; }
 .burgerLineBot { transform: translateY(-7px) rotate(-45deg) !important; }
 
-@media (min-width: 880px) { .burger { display: none; } }
+@media (min-width: 1280px) { .burger { display: none; } }
 
 /* Mobile menu */
-@media (max-width: 879px) {
+@media (max-width: 1279px) {
   .navLinks {
     display: flex; flex-direction: column;
     position: fixed;
-    top: 73px; inset-inline: 0;
-    background: rgba(248,244,237,0.98);
+    top: 100%; inset-inline: 0;
+    background: var(--nav-menu-surface, rgba(248,244,237,0.98));
     backdrop-filter: blur(18px);
     border-bottom: 1px solid var(--rule);
     padding: 20px clamp(20px,4vw,48px) 28px;
@@ -101,4 +100,41 @@
     pointer-events: all !important;
   }
   .adminLink { margin-top: 8px; width: fit-content; }
+}
+
+.themeToggle {
+  display:grid;place-items:center;flex-shrink:0;width:44px;height:44px;
+  border-radius:50%;border:1px solid var(--rule);background:var(--paper);
+  color:var(--teal-600);transition:background .2s,transform .2s,box-shadow .2s;
+}
+.themeToggle:hover { background:var(--green-100);transform:translateY(-2px);box-shadow:0 0 0 4px var(--green-100); }
+.themeToggle svg { width:22px;height:22px;animation:themeAppear .3s ease-out; }
+@keyframes themeAppear { from { opacity:0;transform:rotate(-35deg) scale(.8); } to { opacity:1;transform:none; } }
+:global([data-theme='dark']) .navCta { background:#0ABD70;border-color:#0ABD70;color:#02313A; }
+:global([data-theme='dark']) .navCta:hover { background:#45CE90; }
+@media (max-width:480px) {
+  .nav { padding:10px 14px;gap:8px; }
+  .brand { gap:8px;min-width:0; }
+  .brandMark { width:36px;height:44px; }
+  .brandWord { gap:4px; }
+  .en { display:none; }
+  .navRight { gap:6px; }
+  .navCta { padding:9px 12px;font-size:12px; }
+  .themeToggle { width:40px;height:40px; }
+  .navLinks { top:65px; }
+}
+
+/* Camp and municipality marks */
+.identity { display:flex;align-items:center;gap:14px;min-width:0; }
+.organizer { display:flex;align-items:center;padding-inline-start:14px;border-inline-start:1px solid var(--rule);flex:none; }
+.navRight { flex-shrink:0; }
+.navLinks a { white-space:nowrap; }
+@media (max-width:760px) {
+  .identity { gap:8px; }
+  .brandWord { display:none; }
+  .organizer { padding-inline-start:8px; }
+}
+@media (max-width:480px) {
+  .navLinks { top:100%; }
+  .brand .brandMark { width:28px;height:34px; }
 }

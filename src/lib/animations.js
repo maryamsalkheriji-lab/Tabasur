@@ -11,7 +11,8 @@ gsap.registerPlugin(ScrollTrigger)
 export function useHomeAnimations() {
   useEffect(() => {
     // Hero reveal (staggered)
-    gsap.to('.hero .reveal', {
+    const heroTargets = gsap.utils.toArray('#top .reveal')
+    if (heroTargets.length) gsap.to(heroTargets, {
       opacity: 1, y: 0, duration: 1,
       ease: 'power3.out', stagger: 0.15, delay: 0.2,
     })

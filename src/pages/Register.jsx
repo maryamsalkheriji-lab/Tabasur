@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase'
 import BgParticles from '../components/BgParticles'
+import RegistrationEmailStatus from '../components/RegistrationEmailStatus'
 import { useRegisterAnimations, gsap } from '../lib/animations'
 import styles from './Register.module.css'
 
@@ -36,27 +37,6 @@ async function submitToSupabase(payload) {
   }
 }
 
-async function sendRegistrationEmail({ email, fullName, receiptId }) {
-  try {
-    const response = await fetch('/api/send-registration-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        fullName,
-        receiptId,
-        kind: 'participant',
-        origin: window.location.origin,
-      }),
-    })
-    const data = await response.json().catch(() => ({}))
-    if (!response.ok || data.ok === false) {
-      console.warn('Registration email was not sent:', data)
-    }
-  } catch (error) {
-    console.warn('Registration email was not sent:', error)
-  }
-}
 
 /* ─── Field wrapper ─── */
 function Field({ id, label, required, hint, error, invalid, children }) {
@@ -86,6 +66,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [formError, setFormError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [simulated, setSimulated] = useState(false)
   const [receiptId, setReceiptId] = useState('')
 
   function handleChange(e) {
@@ -107,7 +88,7 @@ export default function Register() {
     // جوال — إجباري
     const mobile = arabicToAscii(form.mobile).replace(/\D/g, '')
     if (!/^05\d{8}$/.test(mobile))
-      errs.mobile = 'رقم غير صحيح — يجب أن يبدأ بـ 05 ويتكوّن من ١٠ أرقام'
+      errs.mobile = 'رقم غير صحيح — يجب أن يبدأ بـ 05 ويتكوّن من 10 أرقام'
     // بريد — إجباري
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       errs.email = 'الرجاء كتابة بريد إلكتروني صحيح'
@@ -136,7 +117,7 @@ export default function Register() {
     }
     // دافع الانضمام — إجباري
     if (!form.notes || form.notes.trim().length < 10)
-      errs.notes = 'الرجاء كتابة دافعك للانضمام (١٠ أحرف على الأقل)'
+      errs.notes = 'الرجاء كتابة دافعك للانضمام (10 أحرف على الأقل)'
     return errs
   }
 
@@ -164,13 +145,10 @@ export default function Register() {
 
     setLoading(false)
     if (result.ok) {
+      setSimulated(Boolean(result.simulated))
       const nextReceiptId = makeReceipt()
       setReceiptId(nextReceiptId)
-      sendRegistrationEmail({
-        email: form.email,
-        fullName: form.fullName,
-        receiptId: nextReceiptId,
-      })
+
       gsap.to('.card-form-view', {
         opacity: 0, y: -12, duration: 0.5, ease: 'power2.in',
         onComplete: () => setSuccess(true)
@@ -195,14 +173,14 @@ export default function Register() {
       <BgParticles />
       {/* ─── Nav ─── */}
       <nav className={styles.nav}>
-        <Link className={styles.brand} to="/">
+        <Link className={styles.brand} to="/tabsur">
           <span className={styles.brandMark}><img src="/assets/tabsur-mark.png" alt="" /></span>
           <span className={styles.brandWord}>
-            <span className={styles.ar}>معسكر تَبصِّر</span>
+            <span className={styles.ar}>معسكر تَبصَّر</span>
             <span className={styles.en}>TABSUR · INSIGHT</span>
           </span>
         </Link>
-        <Link className={styles.navBack} to="/">
+        <Link className={styles.navBack} to="/tabsur">
           <span>الصفحة الرئيسية</span>
           <span className={styles.arrow}>→</span>
         </Link>
@@ -215,15 +193,15 @@ export default function Register() {
       <main className={styles.shell}>
         {/* ─── Intro ─── */}
         <aside className={`${styles.intro} fade-up`}>
-          <div className={styles.introEyebrow}>التسجيل · دفعة ٢٠٢٦</div>
-          <h1>انضمّ إلى <span className={styles.accent}>تَبصِّر</span></h1>
+          <div className={styles.introEyebrow}>التسجيل · دفعة 2026</div>
+          <h1>انضمّ إلى <span className={styles.accent}>تَبصَّر</span></h1>
           <p>ثلاثون مقعدًا فقط، نختار من خلالها أصواتًا بصريّة جديدة لتوثيق المدينة المنورة. أكمل النموذج، وسنتواصل معك خلال أسبوع.</p>
 
           <div className={styles.meta}>
             {[
               { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2C7.5 2 4 5.5 4 10c0 6 8 12 8 12s8-6 8-12c0-4.5-3.5-8-8-8z"/><circle cx="12" cy="10" r="3"/></svg>, text: <><strong>المدينة المنورة</strong> · المملكة العربية السعودية</> },
               { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>, text: <><strong>النسخة الأولى</strong> · أربعة أيام مكثفة</> },
-              { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>, text: <><strong>التسجيل مفتوح</strong> حتى ١٥ رجب ١٤٤٧ هـ</> },
+              { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>, text: <><strong>التسجيل مفتوح</strong> 13 سبتمبر 2026</> },
             ].map((r, i) => (
               <div key={i} className={styles.metaRow}>
                 <span className={styles.metaIcon}>{r.icon}</span>
@@ -266,7 +244,7 @@ export default function Register() {
 
                 <div className="field-row">
                   <Field id="mobile" label="رقم الجوال" required
-                    hint="يبدأ بـ 05 ويتكوّن من ١٠ أرقام"
+                    hint="يبدأ بـ 05 ويتكوّن من 10 أرقام"
                     invalid={!!errors.mobile} error={errors.mobile}>
                     <div className="tel-group">
                       <span className="tel-prefix">🇸🇦 +966</span>
@@ -303,10 +281,10 @@ export default function Register() {
                       value={form.experience} onChange={handleChange}>
                       <option value="" disabled>اختر مدّة خبرتك</option>
                       <option value="0-1">أقل من سنة</option>
-                      <option value="1-3">١ – ٣ سنوات</option>
-                      <option value="3-5">٣ – ٥ سنوات</option>
-                      <option value="5-10">٥ – ١٠ سنوات</option>
-                      <option value="10+">أكثر من ١٠ سنوات</option>
+                      <option value="1-3">1 – 3 سنوات</option>
+                      <option value="3-5">3 – 5 سنوات</option>
+                      <option value="5-10">5 – 10 سنوات</option>
+                      <option value="10+">أكثر من 10 سنوات</option>
                     </select>
                   </Field>
                 </div>
@@ -354,7 +332,7 @@ export default function Register() {
 
                 <Field id="notes" label="دافعك للانضمام" required invalid={!!errors.notes} error="الرجاء كتابة دافعك للانضمام">
                   <textarea id="notes" name="notes" rows={4}
-                    placeholder="اكتب لنا في سطرين: لماذا تَبصِّر؟ وماذا تتوقّع أن تخرج به؟"
+                    placeholder="اكتب لنا في سطرين: لماذا تَبصَّر؟ وماذا تتوقّع أن تخرج به؟"
                     value={form.notes} onChange={handleChange} />
                 </Field>
 
@@ -389,9 +367,11 @@ export default function Register() {
 
               {/* النص */}
               <p className={styles.successMsg}>
-                وصل طلبك إلى فريق <strong>تَبصِّر</strong>، وأنت الآن خطوةً أقرب نحو تجربة لن تنساها.
+                وصل طلبك إلى فريق <strong>تَبصَّر</strong>، وأنت الآن خطوةً أقرب نحو تجربة لن تنساها.
                 سنراجع أعمالك ونتواصل معك خلال أسبوع على البريد أو الجوال.
               </p>
+
+              <RegistrationEmailStatus email={form.email} fullName={form.fullName} receiptId={receiptId} kind="participant" simulated={simulated} />
 
               {/* كلام محفّز */}
               <div className={styles.successQuote}>
@@ -410,7 +390,7 @@ export default function Register() {
 
               {/* الأزرار */}
               <div className={styles.successActions}>
-                <Link className="btn btn-primary" to="/">
+                <Link className="btn btn-primary" to="/tabsur">
                   <span>العودة للرئيسية</span>
                   <span className="arrow">→</span>
                 </Link>
@@ -425,7 +405,7 @@ export default function Register() {
       </main>
 
       <footer className={styles.footer}>
-        © ٢٠٢٦ تَبصِّر · حيث تلتقي العدسة بالتاريخ · بشراكة أمانة المدينة المنوّرة × مُكعّب
+        © 2026 تَبصَّر · حيث تلتقي العدسة بالتاريخ · بشراكة أمانة المدينة المنوّرة × مُكعّب
       </footer>
     </div>
   )

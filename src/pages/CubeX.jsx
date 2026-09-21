@@ -3,11 +3,18 @@ import { Link } from 'react-router-dom'
 
 const A = '/assets/cubex/'
 
+const typography = {
+  section: 'clamp(34px,4vw,58px)',
+  card: 'clamp(23px,2vw,28px)',
+  body: 'clamp(18px,1.6vw,22px)',
+  label: 'clamp(17px,1.6vw,21px)'
+}
+
 const DICT = {
   ar: {
     nav: { sub: 'ابتكار · ريادة أعمال', about: 'من نحن', services: 'خدماتنا', programs: 'برامجنا', value: 'الأثر', leadership: 'القيادة', contact: 'تواصل معنا', langCurrent: 'AR', langAr: 'العربية', langEn: 'English' },
-    hero: { badge: 'شريكك في الابتكار وريادة الأعمال', kicker: 'FROM CHALLENGE TO VENTURE', title1: 'من التحدّي إلى الفرصة،', title2: 'ومن الفكرة إلى الأثر', desc: 'نساعد الجهات الحكومية والقطاع الخاص على تحويل التحديات المعقدة إلى حلول قابلة للتنفيذ.', cta1: 'استكشف برامجنا ←', cta2: 'تعرّف علينا', stat1n: '٠١', stat1: 'أول معسكر: تَبصِّر', stat2n: '٠٨', stat2: 'برامج ابتكار', stat3n: '٠٥', stat3: 'مراحل عمل', stat4n: '∞', stat4: 'شبكة خبراء' },
-    about: { eyebrow: 'من نحن', title: 'من فكرة طموحة إلى قيمة حقيقية', desc: 'أربع مراحل تحوّل التحدي إلى مشروع.', cards: [
+    hero: { badge: 'شريكك في الابتكار وريادة الأعمال', kicker: 'FROM CHALLENGE TO VENTURE', title1: 'من التحدّي إلى الفرصة،', title2: 'ومن الفكرة إلى الأثر', desc: 'نساعد الجهات الحكومية والقطاع الخاص على تحويل التحديات المعقدة إلى حلول قابلة للتنفيذ.', cta1: 'استكشف برامجنا ←', cta2: 'تعرّف علينا' },
+    about: { eyebrow: 'من نحن', desc: 'أربع مراحل تحوّل التحدي إلى مشروع.', cards: [
       { tag: 'DISCOVERY', title: 'اكتشاف', desc: 'نفهم التحدي وسياقه قبل أي حل.' },
       { tag: 'DESIGN', title: 'تصميم', desc: 'نبني البرنامج والحل المناسب.' },
       { tag: 'AI', title: 'تقنية', desc: 'نوظّف الذكاء الاصطناعي حيث يصنع فرقًا.' },
@@ -19,21 +26,21 @@ const DICT = {
       { tag: '03', title: 'معسكرات وهاكاثونات', desc: 'تجارب مكثفة تنتهي بمخرجات جاهزة للنشر.' },
       { tag: '04', title: 'بناء الشركات', desc: 'من الفكرة إلى شركة ناشئة قابلة للنمو.' }
     ]},
-    programs: { eyebrow: 'برامجنا وفعالياتنا', title: 'ما نُشغّله الآن',
-      tabsur: { badge: 'التسجيل مفتوح', title: 'معسكر تَبصِّر', sub: 'TABSUR · تسويق المدن', desc: '٤ أيام لرواية تحوّل المدينة المنورة بصريًا.', cta: 'زيارة الموقع ←' },
-      madinah: { badge: 'قريبًا', title: 'مدينة تِك', desc: 'فعالية تقنية تجمع المواهب وروّاد الأعمال.', meta: 'الموعد يُعلن لاحقًا' },
-      medai: { badge: 'قريبًا', title: 'هاكاثون ملتقى الذكاء الاصطناعي', desc: 'تحدٍّ تقني لحلول ذكية لمشكلات حقيقية.', meta: 'فِرَق من ٢–٤' }
+    programs: { eyebrow: 'برامجنا ومبادراتنا', title: 'برامج تصنع الأثر',
+      tabsur: { badge: 'التسجيل مفتوح', title: 'معسكر تَبصَّر', sub: 'TABSUR · تسويق المدن', desc: '4 أيام لرواية تحوّل المدينة المنورة بصريًا.', cta: 'زيارة الموقع ←' },
+      madinah: { badge: 'قريبًا', title: 'مدينة تِك', desc: 'مبادرة تقنية تجمع المواهب وروّاد الأعمال لتطوير الأفكار وتحويلها إلى حلول مبتكرة.', meta: 'الموعد يُعلن لاحقًا' },
+      medai: { badge: 'قريبًا', title: 'معسكر وهاكاثون ملتقى الذكاء الاصطناعي', desc: 'تحدٍّ تقني لحلول ذكية لمشكلات حقيقية.', meta: 'فِرَق من 2–4' }
     },
-    value: { eyebrow: 'الأثر', title: 'ما الذي نمكّنه فعليًا', points: ['قرارات أوضح وتسريع تطوير الأفكار', 'مبادرات بأهداف واضحة', 'خبرات وشراكات مؤثرة', 'رفع جاهزية الفرق', 'تقليل مخاطر التنفيذ', 'قياس النتائج وفرص نمو مستدامة'] },
-    network: { eyebrow: 'شبكة الخبرات', title: 'الابتكار لا يحدث منفردًا', tags: ['الابتكار', 'ريادة الأعمال', 'الاستثمار', 'تطوير الأعمال', 'التصميم', 'التحول المؤسسي', 'الذكاء الاصطناعي', 'خبرات قطاعية'] },
+    value: { eyebrow: 'الأثر', title: 'الأثر الذي نصنعه', points: ['قرارات أوضح وتسريع تطوير الأفكار', 'مبادرات بأهداف واضحة', 'خبرات وشراكات مؤثرة', 'رفع جاهزية الفرق', 'تقليل مخاطر التنفيذ', 'قياس النتائج وفرص نمو مستدامة'] },
+    partners: { title: 'شركاء النجاح', pending: 'نعلن عن شركاء النجاح قريبًا.' },
     leadership: { kicker: 'CEO', name: 'وفاء العمري', role: 'الرئيس التنفيذي', bio: 'تقود كيوبكس من فهم عميق للتحديات المؤسسية.', extra: 'تصميم البرامج، وبناء الشراكات، وتحويل المبادرة إلى نتيجة — هذا ما يقودها كل يوم.', tags: ['منظومات الابتكار', 'ريادة الأعمال', 'الشراكات الاستراتيجية'] },
-    contact: { title: 'عندك تحدٍّ يستحق حلًّا؟', desc: 'ابدأ معنا من التحدي.', cta1: 'تواصل مع كيوبكس ←', cta2: 'موقع معسكر تَبصِّر' },
-    footer: { tagline: 'شريكك من التحدي إلى الفرصة، ومن الفكرة إلى الأثر', desc: 'نصمّم وننفّذ منظومات الابتكار وريادة الأعمال.', colCompany: 'الشركة', colPrograms: 'البرامج', colContact: 'تواصل', linkAbout: 'من نحن', linkServices: 'خدماتنا', linkLeadership: 'القيادة', linkTabsur: 'معسكر تَبصِّر', linkMadinah: 'مدينة تِك — قريبًا', linkMedai: 'هاكاثون MED AI — قريبًا', copyright: '© ٢٠٢٦ كيوبكس · جميع الحقوق محفوظة', mono: 'FROM CHALLENGE TO VENTURE' }
+    contact: { title: 'عندك تحدٍّ يستحق حلًّا؟', desc: 'ابدأ معنا من التحدي.', cta1: 'تواصل مع كيوبكس ←', cta2: 'موقع معسكر تَبصَّر' },
+    footer: { tagline: 'شريكك من التحدي إلى الفرصة، ومن الفكرة إلى الأثر', desc: 'نصمّم وننفّذ منظومات الابتكار وريادة الأعمال.', colCompany: 'الشركة', colPrograms: 'البرامج', colContact: 'تواصل', linkAbout: 'من نحن', linkServices: 'خدماتنا', linkLeadership: 'القيادة', linkTabsur: 'معسكر تَبصَّر', linkMadinah: 'مدينة تِك — قريبًا', linkMedai: 'معسكر وهاكاثون MED AI — قريبًا', copyright: '© 2026 كيوبكس · جميع الحقوق محفوظة', mono: 'FROM CHALLENGE TO VENTURE' }
   },
   en: {
     nav: { sub: 'Innovation · Ventures', about: 'About', services: 'Services', programs: 'Programs', value: 'Impact', leadership: 'Leadership', contact: 'Contact', langCurrent: 'EN', langAr: 'العربية', langEn: 'English' },
-    hero: { badge: 'Your partner in innovation & ventures', kicker: 'FROM CHALLENGE TO VENTURE', title1: 'From challenge to opportunity,', title2: 'from idea to impact', desc: 'We help government and private organizations turn complex challenges into solutions that ship.', cta1: 'Explore our programs →', cta2: 'About CubeX', stat1n: '01', stat1: 'First camp: Tabsur', stat2n: '08', stat2: 'Innovation programs', stat3n: '05', stat3: 'Delivery stages', stat4n: '∞', stat4: 'Expert network' },
-    about: { eyebrow: 'About', title: 'From ambitious idea to real value', desc: 'Four stages that turn a challenge into a venture.', cards: [
+    hero: { badge: 'Your partner in innovation & ventures', kicker: 'FROM CHALLENGE TO VENTURE', title1: 'From challenge to opportunity,', title2: 'from idea to impact', desc: 'We help government and private organizations turn complex challenges into solutions that ship.', cta1: 'Explore our programs →', cta2: 'About CubeX' },
+    about: { eyebrow: 'About', desc: 'Four stages that turn a challenge into a venture.', cards: [
       { tag: 'DISCOVERY', title: 'Discover', desc: 'We understand the challenge before the solution.' },
       { tag: 'DESIGN', title: 'Design', desc: 'We shape the right program and solution.' },
       { tag: 'AI', title: 'Technology', desc: 'We apply AI where it truly matters.' },
@@ -45,16 +52,16 @@ const DICT = {
       { tag: '03', title: 'Camps & Hackathons', desc: 'Intensive experiences that end in shippable output.' },
       { tag: '04', title: 'Venture Building', desc: 'From idea to a scalable startup.' }
     ]},
-    programs: { eyebrow: 'Programs & Events', title: 'What we run now',
+    programs: { eyebrow: 'Programs & Initiatives', title: 'Programs that make an impact',
       tabsur: { badge: 'Registration open', title: 'Tabsur Camp', sub: 'TABSUR · CITY MARKETING', desc: "4 days retelling Madinah's transformation, visually.", cta: 'Visit website →' },
-      madinah: { badge: 'Coming soon', title: 'Madinah Tech', desc: 'A tech event for talent and entrepreneurs.', meta: 'Date announced soon' },
-      medai: { badge: 'Coming soon', title: 'AI Forum Hackathon', desc: 'A technical challenge for real-world AI solutions.', meta: 'Teams of 2–4' }
+      madinah: { badge: 'Coming soon', title: 'Madinah Tech', desc: 'A technology initiative bringing talent and entrepreneurs together to develop ideas into innovative solutions.', meta: 'Date announced soon' },
+      medai: { badge: 'Coming soon', title: 'AI Forum Bootcamp & Hackathon', desc: 'A technical challenge for real-world AI solutions.', meta: 'Teams of 2–4' }
     },
-    value: { eyebrow: 'Impact', title: 'What we actually enable', points: ['Clearer decisions & faster ideas', 'Initiatives with clear goals', 'Expert & strategic partners', 'Stronger team readiness', 'Lower execution risk', 'Measurable results & growth'] },
-    network: { eyebrow: 'Expert Network', title: "Innovation doesn't happen alone", tags: ['Innovation', 'Entrepreneurship', 'Investment', 'Business Development', 'Design', 'Institutional Transformation', 'Applied AI', 'Sector Expertise'] },
+    value: { eyebrow: 'Impact', title: 'The impact we create', points: ['Clearer decisions & faster ideas', 'Initiatives with clear goals', 'Expert & strategic partners', 'Stronger team readiness', 'Lower execution risk', 'Measurable results & growth'] },
+    partners: { title: 'Our Partners', pending: 'Our partners will be announced soon.' },
     leadership: { kicker: 'CEO', name: 'Wafa Alomari', role: 'Chief Executive Officer', bio: 'Leads CubeX with a deep understanding of institutional challenges.', extra: 'Program design, partnerships, and turning initiative into results — every day.', tags: ['Innovation Systems', 'Entrepreneurship', 'Strategic Partnerships'] },
     contact: { title: 'Have a challenge worth solving?', desc: 'Start with us — from challenge to venture.', cta1: 'Talk to CubeX →', cta2: 'Visit Tabsur Camp' },
-    footer: { tagline: 'From challenge to opportunity, from idea to impact', desc: 'We design and run innovation & venture systems.', colCompany: 'Company', colPrograms: 'Programs', colContact: 'Contact', linkAbout: 'About', linkServices: 'Services', linkLeadership: 'Leadership', linkTabsur: 'Tabsur Camp', linkMadinah: 'Madinah Tech — soon', linkMedai: 'MED AI Hackathon — soon', copyright: '© 2026 CubeX · All rights reserved', mono: 'FROM CHALLENGE TO VENTURE' }
+    footer: { tagline: 'From challenge to opportunity, from idea to impact', desc: 'We design and run innovation & venture systems.', colCompany: 'Company', colPrograms: 'Programs', colContact: 'Contact', linkAbout: 'About', linkServices: 'Services', linkLeadership: 'Leadership', linkTabsur: 'Tabsur Camp', linkMadinah: 'Madinah Tech — soon', linkMedai: 'MED AI Bootcamp & Hackathon — soon', copyright: '© 2026 CubeX · All rights reserved', mono: 'FROM CHALLENGE TO VENTURE' }
   }
 }
 
@@ -72,7 +79,7 @@ function buildCells(i) {
   return cells
 }
 function revealStyle(open) {
-  return { maxHeight: open ? 160 : 0, opacity: open ? 1 : 0, overflow: 'hidden', transition: 'max-height .45s cubic-bezier(.2,.7,.2,1), opacity .3s ease' }
+  return { maxHeight: open ? 360 : 0, opacity: open ? 1 : 0, overflow: 'hidden', transition: 'max-height .45s cubic-bezier(.2,.7,.2,1), opacity .3s ease' }
 }
 const NOTE_BG = ['#1B0F30', '#241041', '#150C24']
 const NOTE_ROT = [-2.2, 1.8, -1.4, 2.1, -1.7, 1.5]
@@ -81,13 +88,13 @@ function buildBars(i, open) {
   return BAR_BASE[i % BAR_BASE.length].map((h) => ({ width: 5, height: open ? h * 1.45 : h, background: '#A96BFF', borderRadius: 2, transition: 'height .4s cubic-bezier(.2,.7,.2,1)' }))
 }
 function slideDescStyle(open) {
-  return { marginTop: 8, fontSize: 13.5, lineHeight: 1.75, color: '#9C8FB4', opacity: open ? 1 : 0, transform: open ? 'translateY(0)' : 'translateY(6px)', transition: 'opacity .35s ease, transform .35s ease' }
+  return { marginTop: 8, fontSize: typography.body, lineHeight: 1.8, color: '#9C8FB4', opacity: open ? 1 : 0, transform: open ? 'translateY(0)' : 'translateY(6px)', transition: 'opacity .35s ease, transform .35s ease' }
 }
 function noteStyle(i) {
   return { background: NOTE_BG[i % NOTE_BG.length], border: '1px solid rgba(150,76,255,.28)', borderRadius: 20, padding: '20px 22px 24px', minHeight: 150, display: 'flex', flexDirection: 'column', transform: `rotate(${NOTE_ROT[i % NOTE_ROT.length]}deg)`, boxShadow: '0 20px 40px -22px rgba(0,0,0,.75)' }
 }
 
-const pill = { display: 'inline-flex', padding: '7px 15px', borderRadius: 999, background: 'rgba(150,76,255,.12)', border: '1px solid rgba(150,76,255,.26)', fontSize: 12.5, fontWeight: 600, color: '#C9A6FF' }
+const pill = { display: 'inline-flex', padding: '7px 15px', borderRadius: 999, background: 'rgba(150,76,255,.12)', border: '1px solid rgba(150,76,255,.26)', fontSize: typography.label, fontWeight: 700, color: '#C9A6FF' }
 
 export default function CubeX() {
   const [lang, setLang] = useState('ar')
@@ -150,7 +157,6 @@ export default function CubeX() {
         @keyframes cxFloat{0%{transform:translate3d(0,0,0) rotate(0deg)}50%{transform:translate3d(0,-18px,0) rotate(2.5deg)}100%{transform:translate3d(0,0,0) rotate(0deg)}}
         @keyframes cxPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
         @keyframes cxGlow{0%,100%{opacity:.5}50%{opacity:.85}}
-        @keyframes cxRoll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
         .cx a{color:#A96BFF;text-decoration:none} .cx a:hover{color:#C9A6FF}
         .cx ::selection{background:#964CFF;color:#fff}
       `}</style>
@@ -218,37 +224,26 @@ export default function CubeX() {
               </div>
             </div>
           </div>
-          <div style={{ position: 'relative', zIndex: 3, maxWidth: 1400, margin: 'clamp(40px,5vw,70px) auto 0', padding: '0 clamp(18px,3.4vw,48px)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 1, background: 'rgba(150,76,255,.16)', borderTop: '1px solid rgba(150,76,255,.16)', borderBottom: '1px solid rgba(150,76,255,.16)' }}>
-              {[[t.hero.stat1n, t.hero.stat1, '#fff'], [t.hero.stat2n, t.hero.stat2, '#A96BFF'], [t.hero.stat3n, t.hero.stat3, '#fff'], [t.hero.stat4n, t.hero.stat4, '#A96BFF']].map(([n, l, c], i) => (
-                <div key={i} style={{ background: '#07040E', padding: 'clamp(16px,2vw,26px) clamp(14px,1.8vw,22px)' }}>
-                  <strong style={{ display: 'block', fontSize: 'clamp(24px,2.8vw,38px)', fontWeight: 700, lineHeight: 1, letterSpacing: '-.04em', color: c }}>{n}</strong>
-                  <span style={{ display: 'block', marginTop: 8, fontSize: 13, color: '#9C8FB4', fontWeight: 500 }}>{l}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </section>
 
         <section id="about" style={{ padding: 'clamp(70px,8.6vw,124px) 0', borderTop: '1px solid rgba(150,76,255,.12)' }}>
           <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 clamp(18px,3.4vw,48px)' }}>
-            <div data-rise="" style={{ maxWidth: 680 }}>
-              <span style={pill}>{t.about.eyebrow}</span>
-              <h2 style={{ marginTop: 20, fontSize: 'clamp(27px,3.4vw,50px)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-.03em', color: '#fff' }}>{t.about.title}</h2>
-              <p style={{ marginTop: 14, fontSize: 'clamp(14.5px,1.25vw,17px)', color: '#9C8FB4' }}>{t.about.desc}</p>
+            <div data-rise="" style={{ maxWidth: 820 }}>
+              <h2 style={{ ...pill, margin: 0 }}>{t.about.eyebrow}</h2>
+              <p style={{ marginTop: 14, fontSize: typography.body, color: '#9C8FB4' }}>{t.about.desc}</p>
             </div>
-            <div data-rise="" style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 12 }}>
+            <div data-rise="" style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,250px),1fr))', gap: 12 }}>
               {capCards.map((card, i) => (
-                <div key={i} onMouseEnter={() => setHoverCard(i)} onMouseLeave={() => setHoverCard(null)} onClick={() => setHoverCard(i)} style={{ padding: 16, borderRadius: 14, background: '#0E0818', border: '1px solid rgba(150,76,255,.16)', cursor: 'pointer', transition: 'border-color .35s ease' }}>
-                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, letterSpacing: '.16em', color: '#7C6E92' }}>{card.tag}</span>
+                <div key={i} onMouseEnter={() => setHoverCard(i)} onMouseLeave={() => setHoverCard(null)} onClick={() => setHoverCard(i)} style={{ padding: 24, borderRadius: 14, background: '#0E0818', border: '1px solid rgba(150,76,255,.16)', cursor: 'pointer', transition: 'border-color .35s ease' }}>
+                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, letterSpacing: '.16em', color: '#7C6E92' }}>{card.tag}</span>
                   <div style={{ height: 34, display: 'flex', alignItems: 'center', marginTop: 12 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,4px)', gridAutoRows: 4, gap: 1 }}>
                       {card.cells.map((c, j) => <span key={j} style={{ width: 4, height: 4, background: c }} />)}
                     </div>
                   </div>
-                  <h3 style={{ marginTop: 12, fontSize: 16.5, fontWeight: 600, color: '#fff', lineHeight: 1.3 }}>{card.title}</h3>
+                  <h3 style={{ marginTop: 12, fontSize: typography.card, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{card.title}</h3>
                   <div style={revealStyle(card.open)}>
-                    <p style={{ fontSize: 14, lineHeight: 1.8, color: '#9C8FB4', paddingTop: 10 }}>{card.desc}</p>
+                    <p style={{ fontSize: typography.body, fontWeight: 500, lineHeight: 1.8, color: '#9C8FB4', paddingTop: 10 }}>{card.desc}</p>
                   </div>
                 </div>
               ))}
@@ -260,10 +255,10 @@ export default function CubeX() {
           <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 clamp(18px,3.4vw,48px)' }}>
             <div data-rise="" style={{ maxWidth: 680 }}>
               <span style={pill}>{t.services.eyebrow}</span>
-              <h2 style={{ marginTop: 20, fontSize: 'clamp(27px,3.4vw,48px)', fontWeight: 800, lineHeight: 1.16, letterSpacing: '-.03em', color: '#fff' }}>{t.services.title}</h2>
-              <p style={{ marginTop: 14, fontSize: 'clamp(14.5px,1.25vw,17px)', color: '#9C8FB4' }}>{t.services.desc}</p>
+              <h2 style={{ marginTop: 20, fontSize: typography.section, fontWeight: 800, lineHeight: 1.3, letterSpacing: '-.03em', color: '#fff' }}>{t.services.title}</h2>
+              <p style={{ marginTop: 14, fontSize: typography.body, color: '#9C8FB4' }}>{t.services.desc}</p>
             </div>
-            <div data-rise="" style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 12 }}>
+            <div data-rise="" style={{ marginTop: 32, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,250px),1fr))', gap: 12 }}>
               {serviceCards.map((card, i) => (
                 <div key={i} onMouseEnter={() => setHoverService(i)} onMouseLeave={() => setHoverService(null)} onClick={() => setHoverService(i)} style={{ position: 'relative', overflow: 'hidden', padding: 16, borderRadius: 14, background: '#0E0818', border: '1px solid rgba(150,76,255,.16)', cursor: 'pointer', transition: 'border-color .35s ease' }}>
                   <span aria-hidden="true" style={{ position: 'absolute', top: -6, insetInlineEnd: 6, fontSize: 52, fontWeight: 800, color: 'rgba(150,76,255,.07)', lineHeight: 1, fontFamily: "'IBM Plex Mono',monospace" }}>{card.tag}</span>
@@ -271,7 +266,7 @@ export default function CubeX() {
                   <div style={{ height: 30, display: 'flex', alignItems: 'flex-end', gap: 4, marginTop: 14 }}>
                     {card.bars.map((b, j) => <span key={j} style={b} />)}
                   </div>
-                  <h3 style={{ marginTop: 12, fontSize: 16.5, fontWeight: 600, color: '#fff', lineHeight: 1.3 }}>{card.title}</h3>
+                  <h3 style={{ marginTop: 12, fontSize: typography.card, fontWeight: 600, color: '#fff', lineHeight: 1.3 }}>{card.title}</h3>
                   <p style={slideDescStyle(card.open)}>{card.desc}</p>
                 </div>
               ))}
@@ -290,22 +285,22 @@ export default function CubeX() {
           <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 clamp(18px,3.4vw,48px)' }}>
             <div data-rise="" style={{ maxWidth: 680 }}>
               <span style={pill}>{t.programs.eyebrow}</span>
-              <h2 style={{ marginTop: 20, fontSize: 'clamp(27px,3.4vw,48px)', fontWeight: 800, lineHeight: 1.16, letterSpacing: '-.03em', color: '#fff' }}>{t.programs.title}</h2>
+              <h2 style={{ marginTop: 20, fontSize: typography.section, fontWeight: 800, lineHeight: 1.3, letterSpacing: '-.03em', color: '#fff' }}>{t.programs.title}</h2>
             </div>
 
             <div data-rise="" style={{ marginTop: 36 }}>
               <Link to="/tabsur" style={{ position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap', padding: 'clamp(24px,3vw,40px)', borderRadius: 22, background: 'linear-gradient(100deg,#150C24 0%,#241041 58%,#3A1670 100%)', border: '1px solid rgba(150,76,255,.32)', color: 'inherit' }}>
                 <div aria-hidden="true" style={{ position: 'absolute', insetInlineStart: '-6%', top: '-40%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle,rgba(169,107,255,.32) 0%,rgba(169,107,255,0) 66%)' }} />
                 <span style={{ position: 'relative', flex: '0 0 auto', width: 90, height: 90, borderRadius: 18, overflow: 'hidden', background: '#F7EEE5' }}>
-                  <img src={A + 'tabsur-logo-black.png'} alt="تَبصِّر" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={A + 'tabsur-logo-black.png'} alt="تَبصَّر" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </span>
                 <div style={{ position: 'relative', flex: '1 1 260px', minWidth: 0 }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 13px', borderRadius: 999, background: 'rgba(93,232,168,.16)', border: '1px solid rgba(93,232,168,.3)', fontSize: 11.5, fontWeight: 600, color: '#5DE8A8' }}>
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#5DE8A8', animation: 'cxPulse 2s ease-in-out infinite' }} />{t.programs.tabsur.badge}
                   </span>
-                  <h3 style={{ marginTop: 12, fontSize: 'clamp(20px,2.2vw,28px)', fontWeight: 700, color: '#fff', letterSpacing: '-.02em' }}>{t.programs.tabsur.title}</h3>
+                  <h3 style={{ marginTop: 12, fontSize: typography.card, fontWeight: 700, color: '#fff', letterSpacing: '-.02em' }}>{t.programs.tabsur.title}</h3>
                   <span style={{ display: 'block', marginTop: 4, fontFamily: "'IBM Plex Mono',monospace", fontSize: 10.5, letterSpacing: '.16em', color: '#8F7BB8' }}>{t.programs.tabsur.sub}</span>
-                  <p style={{ marginTop: 10, fontSize: 14.5, lineHeight: 1.8, color: '#B3A6C7', maxWidth: '52ch' }}>{t.programs.tabsur.desc}</p>
+                  <p style={{ marginTop: 10, fontSize: typography.body, lineHeight: 1.8, color: '#B3A6C7', maxWidth: '52ch' }}>{t.programs.tabsur.desc}</p>
                 </div>
                 <span style={{ position: 'relative', flex: '0 0 auto', display: 'inline-flex', alignItems: 'center', gap: 9, fontSize: 14.5, fontWeight: 600, color: '#fff', borderBottom: '1px solid rgba(255,255,255,.35)', paddingBottom: 4 }}>{t.programs.tabsur.cta}</span>
               </Link>
@@ -320,8 +315,8 @@ export default function CubeX() {
                   <span style={{ height: 44, display: 'flex', alignItems: 'center' }}>
                     <img src={A + img} alt={alt} style={{ height: '100%', width: 'auto', ...imgStyle }} />
                   </span>
-                  <h3 style={{ fontSize: 20, fontWeight: 700, color: '#fff', letterSpacing: '-.02em' }}>{p.title}</h3>
-                  <p style={{ fontSize: 14, lineHeight: 1.8, color: '#9C8FB4' }}>{p.desc}</p>
+                  <h3 style={{ fontSize: typography.card, fontWeight: 700, color: '#fff', letterSpacing: '-.02em' }}>{p.title}</h3>
+                  <p style={{ fontSize: typography.body, lineHeight: 1.8, color: '#9C8FB4' }}>{p.desc}</p>
                   <span style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid rgba(150,76,255,.16)', fontSize: 12.5, color: '#7C6E92' }}>{p.meta}</span>
                 </article>
               ))}
@@ -333,35 +328,25 @@ export default function CubeX() {
           <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 clamp(18px,3.4vw,48px)' }}>
             <div data-rise="" style={{ maxWidth: 680 }}>
               <span style={pill}>{t.value.eyebrow}</span>
-              <h2 style={{ marginTop: 20, fontSize: 'clamp(27px,3.4vw,48px)', fontWeight: 800, lineHeight: 1.16, letterSpacing: '-.03em', color: '#fff' }}>{t.value.title}</h2>
+              <h2 style={{ marginTop: 20, fontSize: typography.section, fontWeight: 800, lineHeight: 1.3, letterSpacing: '-.03em', color: '#fff' }}>{t.value.title}</h2>
             </div>
-            <div data-rise="" style={{ marginTop: 40, display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20 }}>
+            <div data-rise="" style={{ marginTop: 40, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,280px),1fr))', gap: 20 }}>
               {valueCards.map((card, i) => (
                 <div key={i} style={card.style}>
                   <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,.35)' }}>{card.numLabel}</span>
-                  <p style={{ marginTop: 12, fontSize: 'clamp(15px,1.6vw,18px)', fontWeight: 700, color: '#fff', lineHeight: 1.4, letterSpacing: '-.01em' }}>{card.text}</p>
+                  <p style={{ marginTop: 12, fontSize: typography.body, fontWeight: 700, color: '#fff', lineHeight: 1.4, letterSpacing: '-.01em' }}>{card.text}</p>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <section id="network" style={{ padding: 'clamp(56px,6.6vw,92px) 0', overflow: 'hidden' }}>
-          <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 clamp(18px,3.4vw,48px)' }}>
-            <span style={pill}>{t.network.eyebrow}</span>
-            <h2 style={{ marginTop: 18, fontSize: 'clamp(22px,2.6vw,36px)', fontWeight: 700, lineHeight: 1.2, letterSpacing: '-.03em', color: '#fff' }}>{t.network.title}</h2>
-          </div>
-          <div style={{ marginTop: 32, overflow: 'hidden', direction: 'ltr', paddingBlock: 8, WebkitMaskImage: 'linear-gradient(to left,transparent 0,#000 8%,#000 92%,transparent 100%)', maskImage: 'linear-gradient(to left,transparent 0,#000 8%,#000 92%,transparent 100%)' }}>
-            <div style={{ display: 'flex', width: 'max-content', direction: 'ltr', animation: 'cxRoll 36s linear infinite', willChange: 'transform' }}>
-              {[0, 1].map((copy) => (
-                <div key={copy} aria-hidden={copy === 1} style={{ display: 'flex', flex: 'none' }}>
-                  {t.network.tags.map((tag, i) => (
-                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 16, padding: '0 22px', direction: lang === 'ar' ? 'rtl' : 'ltr', fontSize: 'clamp(22px,3.4vw,44px)', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', letterSpacing: '-.01em' }}>
-                      {tag}<span style={{ color: '#A96BFF', fontSize: 15 }}>✦</span>
-                    </span>
-                  ))}
-                </div>
-              ))}
+        <section id="partners" aria-labelledby="partners-title" style={{ padding: 'clamp(56px,6.6vw,92px) 0' }}>
+          <div data-rise="" style={{ maxWidth: 1400, margin: '0 auto', padding: '0 clamp(18px,3.4vw,48px)' }}>
+            <h2 id="partners-title" style={{ fontSize: typography.section, fontWeight: 700, lineHeight: 1.3, letterSpacing: '-.03em', color: '#fff' }}>{t.partners.title}</h2>
+            {/* Replace this announcement with partner logos when they are available. */}
+            <div style={{ marginTop: 32, padding: 'clamp(32px,5vw,64px) 24px', borderRadius: 18, background: '#0E0818', border: '1px solid rgba(150,76,255,.16)', textAlign: 'center' }}>
+              <p style={{ margin: 0, fontSize: typography.body, color: '#9C8FB4' }}>{t.partners.pending}</p>
             </div>
           </div>
         </section>
@@ -377,11 +362,11 @@ export default function CubeX() {
               </div>
               <div>
                 <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, letterSpacing: '.24em', color: '#8F7BB8' }}>{t.leadership.kicker}</span>
-                <h2 style={{ marginTop: 14, fontSize: 'clamp(30px,4vw,54px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-.035em', color: '#fff' }}>{t.leadership.name}</h2>
+                <h2 style={{ marginTop: 14, fontSize: typography.section, fontWeight: 800, lineHeight: 1.3, letterSpacing: '-.035em', color: '#fff' }}>{t.leadership.name}</h2>
                 <span style={{ display: 'block', marginTop: 6, fontSize: 14.5, color: '#9C8FB4' }}>{t.leadership.role}</span>
-                <p style={{ marginTop: 18, fontSize: 'clamp(14.5px,1.25vw,17px)', lineHeight: 1.9, color: '#B3A6C7', maxWidth: '52ch' }}>{t.leadership.bio}</p>
+                <p style={{ marginTop: 18, fontSize: typography.body, lineHeight: 1.9, color: '#B3A6C7', maxWidth: '52ch' }}>{t.leadership.bio}</p>
                 <div style={revealStyle(wafaHover)}>
-                  <p style={{ fontSize: 14.5, lineHeight: 1.9, color: '#B3A6C7', maxWidth: '52ch', paddingTop: 8 }}>{t.leadership.extra}</p>
+                  <p style={{ fontSize: typography.body, lineHeight: 1.9, color: '#B3A6C7', maxWidth: '52ch', paddingTop: 8 }}>{t.leadership.extra}</p>
                   <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 9 }}>
                     {t.leadership.tags.map((wtag, i) => <span key={i} style={{ padding: '9px 16px', borderRadius: 999, background: '#120B1F', border: '1px solid rgba(150,76,255,.22)', fontSize: 13, color: '#D8CCEC' }}>{wtag}</span>)}
                   </div>
@@ -395,8 +380,8 @@ export default function CubeX() {
           <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(55% 60% at 50% 0%,rgba(150,76,255,.26) 0%,rgba(150,76,255,0) 66%)' }} />
           <div style={{ position: 'relative', zIndex: 2, maxWidth: 920, margin: '0 auto', padding: '0 clamp(18px,3.4vw,48px)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 20 }}>
             <img data-rise="" src={A + 'cube-x.png'} alt="" style={{ width: 'min(200px,50%)', opacity: .95, filter: 'drop-shadow(0 0 30px rgba(150,76,255,.6))' }} />
-            <h2 data-rise="" style={{ fontSize: 'clamp(30px,5vw,64px)', fontWeight: 800, lineHeight: 1.06, letterSpacing: '-.04em', color: '#fff' }}>{t.contact.title}</h2>
-            <p data-rise="" style={{ fontSize: 'clamp(15px,1.4vw,18px)', lineHeight: 1.9, color: '#B3A6C7', maxWidth: '52ch' }}>{t.contact.desc}</p>
+            <h2 data-rise="" style={{ fontSize: typography.section, fontWeight: 800, lineHeight: 1.3, letterSpacing: '-.04em', color: '#fff' }}>{t.contact.title}</h2>
+            <p data-rise="" style={{ fontSize: typography.body, lineHeight: 1.9, color: '#B3A6C7', maxWidth: '52ch' }}>{t.contact.desc}</p>
             <div data-rise="" style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 13 }}>
               <a href="mailto:info@cubex.com.sa" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 10, padding: '18px 34px', borderRadius: 999, background: '#964CFF', color: '#fff', fontSize: 16, fontWeight: 600, boxShadow: '0 22px 50px -22px rgba(150,76,255,.95)' }}>{t.contact.cta1}</a>
               <Link to="/tabsur" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 10, padding: '18px 30px', borderRadius: 999, border: '1px solid rgba(150,76,255,.32)', color: '#EDE7F7', fontSize: 16, fontWeight: 500 }}>{t.contact.cta2}</Link>
@@ -412,8 +397,8 @@ export default function CubeX() {
                   <img src={A + 'cube-wire.png'} alt="" style={{ height: 38, width: 'auto', filter: 'drop-shadow(0 0 12px rgba(150,76,255,.6))' }} />
                   <span style={{ fontSize: 21, fontWeight: 600, letterSpacing: '-.02em', color: '#fff' }}>Cube<span style={{ color: '#A96BFF' }}>X</span></span>
                 </span>
-                <p style={{ marginTop: 20, fontSize: 15.5, fontWeight: 500, lineHeight: 1.7, color: '#fff' }}>{t.footer.tagline}</p>
-                <p style={{ marginTop: 12, fontSize: 14, lineHeight: 1.9, color: '#8F82A6' }}>{t.footer.desc}</p>
+                <p style={{ marginTop: 20, fontSize: typography.body, fontWeight: 500, lineHeight: 1.7, color: '#fff' }}>{t.footer.tagline}</p>
+                <p style={{ marginTop: 12, fontSize: typography.body, lineHeight: 1.9, color: '#8F82A6' }}>{t.footer.desc}</p>
               </div>
               <div>
                 <h5 style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, letterSpacing: '.2em', color: '#A96BFF', fontWeight: 500 }}>{t.footer.colCompany}</h5>

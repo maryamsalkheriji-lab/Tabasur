@@ -19,13 +19,8 @@ function Hero() {
       />
       <div className={styles.heroContent}>
         <div className="container">
-          <span className={`${styles.heroBadge} reveal`}>
-            <span className={styles.dot} />
-            النسخة الأولى · 4 أيام مكثفة
-          </span>
-          <p className={`${styles.heroSuper} reveal`}>معسكر لتسويق المدن</p>
           <h1 className={`${styles.heroTitle} reveal`}>
-            <span className={styles.accent}>تَبصِّر</span>
+            <span className={styles.accent}>تَبصَّر</span>
           </h1>
           <p className={`${styles.heroSub} reveal`}>
             نحكي قصة التحوّل كما عاشها الناس.
@@ -42,9 +37,9 @@ function Hero() {
           <div className={`${styles.heroFacts} reveal`}>
             <span>المدينة المنورة · السعودية</span>
             <i />
-            <span>٤ أيام مكثفة</span>
+            <span>4 أيام مكثفة</span>
             <i />
-            <span>+٤٠ موهبة مستهدفة</span>
+            <span>100 موهبة مستهدفة</span>
             <i />
             <span>مخرجات قابلة للنشر</span>
           </div>
@@ -63,10 +58,10 @@ function Hero() {
 /* ─── About — بانر صورة كامل العرض ─── */
 function About() {
   const stats = [
-    { value: '٤', label: 'أيام مكثفة', tone: 'teal' },
-    { value: '+٤٠', label: 'مشارك مستهدف', tone: 'green' },
-    { value: '٨٠٪', label: 'تطبيق عملي', tone: 'teal' },
-    { value: '٤', label: 'مسارات تحدٍّ', tone: 'green' },
+    { value: '4', label: 'أيام مكثفة', tone: 'teal' },
+    { value: '100', label: 'مشارك مستهدف', tone: 'green' },
+    { value: '80%', label: 'تطبيق عملي', tone: 'teal' },
+    { value: '4', label: 'مسارات تحدٍّ', tone: 'green' },
   ]
 
   return (
@@ -84,9 +79,8 @@ function About() {
             <span className={styles.aboutTag}>عن المعسكر</span>
             <h2>من عرض الأماكن إلى رواية تجربة مدينة</h2>
             <p>
-              تَبصِّر لا يكتفي بالترويج للمدينة، بل يعيد اكتشافها وفهم تحوّلها وسرد قصتها بصريًا كما عاشها الناس — بمحتوى قابل للنشر يبرز التطور الحضري والإنساني.
+              تَبصَّر لا يكتفي بالترويج للمدينة، بل يعيد اكتشافها وفهم تحوّلها وسرد قصتها بصريًا كما عاشها الناس — بمحتوى قابل للنشر يبرز التطور الحضري والإنساني.
             </p>
-            <span className={styles.aboutCoord}>24.4709°N / 39.6111°E</span>
           </div>
         </div>
       </div>
@@ -95,7 +89,7 @@ function About() {
         <div className={`${styles.aboutStats} reveal`}>
           {stats.map((s) => (
             <div className={styles.stat} key={s.label}>
-              <strong data-tone={s.tone}>{s.value}</strong>
+              <strong data-tone={s.tone}><bdi dir="ltr">{s.value}</bdi></strong>
               <span>{s.label}</span>
             </div>
           ))}
@@ -109,28 +103,28 @@ function About() {
 function Pillars() {
   const pillars = [
     {
-      num: 'TRACK / 01',
+      num: 'المسار / 01',
       title: 'الوجهة وتجربة الزائر',
       img: '/assets/track-01.png',
       alt: 'زوار يستكشفون سوق التمور في المدينة المنورة',
       desc: 'تقديم المدينة كوجهة غنية بالتجارب الدينية والثقافية والسياحية، وتشجيع الزائر على اكتشاف مساراتها ووجهاتها المحلية.',
     },
     {
-      num: 'TRACK / 02',
+      num: 'المسار / 02',
       title: 'جودة الحياة',
       img: '/assets/track-02.png',
       alt: 'مساحات عامة وتنقل ذكي في المدينة',
       desc: 'رواية تطور المساحات العامة والخدمات والتنقل والحلول الذكية، وإظهار أثرها في تجربة الإنسان اليومية داخل المدينة.',
     },
     {
-      num: 'TRACK / 03',
+      num: 'المسار / 03',
       title: 'الاستثمار والفرص',
       img: '/assets/track-03.png',
       alt: 'لقاء أعمال في ساحة تجارية',
       desc: 'إظهار المدينة كبيئة واعدة للقطاع الخاص ورواد الأعمال، وإبراز فرص السياحة والضيافة والمساحات العامة والشراكات.',
     },
     {
-      num: 'TRACK / 04',
+      num: 'المسار / 04',
       title: 'الهوية والسردية',
       img: '/assets/track-04.png',
       alt: 'جلسة تراثية ورواية قصص المدينة',
@@ -205,7 +199,7 @@ function Pillars() {
 
         <div className={`${styles.pillarsHead} reveal`}>
           <span className="eyebrow">المسارات</span>
-          <h2>مسارات التحدّي في تَبصِّر</h2>
+          <h2>مسارات التحدي</h2>
           <p className="lead">
             أربع زوايا تروي تحوّل المدينة. يختار كل فريق مسارًا يبني عليه عمله الإنتاجي، بما يضمن تغطية متكاملة للقصة الحضرية والإنسانية.
           </p>
@@ -233,6 +227,18 @@ function Pillars() {
   )
 }
 
+const journeyColors = ['var(--green-500)', 'var(--teal-600)', 'var(--coral-500)', 'var(--mauve-500)']
+
+function AudienceIcon({ index }) {
+  const shapes = [
+    <g><rect x="4" y="7" width="23" height="22" rx="5" /><path d="m27 14 8-4v16l-8-4M11 7l3-4h7l3 4" /><circle cx="16" cy="18" r="5" /></g>,
+    <g><rect x="9" y="9" width="22" height="22" rx="6" /><path d="M15 3v6m10-6v6M15 31v6m10-6v6M3 15h6m-6 10h6m22-10h6m-6 10h6m-17-11-5 6h5l-2 6 7-8h-5l2-4" /></g>,
+    <g><path d="m6 17 22-8v22L6 23zM28 16l6-3v14l-6-3M10 25l3 9h6l-3-7M32 6l3-3M34 33l3 3" /></g>,
+    <g><path d="m20 4 12 20-12 12L8 24zM20 4v15M8 24h8m8 0h8" /><circle cx="20" cy="23" r="4" /><path d="M7 5H3v4m30-4h4v4M3 31v4h4m26 0h4v-4" /></g>,
+  ]
+  return <span className={styles.whoIcon} aria-hidden="true"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{shapes[index]}</svg></span>
+}
+
 /* ─── Who ─── */
 function Who() {
   const cards = [
@@ -253,6 +259,7 @@ function Who() {
         <div className={`who-grid ${styles.whoGrid}`}>
           {cards.map((c, i) => (
             <div key={i} className={`who-card reveal ${styles.whoCard}`} style={{'--accent': c.accent}}>
+              <AudienceIcon index={i} />
               <span className={styles.whoGlyph}>{c.n}</span>
               <div><h4>{c.title}</h4><p>{c.desc}</p></div>
             </div>
@@ -265,14 +272,29 @@ function Who() {
 
 /* ─── Timeline ─── */
 function Timeline() {
+  const wrapRef = useRef(null)
+  useEffect(() => {
+    const wrap = wrapRef.current
+    const line = wrap.querySelector('.timeline-line')
+    const update = () => {
+      const rows = [...wrap.querySelectorAll('.tl-row')]
+      const stops = rows.map((row) => row.offsetTop + row.offsetHeight / 2)
+      const segments = journeyColors.map((color, i) => `${color} ${i === 0 ? 0 : stops[i - 1]}px ${i === journeyColors.length - 1 ? wrap.offsetHeight : stops[i]}px`)
+      line.style.setProperty('--journey-gradient', `linear-gradient(to bottom, ${segments.join(', ')})`)
+    }
+    const observer = new ResizeObserver(update)
+    observer.observe(wrap)
+    update()
+    return () => observer.disconnect()
+  }, [])
   const days = [
-    { side:'right', time:'اليوم 01 — الفهم', day:'DAY 01', title:'تسويق المدن والسرد الحضري',
+    { side:'right', time:'اليوم 01 — الفهم', day:'اليوم 01', title:'تسويق المدن والسرد الحضري',
       items:['خصوصية المدينة المنورة','فهم التحوّل الحضري والإنساني','تكوين الفرق واختيار المسارات'] },
-    { side:'left', time:'اليوم 02 — الاكتشاف', day:'DAY 02', title:'الأفكار والزوايا الجديدة',
+    { side:'left', time:'اليوم 02 — الاكتشاف', day:'اليوم 02', title:'الأفكار والزوايا الجديدة',
       items:['استخدام AI لتوليد الأفكار','تحليل الجمهور والرسائل','تطوير زوايا محتوى قابلة للنشر'] },
-    { side:'right', time:'اليوم 03 — الإنتاج', day:'DAY 03', title:'من السيناريو إلى النموذج',
+    { side:'right', time:'اليوم 03 — الإنتاج', day:'اليوم 03', title:'من السيناريو إلى النموذج',
       items:['كتابة السيناريو وبناء القصة','تصوير وتصميم ومونتاج','تحسين المخرجات بالذكاء الاصطناعي'] },
-    { side:'left', time:'اليوم 04 — الإطلاق', day:'DAY 04', title:'عرض الأعمال والتكريم',
+    { side:'left', time:'اليوم 04 — الإطلاق', day:'اليوم 04', title:'عرض الأعمال والتكريم',
       items:['إطلاق جماعي للمحتوى','عرض أفضل الأعمال أمام لجنة','تكريم الفائزين وتوثيق المخرجات'] },
   ]
   return (
@@ -284,10 +306,10 @@ function Timeline() {
           <p className="lead">رحلة مكثفة تمزج التعلم بالتطبيق، وتنتهي بمحتوى قابل للنشر يخدم صورة المدينة وتجربة الزائر.</p>
           <div className="divider" />
         </div>
-        <div className={`timeline-wrap ${styles.timelineWrap}`}>
+        <div ref={wrapRef} className={`timeline-wrap ${styles.timelineWrap}`}>
           <div className={`timeline-line ${styles.timelineLine}`} id="tlLine" />
           {days.map((d, i) => (
-            <div key={i} className={`tl-row ${d.side} ${styles.tlRow} ${d.side === 'right' ? `${styles.right} reveal-r` : `${styles.left} reveal-l`}`}>
+            <div key={i} style={{ '--day-accent': journeyColors[i] }} className={`tl-row ${d.side} ${styles.tlRow} ${d.side === 'right' ? `${styles.right} reveal-r` : `${styles.left} reveal-l`}`}>
               {d.side === 'right' && <div className={`tl-time ${styles.tlTime}`}>{d.time}</div>}
               <div className={`tl-dot ${styles.tlDot}`} />
               <div className={`tl-card ${styles.tlCard}`}>
@@ -339,7 +361,7 @@ function Outputs() {
 
 /* ─── Partners ─── */
 function Partners() {
-  const partnerLogo = '/assets/amana-logo.png'
+  const partnerLogo = '/assets/amana-organizer.png'
   const cubexLogo = '/assets/cubex-logo.png'
 
   return (
@@ -347,9 +369,9 @@ function Partners() {
       <div className="pattern-stars" aria-hidden="true" />
       <div className="container">
         <div className="section-head reveal">
-          <span className="eyebrow">الشركاء</span>
-          <h2>شركاء في رواية قصة التحوّل</h2>
-          <p className="lead">لا تُبنى الشراكة في تَبصِّر على الظهور الإعلامي فقط، بل على صناعة الأثر، دعم التحوّل الحضري، وتمكين المواهب.</p>
+          <span className="eyebrow">الجهات المسؤولة</span>
+          <h2>الجهة المالكة والمنفّذة</h2>
+          <p className="lead">أمانة منطقة المدينة المنورة هي الجهة المالكة لمعسكر تَبصَّر، وكيوبكس هي الجهة المنفّذة.</p>
           <div className="divider" />
         </div>
         <div className={`partners-grid ${styles.partnersGrid}`}>
@@ -358,16 +380,16 @@ function Partners() {
               <span className={styles.partnerMark} aria-hidden="true">
                 <img src={partnerLogo} alt="" />
               </span>
-              <span className={styles.partnerTag}>الشريك الرسمي</span>
+              <span className={styles.partnerTag}>الجهة المالكة</span>
             </div>
             <div>
-              <h3>أمانة المدينة المنوّرة</h3>
-              <span className={styles.partnerEn}>MADINAH MUNICIPALITY</span>
+              <h3>أمانة منطقة المدينة المنورة</h3>
+              <span className={styles.partnerEn}>MADINAH REGIONAL MUNICIPALITY</span>
             </div>
-            <p>شريك في إبراز التحوّل الحضري وجودة الحياة، وربط المشاركين بتجربة المدينة اليومية وخدماتها ومساحاتها العامة.</p>
+            <p>الجهة المالكة لمعسكر تَبصَّر، وتشرف على إبراز تحوّل المدينة المنورة وجودة الحياة فيها، وتمكين المواهب من رواية قصتها بصريًا.</p>
             <div className={styles.partnerFoot}>
-              <strong>حضور مؤسسي</strong>
-              <span>CITY STORY</span>
+              <strong>ملكية وإشراف</strong>
+              <span>OWNER</span>
             </div>
           </article>
 
@@ -376,16 +398,16 @@ function Partners() {
               <span className={`${styles.partnerMark} ${styles.cubexMark}`} aria-hidden="true">
                 <img className={styles.cubexLogo} src={cubexLogo} alt="" />
               </span>
-              <span className={`${styles.partnerTag} ${styles.partnerTagAlt}`}>الشريك الاستراتيجي</span>
+              <span className={`${styles.partnerTag} ${styles.partnerTagAlt}`}>الجهة المنفّذة</span>
             </div>
             <div>
               <h3>كيوبكس</h3>
               <span className={styles.partnerEn}>CUBEX</span>
             </div>
-            <p>شريك تقني وإبداعي يدعم تحويل الأفكار إلى محتوى قابل للنشر، ويعزز حضور الابتكار داخل تجربة المعسكر.</p>
+            <p>الجهة المنفّذة لمعسكر تَبصَّر، تتولى تنفيذ تجربة المعسكر وأنشطته، وتدعم المشاركين في تحويل أفكارهم إلى محتوى بصري قابل للنشر.</p>
             <div className={styles.partnerFoot}>
-              <strong>ابتكار وإنتاج</strong>
-              <span>AI · CONTENT</span>
+              <strong>تنفيذ وتشغيل</strong>
+              <span>EXECUTION</span>
             </div>
           </article>
         </div>
@@ -399,8 +421,6 @@ function Sponsors() {
   /* ✏️ أضف الرعاة هنا: name = اسم الجهة، logo = مسار الشعار في public/assets
      اترك logo فارغًا (null) ليظهر مكان الشعار كعنصر بديل. */
   const sponsors = [
-    { name: 'أمانة المدينة المنورة', logo: '/assets/amana-logo.png' },
-    { name: 'كيوبكس', logo: '/assets/cubex-logo.png' },
     { name: 'شعار الجهة', logo: null },
     { name: 'شعار الجهة', logo: null },
     { name: 'شعار الجهة', logo: null },
@@ -415,7 +435,7 @@ function Sponsors() {
         <div className="section-head reveal">
           <span className="eyebrow">الرعاة</span>
           <h2>دعم يصنع أثرًا لا ظهورًا فقط</h2>
-          <p className="lead">في تَبصِّر، الرعاة شركاء في تمكين المواهب وبناء الصورة الذهنية الحديثة للمدينة من خلال محتوى حقيقي قابل للانتشار.</p>
+          <p className="lead">في تَبصَّر، الرعاة شركاء في تمكين المواهب وبناء الصورة الذهنية الحديثة للمدينة من خلال محتوى حقيقي قابل للانتشار.</p>
           <div className="divider" />
         </div>
       </div>
@@ -443,7 +463,7 @@ function Sponsors() {
         <div className={`${styles.sponsorsCta} reveal`}>
           <div>
             <h3>تسجيل الرعاة</h3>
-            <p>هذا النموذج مخصص للجهات الراغبة في رعاية معسكر تَبصِّر والمشاركة في رواية قصة التحوّل ودعم المواهب.</p>
+            <p>هذا النموذج مخصص للجهات الراغبة في رعاية معسكر تَبصَّر والمشاركة في رواية قصة التحوّل ودعم المواهب.</p>
           </div>
           <Link className={`btn btn-primary ${styles.sponsorsCtaBtn}`} to="/sponsor-register">
             سجّل كراعٍ <span className="arrow">→</span>
@@ -460,7 +480,7 @@ function CTA() {
     <section className={`section cta ${styles.cta}`} id="cta">
       <CTATorus />
       <div className="container" style={{position:'relative',zIndex:3,textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',gap:'22px'}}>
-        <span className="eyebrow reveal" style={{alignSelf:'center'}}>انضم إلى أكثر من 40 موهبة</span>
+        <span className="eyebrow reveal" style={{alignSelf:'center'}}>كن ضمن 100 موهبة</span>
         <h2 className="reveal" style={{fontSize:'clamp(40px,6.4vw,92px)',fontWeight:900,lineHeight:1.02,letterSpacing:'-0.035em',color:'var(--ink-900)'}}>
           مكانك بين المبدعين
         </h2>

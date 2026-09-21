@@ -1,4 +1,4 @@
-/* ============== Brand Tokens — هوية تَبصِّر الرسمية ==============
+/* ============== Brand Tokens — هوية تَبصَّر الرسمية ==============
    الأخضر ٦٠٪ (قائد) · التركوازي/الحبر ٣٠٪ · المرجاني + البنفسجي ١٠٪ (لمسات)
    أسماء المتغيرات لم تتغير حتى لا تتأثر بقية الصفحات.
    green-*  = الأخضر البراند #0ABD70
@@ -99,12 +99,12 @@ h1 { font-weight: 900; letter-spacing: -0.03em; }
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
-  font-size: 13px;
+  font-size: clamp(16px, 1.5vw, 20px);
   font-weight: 700;
   letter-spacing: 0;
   color: var(--teal-600);
   background: var(--green-100);
-  padding: 7px 16px;
+  padding: 9px 22px;
   border-radius: 999px;
   line-height: 1.4;
 }
