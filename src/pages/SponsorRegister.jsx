@@ -79,11 +79,15 @@ export default function SponsorRegister() {
 
     if (!form.organizationName.trim() || form.organizationName.trim().length < 2) {
       nextErrors.organizationName = 'الرجاء كتابة اسم الجهة'
+    } else if (form.organizationName.trim().length > 200) {
+      nextErrors.organizationName = 'اسم الجهة طويل جدًا — الحد الأقصى 200 حرف'
     }
     if (!form.contactName.trim() || form.contactName.trim().length < 2) {
       nextErrors.contactName = 'الرجاء كتابة اسم الشخص المسؤول'
+    } else if (form.contactName.trim().length > 100) {
+      nextErrors.contactName = 'الاسم طويل جدًا — الحد الأقصى 100 حرف'
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || form.email.trim().length > 254) {
       nextErrors.email = 'الرجاء كتابة بريد إلكتروني صحيح'
     }
     if (!/^05\d{8}$/.test(mobile)) {

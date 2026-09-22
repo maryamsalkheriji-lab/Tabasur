@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase'
+import { toSafeHttpUrl, csvCell } from '../lib/security'
 import styles from './Admin.module.css'
 
 /* ─── Helpers ─── */
@@ -19,7 +20,7 @@ function fmtDate(iso) {
 
 function exportCSV(rows) {
   const headers = ['#','الاسم','البريد','الجوال','المدينة','التخصص','الخبرة','أدوات AI','رابط الأعمال','رابط الحساب','الملاحظات','تاريخ التسجيل']
-  const esc = v => `"${String(v||'').replace(/"/g,'""')}"`
+  const esc = csvCell
   const lines = [
     headers.join(','),
     ...rows.map((r,i) => [
@@ -41,7 +42,7 @@ function exportCSV(rows) {
 
 function exportSponsorsCSV(rows) {
   const headers = ['#','اسم الجهة','اسم المسؤول','البريد','رقم المسؤول','تاريخ التسجيل']
-  const esc = v => `"${String(v||'').replace(/"/g,'""')}"`
+  const esc = csvCell
   const lines = [
     headers.join(','),
     ...rows.map((r,i) => [
@@ -142,17 +143,29 @@ function NoSupabaseNotice() {
         <code>VITE_SUPABASE_ANON_KEY=eyJhbGc...</code>
       </div>
       <p className={styles.noSupabaseSub}>
-        ثم تأكد من إضافة Policy تسمح بالقراءة في جدول <code>registrations</code>
+        ثم شغّل ملف <code>supabase/security.sql</code> لتفعيل صلاحيات الأدمن
       </p>
     </div>
   )
 }
 
 const PER_PAGE = 10
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'tabasur-admin'
+// الدخول عن طريق Supabase Auth: كلمة المرور تُفحص في السيرفر، وما تنكتب في كود الموقع.
+const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || '').trim()
+const ADMIN_IDLE_TIMEOUT_MS = 30 * 60 * 1000 // خروج تلقائي بعد 30 دقيقة بدون نشاط
+
+// يمسح جلسة Supabase المحفوظة في هذا التبويب حتى لو تعذّر الاتصال بالسيرفر.
+function clearStoredAdminSession() {
+  try {
+    for (const key of Object.keys(sessionStorage)) {
+      if (key.startsWith('sb-') || key === 'tabasur_admin_auth') sessionStorage.removeItem(key)
+    }
+  } catch { /* التخزين غير متاح */ }
+}
 
 export default function Admin() {
-  const [authorized, setAuthorized] = useState(() => sessionStorage.getItem('tabasur_admin_auth') === 'true')
+  const [authorized, setAuthorized] = useState(false)
+  const loggingIn = useRef(false)
   const [password, setPassword] = useState('')
   const [authError, setAuthError] = useState('')
   const [activeTab, setActiveTab] = useState('participants')
@@ -220,22 +233,79 @@ export default function Admin() {
     if (authorized) load()
   }, [authorized, load])
 
-  function handleLogin(e) {
+  /* ─── الجلسة: تُقرأ من Supabase Auth فقط ─── */
+  useEffect(() => {
+    // مسح علامة الدخول القديمة اللي كانت تسمح بتجاوز كلمة المرور
+    try { sessionStorage.removeItem('tabasur_admin_auth') } catch { /* التخزين غير متاح */ }
+    if (!isSupabaseActive) return
+    let active = true
+    supabase.auth.getSession()
+      .then(({ data }) => { if (active) setAuthorized(Boolean(data?.session)) })
+      .catch(() => { if (active) setAuthorized(false) })
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) setAuthorized(Boolean(session))
+    })
+    return () => {
+      active = false
+      listener?.subscription?.unsubscribe()
+    }
+  }, [])
+
+  async function handleLogin(e) {
     e.preventDefault()
-    if (password === ADMIN_PASSWORD) {
-      sessionStorage.setItem('tabasur_admin_auth', 'true')
-      setAuthorized(true)
+    if (loggingIn.current) return
+    if (!isSupabaseActive || !ADMIN_EMAIL) {
+      setAuthError('الدخول غير متاح حاليًا — إعدادات لوحة التحكم غير مكتملة')
+      return
+    }
+    if (!password) {
+      setAuthError('الرجاء كتابة كلمة المرور')
+      return
+    }
+    loggingIn.current = true
+    try {
+      const { data, error: err } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password })
+      if (err || !data?.session) {
+        setAuthError(err?.status === 429 ? 'محاولات كثيرة — انتظر قليلًا ثم حاول مرة أخرى' : 'كلمة المرور غير صحيحة')
+        return
+      }
+      setPassword('')
       setAuthError('')
-    } else {
-      setAuthError('كلمة المرور غير صحيحة')
+      setAuthorized(true)
+    } catch {
+      setAuthError('تعذّر الاتصال — حاول مرة أخرى')
+    } finally {
+      loggingIn.current = false
     }
   }
 
-  function logout() {
-    sessionStorage.removeItem('tabasur_admin_auth')
+  const logout = useCallback(async () => {
     setAuthorized(false)
     setPassword('')
-  }
+    setRows([])
+    setSponsorRows([])
+    setSelected(null)
+    try {
+      if (supabase) await supabase.auth.signOut()
+    } catch { /* نكمل المسح المحلي */ }
+    clearStoredAdminSession()
+  }, [])
+
+  /* ─── خروج تلقائي عند عدم النشاط ─── */
+  useEffect(() => {
+    if (!authorized) return
+    let lastActivity = Date.now()
+    const markActive = () => { lastActivity = Date.now() }
+    const events = ['pointerdown', 'keydown', 'scroll', 'touchstart', 'mousemove']
+    events.forEach(ev => window.addEventListener(ev, markActive, { passive: true }))
+    const timer = setInterval(() => {
+      if (Date.now() - lastActivity > ADMIN_IDLE_TIMEOUT_MS) logout()
+    }, 60 * 1000)
+    return () => {
+      clearInterval(timer)
+      events.forEach(ev => window.removeEventListener(ev, markActive))
+    }
+  }, [authorized, logout])
 
   /* Filter + sort */
   const filtered = rows
@@ -618,13 +688,17 @@ export default function Admin() {
                   {selected.portfolio && (
                     <div className={styles.detailRow}>
                       <span className={styles.detailLabel}>رابط الأعمال</span>
-                      <a href={selected.portfolio} target="_blank" rel="noreferrer" className={styles.detailLink}>{selected.portfolio}</a>
+                      {toSafeHttpUrl(selected.portfolio)
+                        ? <a href={toSafeHttpUrl(selected.portfolio)} target="_blank" rel="noopener noreferrer" className={styles.detailLink}>{selected.portfolio}</a>
+                        : <span className={styles.detailValue}>{selected.portfolio}</span>}
                     </div>
                   )}
                   {selected.social_account && (
                     <div className={styles.detailRow}>
                       <span className={styles.detailLabel}>رابط الحساب</span>
-                      <a href={selected.social_account} target="_blank" rel="noreferrer" className={styles.detailLink}>{selected.social_account}</a>
+                      {toSafeHttpUrl(selected.social_account)
+                        ? <a href={toSafeHttpUrl(selected.social_account)} target="_blank" rel="noopener noreferrer" className={styles.detailLink}>{selected.social_account}</a>
+                        : <span className={styles.detailValue}>{selected.social_account}</span>}
                     </div>
                   )}
                   {selected.notes && (

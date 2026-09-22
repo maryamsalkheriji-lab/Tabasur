@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import './CubeX.css'
 
 const A = '/assets/cubex/'
 
@@ -152,14 +153,6 @@ export default function CubeX() {
 
   return (
     <div dir={dir} lang={lang} style={{ direction: dir, background: '#07040E', overflowX: 'hidden', color: '#EDE7F7', fontFamily: "'IBM Plex Sans Arabic',system-ui,sans-serif", lineHeight: 1.75 }}>
-      <style>{`
-        @keyframes cxRise{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
-        @keyframes cxFloat{0%{transform:translate3d(0,0,0) rotate(0deg)}50%{transform:translate3d(0,-18px,0) rotate(2.5deg)}100%{transform:translate3d(0,0,0) rotate(0deg)}}
-        @keyframes cxPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.8)}}
-        @keyframes cxGlow{0%,100%{opacity:.5}50%{opacity:.85}}
-        .cx a{color:#A96BFF;text-decoration:none} .cx a:hover{color:#C9A6FF}
-        .cx ::selection{background:#964CFF;color:#fff}
-      `}</style>
       <div className="cx">
 
         <nav ref={navRef} style={{ position: 'sticky', top: 0, zIndex: 80, background: 'rgba(7,4,14,.82)', backdropFilter: 'blur(18px)', borderBottom: '1px solid rgba(150,76,255,.14)' }}>

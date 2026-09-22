@@ -1,5 +1,17 @@
 const ZEPTOMAIL_API_URL = 'https://api.zeptomail.com/v1.1/email'
 
+// ─── حماية الإرسال ───
+// الرسالة ما تنرسل إلا لإيميل مسجّل فعلًا في قاعدة البيانات خلال آخر 24 ساعة،
+// وبحد أقصى 3 رسائل لكل إيميل في نفس الفترة. الاسم يُؤخذ من قاعدة البيانات لا من الطلب.
+const VERIFY_WINDOW_MS = 24 * 60 * 60 * 1000
+const MAX_EMAILS_PER_WINDOW = 3
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const RECEIPT_PATTERN = /^TBSR-\d{4}-\d{4}$/
+const REGISTRATION_SOURCES = {
+  participant: { table: 'registrations', emailColumn: 'email', nameColumn: 'full_name' },
+  sponsor: { table: 'sponsor_registrations', emailColumn: 'contact_email', nameColumn: 'contact_name' },
+}
+
 const PROVIDER_ERRORS = {
   SERR_157: 'EMAIL_AUTH_FAILED',
   SM_111: 'EMAIL_SENDER_UNVERIFIED',
@@ -26,7 +38,73 @@ function providerErrorCode(error) {
 function json(res, status, payload) {
   res.statusCode = status
   res.setHeader('Content-Type', 'application/json; charset=utf-8')
+  res.setHeader('Cache-Control', 'no-store')
+  res.setHeader('X-Content-Type-Options', 'nosniff')
   res.end(JSON.stringify(payload))
+}
+
+// في النسخة المنشورة: نقبل الطلبات من موقعنا فقط.
+function originAllowed(req) {
+  if (process.env.VERCEL_ENV !== 'production') return true
+  const origin = req.headers?.origin
+  if (!origin) return true
+  const allowed = new Set()
+  for (const value of [process.env.PUBLIC_SITE_URL || 'https://cubex.com.sa', ...(process.env.ALLOWED_ORIGINS || '').split(',')]) {
+    try {
+      const url = new URL(value.trim())
+      allowed.add(url.origin)
+      if (!url.hostname.startsWith('www.')) allowed.add(`${url.protocol}//www.${url.host}`)
+    } catch { /* قيمة غير صالحة نتجاهلها */ }
+  }
+  return allowed.has(origin)
+}
+
+function supabaseConfig() {
+  const url = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '').trim().replace(/\/$/, '')
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()
+  return url && key ? { url, key } : null
+}
+
+async function supabaseRequest(config, path, init = {}) {
+  const headers = { apikey: config.key, Accept: 'application/json', ...(init.headers || {}) }
+  // المفاتيح الجديدة (sb_secret_) تنرسل في apikey فقط، والمفاتيح القديمة (JWT) في الاثنين.
+  if (!config.key.startsWith('sb_secret_')) headers.Authorization = `Bearer ${config.key}`
+  const response = await fetch(`${config.url}/rest/v1/${path}`, { ...init, headers, signal: AbortSignal.timeout(8000) })
+  if (!response.ok) throw new Error(`SUPABASE_${response.status}`)
+  return response
+}
+
+async function findRecentRegistration(config, kind, email, sinceIso) {
+  const source = REGISTRATION_SOURCES[kind]
+  const params = new URLSearchParams({
+    select: `${source.nameColumn},created_at`,
+    [source.emailColumn]: `eq.${email}`,
+    created_at: `gte.${sinceIso}`,
+    order: 'created_at.desc',
+    limit: '1',
+  })
+  const rows = await (await supabaseRequest(config, `${source.table}?${params}`)).json()
+  return Array.isArray(rows) && rows.length ? rows[0] : null
+}
+
+async function countRecentEmails(config, kind, email, sinceIso) {
+  const params = new URLSearchParams({
+    select: 'id',
+    email: `eq.${email.toLowerCase()}`,
+    kind: `eq.${kind}`,
+    sent_at: `gte.${sinceIso}`,
+    limit: String(MAX_EMAILS_PER_WINDOW),
+  })
+  const rows = await (await supabaseRequest(config, `registration_email_log?${params}`)).json()
+  return Array.isArray(rows) ? rows.length : MAX_EMAILS_PER_WINDOW
+}
+
+async function recordEmailAttempt(config, kind, email) {
+  await supabaseRequest(config, 'registration_email_log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify({ email: email.toLowerCase(), kind }),
+  })
 }
 
 function escapeHtml(value = '') {
@@ -44,11 +122,17 @@ export default async function handler(req, res) {
     return json(res, 405, { ok: false, message: 'Method not allowed' })
   }
 
+  if (!originAllowed(req)) {
+    return json(res, 403, { ok: false, code: 'EMAIL_NOT_ALLOWED' })
+  }
+
   const apiKey = (process.env.ZEPTOMAIL_TOKEN || '').trim().replace(/^Zoho-enczapikey\s+/i, '').trim()
   const fromAddress = (process.env.EMAIL_FROM_ADDRESS || 'info@cubex.com.sa').trim()
   const fromName = process.env.EMAIL_FROM_NAME || 'تَبصَّر'
 
-  if (!apiKey) {
+  const database = supabaseConfig()
+
+  if (!apiKey || !database) {
     return json(res, 503, { ok: false, code: 'EMAIL_NOT_CONFIGURED', message: 'Email service is unavailable' })
   }
 
@@ -60,22 +144,38 @@ export default async function handler(req, res) {
     const { receiptId, kind } = body
     const email = typeof body.email === 'string' ? body.email.trim() : body.email
     const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : body.fullName
-    if (typeof email !== 'string' || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ||
+    if (typeof email !== 'string' || email.length > 254 || !EMAIL_PATTERN.test(email) ||
         typeof fullName !== 'string' || !fullName.trim() || fullName.length > 200 ||
-        !['participant', 'sponsor'].includes(kind) ||
-        (receiptId !== undefined && (typeof receiptId !== 'string' || receiptId.length > 100))) {
+        !Object.hasOwn(REGISTRATION_SOURCES, kind) ||
+        (receiptId !== undefined && receiptId !== null && receiptId !== '' &&
+          (typeof receiptId !== 'string' || !RECEIPT_PATTERN.test(receiptId)))) {
       return json(res, 400, { ok: false, message: 'Missing email or fullName' })
     }
 
+    // ─── التحقق من التسجيل وحد الإرسال (قبل أي اتصال بمزوّد البريد) ───
+    const sinceIso = new Date(Date.now() - VERIFY_WINDOW_MS).toISOString()
+    let registration
+    try {
+      registration = await findRecentRegistration(database, kind, email, sinceIso)
+      if (!registration) return json(res, 403, { ok: false, code: 'EMAIL_NOT_ALLOWED' })
+      if (await countRecentEmails(database, kind, email, sinceIso) >= MAX_EMAILS_PER_WINDOW) {
+        return json(res, 429, { ok: false, code: 'EMAIL_LIMIT_REACHED' })
+      }
+      await recordEmailAttempt(database, kind, email)
+    } catch {
+      return json(res, 503, { ok: false, code: 'EMAIL_NOT_CONFIGURED' })
+    }
+    const registeredName = String(registration[REGISTRATION_SOURCES[kind].nameColumn] || '').trim().slice(0, 200)
+
     const publicSite = process.env.PUBLIC_SITE_URL || 'https://cubex.com.sa'
     const imageUrl = `${publicSite.replace(/\/$/, '')}/assets/tabsur-registration-email.jpeg`
-    const safeName = escapeHtml(fullName)
+    const safeName = escapeHtml(registeredName)
     const safeReceipt = escapeHtml(receiptId || '')
     const isSponsor = kind === 'sponsor'
 
     const subject = isSponsor ? 'تم استلام طلب الرعاية في تَبصَّر' : 'تم تسجيلك بنجاح في معسكر تَبصَّر'
     const kicker = isSponsor ? 'تم استلام طلب الرعاية' : 'تم تسجيلك بنجاح'
-    const title = `مرحبًا ${safeName}`
+    const title = safeName ? `مرحبًا ${safeName}` : 'مرحبًا'
     const message = isSponsor
       ? 'شكرًا لتواصلكم مع تَبصَّر. وصلنا طلب الرعاية بنجاح، وسنراجع بيانات الجهة ثم نتواصل مع الشخص المسؤول لمناقشة فرص الشراكة والدعم.'
       : 'شكرًا لتسجيلك في معسكر تَبصَّر. وصلنا طلبك بنجاح، وسنراجع بياناتك ثم نتواصل معك عبر البريد الإلكتروني أو رقم الجوال خلال الفترة القادمة.'
@@ -106,7 +206,7 @@ export default async function handler(req, res) {
     const text = [
       kicker,
       '',
-      `مرحبًا ${fullName}`,
+      registeredName ? `مرحبًا ${registeredName}` : 'مرحبًا',
       '',
       message,
       receiptId ? `\nرقم الطلب: ${receiptId}` : '',
@@ -125,12 +225,12 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         from: { address: fromAddress, name: fromName },
-        to: [{ email_address: { address: email, name: fullName } }],
+        to: [{ email_address: { address: email, name: registeredName || email } }],
         reply_to: [{ address: fromAddress, name: fromName }],
         subject,
         htmlbody: html,
         textbody: text,
-        track_opens: true,
+        track_opens: false,
         track_clicks: false,
       }),
     })

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase'
+import { isHttpUrl } from '../lib/security'
 import BgParticles from '../components/BgParticles'
 import RegistrationEmailStatus from '../components/RegistrationEmailStatus'
 import { useRegisterAnimations, gsap } from '../lib/animations'
@@ -85,13 +86,18 @@ export default function Register() {
     // اسم كامل — إجباري
     if (!form.fullName || form.fullName.trim().length < 2)
       errs.fullName = 'الرجاء كتابة الاسم كاملًا'
+    else if (form.fullName.trim().length > 100)
+      errs.fullName = 'الاسم طويل جدًا — الحد الأقصى 100 حرف'
     // جوال — إجباري
     const mobile = arabicToAscii(form.mobile).replace(/\D/g, '')
     if (!/^05\d{8}$/.test(mobile))
       errs.mobile = 'رقم غير صحيح — يجب أن يبدأ بـ 05 ويتكوّن من 10 أرقام'
     // بريد — إجباري
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) || form.email.length > 254)
       errs.email = 'الرجاء كتابة بريد إلكتروني صحيح'
+    // المدينة — اختيارية
+    if (form.city && form.city.trim().length > 100)
+      errs.city = 'اسم المدينة طويل جدًا'
     // تخصص — إجباري
     if (!form.specialty)
       errs.specialty = 'الرجاء اختيار تخصّصك'
@@ -104,20 +110,19 @@ export default function Register() {
     // رابط الأعمال — إجباري
     if (!form.portfolio || !form.portfolio.trim()) {
       errs.portfolio = 'الرجاء إدخال رابط أعمالك'
-    } else {
-      try { new URL(form.portfolio) } catch (_) {
-        errs.portfolio = 'الرجاء إدخال رابط أعمال صحيح يبدأ بـ https://'
-      }
+    } else if (!isHttpUrl(form.portfolio) || form.portfolio.trim().length > 500) {
+      errs.portfolio = 'الرجاء إدخال رابط أعمال صحيح يبدأ بـ https://'
     }
     // رابط الحساب — اختياري، لكن إذا أُدخل يجب أن يكون صحيحاً
     if (form.socialAccount && form.socialAccount.trim()) {
-      try { new URL(form.socialAccount) } catch (_) {
+      if (!isHttpUrl(form.socialAccount) || form.socialAccount.trim().length > 500)
         errs.socialAccount = 'الرجاء إدخال رابط حساب صحيح يبدأ بـ https://'
-      }
     }
     // دافع الانضمام — إجباري
     if (!form.notes || form.notes.trim().length < 10)
       errs.notes = 'الرجاء كتابة دافعك للانضمام (10 أحرف على الأقل)'
+    else if (form.notes.trim().length > 2000)
+      errs.notes = 'النص طويل جدًا — الحد الأقصى 2000 حرف'
     return errs
   }
 
@@ -130,16 +135,16 @@ export default function Register() {
 
     const mobile = arabicToAscii(form.mobile).replace(/\D/g, '')
     const result = await submitToSupabase({
-      full_name:  form.fullName,
-      email:      form.email,
+      full_name:  form.fullName.trim(),
+      email:      form.email.trim(),
       mobile,
-      city:       form.city || null,
+      city:       form.city.trim() || null,
       specialty:     form.specialty,
       experience:    form.experience || null,
       ai_experience: form.aiExperience || null,
-      portfolio:     form.portfolio || null,
-      social_account: form.socialAccount || null,
-      notes:      form.notes,
+      portfolio:     form.portfolio.trim() || null,
+      social_account: form.socialAccount.trim() || null,
+      notes:      form.notes.trim(),
       created_at: new Date().toISOString()
     })
 
@@ -235,7 +240,7 @@ export default function Register() {
                       placeholder="اكتب اسمك ثلاثيًا" autoComplete="name" required
                       value={form.fullName} onChange={handleChange} />
                   </Field>
-                  <Field id="city" label="المدينة">
+                  <Field id="city" label="المدينة" invalid={!!errors.city} error={errors.city}>
                     <input className="input" id="city" name="city" type="text"
                       placeholder="المدينة المنورة، الرياض، ..."
                       value={form.city} onChange={handleChange} />
@@ -330,7 +335,7 @@ export default function Register() {
                 </Field>
                 </div>
 
-                <Field id="notes" label="دافعك للانضمام" required invalid={!!errors.notes} error="الرجاء كتابة دافعك للانضمام">
+                <Field id="notes" label="دافعك للانضمام" required invalid={!!errors.notes} error={form.notes.trim().length > 2000 ? errors.notes : "الرجاء كتابة دافعك للانضمام"}>
                   <textarea id="notes" name="notes" rows={4}
                     placeholder="اكتب لنا في سطرين: لماذا تَبصَّر؟ وماذا تتوقّع أن تخرج به؟"
                     value={form.notes} onChange={handleChange} />

@@ -4,7 +4,7 @@ import handler from '../api/send-registration-email.js'
 export function registrationEmailPlugin() {
   function install(server) {
     const env = loadEnv(server.config.mode, server.config.envDir, '')
-    for (const key of ['ZEPTOMAIL_TOKEN', 'EMAIL_FROM_ADDRESS', 'EMAIL_FROM_NAME', 'PUBLIC_SITE_URL']) {
+    for (const key of ['ZEPTOMAIL_TOKEN', 'EMAIL_FROM_ADDRESS', 'EMAIL_FROM_NAME', 'PUBLIC_SITE_URL', 'SUPABASE_URL', 'VITE_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ALLOWED_ORIGINS']) {
       if (process.env[key] === undefined && env[key]) process.env[key] = env[key]
     }
     server.middlewares.use(async (req, res, next) => {
