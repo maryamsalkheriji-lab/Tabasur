@@ -39,7 +39,7 @@ export default function Footer() {
           </div>
         </div>
         <div className={styles.bottom}>
-          <span>© 2026 تَبصَّر · جميع الحقوق محفوظة</span>
+          <span>© 2026 تَبصَّر · جميع الحقوق محفوظة · <Link to="/admin" rel="nofollow">لوحة الإدارة</Link></span>
           <div className={styles.credits}>
             <span>تنظيم</span>
             <span className={styles.chip}>أمانة منطقة المدينة المنورة</span>

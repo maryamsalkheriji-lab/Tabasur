@@ -8,3 +8,4 @@ __MACOSX
 .vercel
 *.log
 *.pem
+supabase/.temp

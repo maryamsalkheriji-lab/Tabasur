@@ -1,4 +1,7 @@
 {
+  "functions": {
+    "api/analyze-project.js": { "maxDuration": 60 }
+  },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
@@ -28,6 +31,13 @@
       "headers": [
         { "key": "Cache-Control", "value": "no-store" },
         { "key": "X-Robots-Tag", "value": "noindex" }
+      ]
+    },
+    {
+      "source": "/judge/admin(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow, noarchive" }
       ]
     }
   ]

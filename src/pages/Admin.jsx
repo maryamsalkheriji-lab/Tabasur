@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase'
+import { useAdminSession, translateAuthError } from '../lib/adminAuth'
 import { toSafeHttpUrl, csvCell } from '../lib/security'
 import styles from './Admin.module.css'
 
@@ -150,24 +151,19 @@ function NoSupabaseNotice() {
 }
 
 const PER_PAGE = 10
-// الدخول عن طريق Supabase Auth: كلمة المرور تُفحص في السيرفر، وما تنكتب في كود الموقع.
-const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL || '').trim()
-const ADMIN_IDLE_TIMEOUT_MS = 30 * 60 * 1000 // خروج تلقائي بعد 30 دقيقة بدون نشاط
-
-// يمسح جلسة Supabase المحفوظة في هذا التبويب حتى لو تعذّر الاتصال بالسيرفر.
-function clearStoredAdminSession() {
-  try {
-    for (const key of Object.keys(sessionStorage)) {
-      if (key.startsWith('sb-') || key === 'tabasur_admin_auth') sessionStorage.removeItem(key)
-    }
-  } catch { /* التخزين غير متاح */ }
-}
+// الدخول عن طريق Supabase Auth (src/lib/adminAuth.js): كلمة المرور تُفحص في السيرفر، وما تنكتب في كود الموقع.
+// نفس الجلسة تُستخدم في لوحة أدمن التحكيم (/judge/admin).
 
 export default function Admin() {
-  const [authorized, setAuthorized] = useState(false)
+  const auth = useAdminSession({ recoveryPath: '/admin' })
+  const authorized = auth.status === 'signed_in'
   const loggingIn = useRef(false)
+  const [email, setEmail] = useState(auth.adminEmail)
   const [password, setPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [newPassword2, setNewPassword2] = useState('')
   const [authError, setAuthError] = useState('')
+  const [authInfo, setAuthInfo] = useState('')
   const [activeTab, setActiveTab] = useState('participants')
   const [rows, setRows]         = useState([])
   const [loading, setLoading]   = useState(true)
@@ -233,79 +229,70 @@ export default function Admin() {
     if (authorized) load()
   }, [authorized, load])
 
-  /* ─── الجلسة: تُقرأ من Supabase Auth فقط ─── */
-  useEffect(() => {
-    // مسح علامة الدخول القديمة اللي كانت تسمح بتجاوز كلمة المرور
-    try { sessionStorage.removeItem('tabasur_admin_auth') } catch { /* التخزين غير متاح */ }
-    if (!isSupabaseActive) return
-    let active = true
-    supabase.auth.getSession()
-      .then(({ data }) => { if (active) setAuthorized(Boolean(data?.session)) })
-      .catch(() => { if (active) setAuthorized(false) })
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) setAuthorized(Boolean(session))
-    })
-    return () => {
-      active = false
-      listener?.subscription?.unsubscribe()
-    }
-  }, [])
-
   async function handleLogin(e) {
     e.preventDefault()
     if (loggingIn.current) return
-    if (!isSupabaseActive || !ADMIN_EMAIL) {
-      setAuthError('الدخول غير متاح حاليًا — إعدادات لوحة التحكم غير مكتملة')
+    if (!auth.isActive) {
+      setAuthError('الدخول غير متاح حاليًا — متغيرات VITE_SUPABASE_URL و VITE_SUPABASE_ANON_KEY غير مضبوطة')
       return
     }
-    if (!password) {
-      setAuthError('الرجاء كتابة كلمة المرور')
-      return
-    }
+    if (!email.trim()) { setAuthError('الرجاء كتابة البريد الإلكتروني'); return }
+    if (!password) { setAuthError('الرجاء كتابة كلمة المرور'); return }
     loggingIn.current = true
+    setAuthError('')
+    setAuthInfo('')
     try {
-      const { data, error: err } = await supabase.auth.signInWithPassword({ email: ADMIN_EMAIL, password })
-      if (err || !data?.session) {
-        setAuthError(err?.status === 429 ? 'محاولات كثيرة — انتظر قليلًا ثم حاول مرة أخرى' : 'كلمة المرور غير صحيحة')
-        return
-      }
+      await auth.signIn(email, password)
       setPassword('')
-      setAuthError('')
-      setAuthorized(true)
-    } catch {
-      setAuthError('تعذّر الاتصال — حاول مرة أخرى')
+    } catch (err) {
+      setAuthError(translateAuthError(err))
+    } finally {
+      loggingIn.current = false
+    }
+  }
+
+  async function handleForgot() {
+    if (loggingIn.current) return
+    if (!email.trim()) { setAuthError('اكتب بريدك الإلكتروني أولًا ثم اضغط «نسيت كلمة المرور»'); return }
+    loggingIn.current = true
+    setAuthError('')
+    setAuthInfo('')
+    try {
+      await auth.resetPassword(email)
+      setAuthInfo('إذا كان هذا البريد مسجّلًا كأدمن فستصلك رسالة فيها رابط لتعيين كلمة مرور جديدة. افتح الرابط من نفس المتصفح.')
+    } catch (err) {
+      setAuthError(translateAuthError(err))
+    } finally {
+      loggingIn.current = false
+    }
+  }
+
+  async function handleSetPassword(e) {
+    e.preventDefault()
+    if (loggingIn.current) return
+    if (newPassword.length < 8) { setAuthError('كلمة المرور يجب أن تكون 8 أحرف على الأقل'); return }
+    if (newPassword !== newPassword2) { setAuthError('كلمتا المرور غير متطابقتين'); return }
+    loggingIn.current = true
+    setAuthError('')
+    try {
+      await auth.updatePassword(newPassword)
+      setNewPassword('')
+      setNewPassword2('')
+      setAuthInfo('')
+    } catch (err) {
+      setAuthError(translateAuthError(err))
     } finally {
       loggingIn.current = false
     }
   }
 
   const logout = useCallback(async () => {
-    setAuthorized(false)
     setPassword('')
     setRows([])
     setSponsorRows([])
     setSelected(null)
-    try {
-      if (supabase) await supabase.auth.signOut()
-    } catch { /* نكمل المسح المحلي */ }
-    clearStoredAdminSession()
-  }, [])
-
-  /* ─── خروج تلقائي عند عدم النشاط ─── */
-  useEffect(() => {
-    if (!authorized) return
-    let lastActivity = Date.now()
-    const markActive = () => { lastActivity = Date.now() }
-    const events = ['pointerdown', 'keydown', 'scroll', 'touchstart', 'mousemove']
-    events.forEach(ev => window.addEventListener(ev, markActive, { passive: true }))
-    const timer = setInterval(() => {
-      if (Date.now() - lastActivity > ADMIN_IDLE_TIMEOUT_MS) logout()
-    }, 60 * 1000)
-    return () => {
-      clearInterval(timer)
-      events.forEach(ev => window.removeEventListener(ev, markActive))
-    }
-  }, [authorized, logout])
+    await auth.signOut()
+  }, [auth])
 
   /* Filter + sort */
   const filtered = rows
@@ -372,7 +359,51 @@ export default function Admin() {
     </span>
   )
 
+  if (auth.status === 'recovery') {
+    return (
+      <div className={styles.authPage}>
+        <form className={styles.authCard} onSubmit={handleSetPassword}>
+          <div className={styles.authMark}>
+            <img src="/assets/tabsur-mark.png" alt="" />
+          </div>
+          <span className={styles.authEyebrow}>RESET PASSWORD</span>
+          <h1>تعيين كلمة مرور جديدة</h1>
+          <p>{auth.user?.email ? `الحساب: ${auth.user.email}` : 'اكتب كلمة المرور الجديدة لحساب الأدمن.'}</p>
+          <div className={styles.authField}>
+            <label htmlFor="admin-new-password">كلمة المرور الجديدة</label>
+            <input
+              id="admin-new-password"
+              className={styles.authInput}
+              type="password"
+              value={newPassword}
+              onChange={e => { setNewPassword(e.target.value); setAuthError('') }}
+              placeholder="8 أحرف على الأقل"
+              autoComplete="new-password"
+              autoFocus
+            />
+          </div>
+          <div className={styles.authField}>
+            <label htmlFor="admin-new-password2">تأكيد كلمة المرور</label>
+            <input
+              id="admin-new-password2"
+              className={styles.authInput}
+              type="password"
+              value={newPassword2}
+              onChange={e => { setNewPassword2(e.target.value); setAuthError('') }}
+              placeholder="أعد كتابتها"
+              autoComplete="new-password"
+            />
+          </div>
+          {authError && <div className={styles.authError}>{authError}</div>}
+          <button className={styles.authButton} type="submit">حفظ والدخول</button>
+          <button type="button" className={styles.authLink} onClick={logout}>إلغاء</button>
+        </form>
+      </div>
+    )
+  }
+
   if (!authorized) {
+    const checking = auth.status === 'loading'
     return (
       <div className={styles.authPage}>
         <form className={styles.authCard} onSubmit={handleLogin}>
@@ -380,18 +411,44 @@ export default function Admin() {
             <img src="/assets/tabsur-mark.png" alt="" />
           </div>
           <span className={styles.authEyebrow}>ADMIN ACCESS</span>
-          <h1>لوحة إدارة تَبصَّر</h1>
-          <p>أدخل كلمة المرور للوصول إلى بيانات المشاركين والرعاة.</p>
-          <input
-            className={styles.authInput}
-            type="password"
-            value={password}
-            onChange={e => { setPassword(e.target.value); setAuthError('') }}
-            placeholder="كلمة المرور"
-            autoFocus
-          />
+          <h1>لوحة إدارة تَبصَّر</h1>
+          <p>ادخل ببريد حساب الأدمن وكلمة المرور (Supabase Auth) للوصول إلى بيانات المشاركين والرعاة.</p>
+          <div className={styles.authField}>
+            <label htmlFor="admin-email">البريد الإلكتروني</label>
+            <input
+              id="admin-email"
+              className={styles.authInput}
+              type="email"
+              dir="ltr"
+              value={email}
+              onChange={e => { setEmail(e.target.value); setAuthError('') }}
+              placeholder="admin@example.com"
+              autoComplete="username"
+              disabled={checking}
+            />
+          </div>
+          <div className={styles.authField}>
+            <label htmlFor="admin-password">كلمة المرور</label>
+            <input
+              id="admin-password"
+              className={styles.authInput}
+              type="password"
+              value={password}
+              onChange={e => { setPassword(e.target.value); setAuthError('') }}
+              placeholder="كلمة المرور"
+              autoComplete="current-password"
+              autoFocus
+              disabled={checking}
+            />
+          </div>
+          {auth.status === 'unavailable' && (
+            <div className={styles.authError}>إعدادات Supabase غير مكتملة — أضف VITE_SUPABASE_URL و VITE_SUPABASE_ANON_KEY ثم أعد النشر.</div>
+          )}
           {authError && <div className={styles.authError}>{authError}</div>}
-          <button className={styles.authButton} type="submit">دخول اللوحة</button>
+          {authInfo && <div className={styles.authInfo}>{authInfo}</div>}
+          <button className={styles.authButton} type="submit" disabled={checking}>{checking ? 'جارٍ التحقق من الجلسة…' : 'دخول اللوحة'}</button>
+          <button type="button" className={styles.authLink} onClick={handleForgot} disabled={checking}>نسيت كلمة المرور؟</button>
+          <p className={styles.authHint}>الحساب يُنشأ من لوحة Supabase: Authentication → Users → Add user. نفس الحساب يفتح لوحة أدمن التحكيم.</p>
         </form>
       </div>
     )

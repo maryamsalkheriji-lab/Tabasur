@@ -13,7 +13,7 @@ const typography = {
 
 const DICT = {
   ar: {
-    nav: { sub: 'ابتكار · ريادة أعمال', about: 'من نحن', services: 'خدماتنا', programs: 'برامجنا', value: 'الأثر', leadership: 'القيادة', contact: 'تواصل معنا', langCurrent: 'AR', langAr: 'العربية', langEn: 'English' },
+    nav: { sub: 'ابتكار · ريادة أعمال', about: 'من نحن', services: 'خدماتنا', programs: 'برامجنا', value: 'الأثر', leadership: 'القيادة', judging: 'منصة التحكيم', contact: 'تواصل معنا', langCurrent: 'AR', langAr: 'العربية', langEn: 'English' },
     hero: { badge: 'شريكك في الابتكار وريادة الأعمال', kicker: 'FROM CHALLENGE TO VENTURE', title1: 'من التحدّي إلى الفرصة،', title2: 'ومن الفكرة إلى الأثر', desc: 'نساعد الجهات الحكومية والقطاع الخاص على تحويل التحديات المعقدة إلى حلول قابلة للتنفيذ.', cta1: 'استكشف برامجنا ←', cta2: 'تعرّف علينا' },
     about: { eyebrow: 'من نحن', desc: 'أربع مراحل تحوّل التحدي إلى مشروع.', cards: [
       { tag: 'DISCOVERY', title: 'اكتشاف', desc: 'نفهم التحدي وسياقه قبل أي حل.' },
@@ -30,16 +30,16 @@ const DICT = {
     programs: { eyebrow: 'برامجنا ومبادراتنا', title: 'برامج تصنع الأثر',
       tabsur: { badge: 'التسجيل مفتوح', title: 'معسكر تَبصَّر', sub: 'TABSUR · تسويق المدن', desc: '4 أيام لرواية تحوّل المدينة المنورة بصريًا.', cta: 'زيارة الموقع ←' },
       madinah: { badge: 'قريبًا', title: 'مدينة تِك', desc: 'مبادرة تقنية تجمع المواهب وروّاد الأعمال لتطوير الأفكار وتحويلها إلى حلول مبتكرة.', meta: 'الموعد يُعلن لاحقًا' },
-      medai: { badge: 'قريبًا', title: 'معسكر وهاكاثون ملتقى الذكاء الاصطناعي', desc: 'تحدٍّ تقني لحلول ذكية لمشكلات حقيقية.', meta: 'فِرَق من 2–4' }
+      medai: { href: 'https://medai.sa/ar', cta: 'زيارة الموقع ←', badge: 'التسجيل مفتوح', title: 'معسكر وهاكاثون ملتقى الذكاء الاصطناعي', desc: 'تحدٍّ تقني لحلول ذكية لمشكلات حقيقية.', meta: 'فِرَق من 2–4' }
     },
     value: { eyebrow: 'الأثر', title: 'الأثر الذي نصنعه', points: ['قرارات أوضح وتسريع تطوير الأفكار', 'مبادرات بأهداف واضحة', 'خبرات وشراكات مؤثرة', 'رفع جاهزية الفرق', 'تقليل مخاطر التنفيذ', 'قياس النتائج وفرص نمو مستدامة'] },
     partners: { title: 'شركاء النجاح', pending: 'نعلن عن شركاء النجاح قريبًا.' },
     leadership: { kicker: 'CEO', name: 'وفاء العمري', role: 'الرئيس التنفيذي', bio: 'تقود كيوبكس من فهم عميق للتحديات المؤسسية.', extra: 'تصميم البرامج، وبناء الشراكات، وتحويل المبادرة إلى نتيجة — هذا ما يقودها كل يوم.', tags: ['منظومات الابتكار', 'ريادة الأعمال', 'الشراكات الاستراتيجية'] },
     contact: { title: 'عندك تحدٍّ يستحق حلًّا؟', desc: 'ابدأ معنا من التحدي.', cta1: 'تواصل مع كيوبكس ←', cta2: 'موقع معسكر تَبصَّر' },
-    footer: { tagline: 'شريكك من التحدي إلى الفرصة، ومن الفكرة إلى الأثر', desc: 'نصمّم وننفّذ منظومات الابتكار وريادة الأعمال.', colCompany: 'الشركة', colPrograms: 'البرامج', colContact: 'تواصل', linkAbout: 'من نحن', linkServices: 'خدماتنا', linkLeadership: 'القيادة', linkTabsur: 'معسكر تَبصَّر', linkMadinah: 'مدينة تِك — قريبًا', linkMedai: 'معسكر وهاكاثون MED AI — قريبًا', copyright: '© 2026 كيوبكس · جميع الحقوق محفوظة', mono: 'FROM CHALLENGE TO VENTURE' }
+    footer: { tagline: 'شريكك من التحدي إلى الفرصة، ومن الفكرة إلى الأثر', desc: 'نصمّم وننفّذ منظومات الابتكار وريادة الأعمال.', colCompany: 'الشركة', colPrograms: 'البرامج', colContact: 'تواصل', linkAbout: 'من نحن', linkServices: 'خدماتنا', linkLeadership: 'القيادة', linkTabsur: 'معسكر تَبصَّر', linkMadinah: 'مدينة تِك — قريبًا', linkMedai: 'معسكر وهاكاثون MED AI — التسجيل مفتوح', copyright: '© 2026 كيوبكس · جميع الحقوق محفوظة', mono: 'FROM CHALLENGE TO VENTURE' }
   },
   en: {
-    nav: { sub: 'Innovation · Ventures', about: 'About', services: 'Services', programs: 'Programs', value: 'Impact', leadership: 'Leadership', contact: 'Contact', langCurrent: 'EN', langAr: 'العربية', langEn: 'English' },
+    nav: { sub: 'Innovation · Ventures', about: 'About', services: 'Services', programs: 'Programs', value: 'Impact', leadership: 'Leadership', judging: 'Judging', contact: 'Contact', langCurrent: 'EN', langAr: 'العربية', langEn: 'English' },
     hero: { badge: 'Your partner in innovation & ventures', kicker: 'FROM CHALLENGE TO VENTURE', title1: 'From challenge to opportunity,', title2: 'from idea to impact', desc: 'We help government and private organizations turn complex challenges into solutions that ship.', cta1: 'Explore our programs →', cta2: 'About CubeX' },
     about: { eyebrow: 'About', desc: 'Four stages that turn a challenge into a venture.', cards: [
       { tag: 'DISCOVERY', title: 'Discover', desc: 'We understand the challenge before the solution.' },
@@ -56,13 +56,13 @@ const DICT = {
     programs: { eyebrow: 'Programs & Initiatives', title: 'Programs that make an impact',
       tabsur: { badge: 'Registration open', title: 'Tabsur Camp', sub: 'TABSUR · CITY MARKETING', desc: "4 days retelling Madinah's transformation, visually.", cta: 'Visit website →' },
       madinah: { badge: 'Coming soon', title: 'Madinah Tech', desc: 'A technology initiative bringing talent and entrepreneurs together to develop ideas into innovative solutions.', meta: 'Date announced soon' },
-      medai: { badge: 'Coming soon', title: 'AI Forum Bootcamp & Hackathon', desc: 'A technical challenge for real-world AI solutions.', meta: 'Teams of 2–4' }
+      medai: { href: 'https://medai.sa/ar', cta: 'Visit website →', badge: 'Registration open', title: 'AI Forum Bootcamp & Hackathon', desc: 'A technical challenge for real-world AI solutions.', meta: 'Teams of 2–4' }
     },
     value: { eyebrow: 'Impact', title: 'The impact we create', points: ['Clearer decisions & faster ideas', 'Initiatives with clear goals', 'Expert & strategic partners', 'Stronger team readiness', 'Lower execution risk', 'Measurable results & growth'] },
     partners: { title: 'Our Partners', pending: 'Our partners will be announced soon.' },
     leadership: { kicker: 'CEO', name: 'Wafa Alomari', role: 'Chief Executive Officer', bio: 'Leads CubeX with a deep understanding of institutional challenges.', extra: 'Program design, partnerships, and turning initiative into results — every day.', tags: ['Innovation Systems', 'Entrepreneurship', 'Strategic Partnerships'] },
     contact: { title: 'Have a challenge worth solving?', desc: 'Start with us — from challenge to venture.', cta1: 'Talk to CubeX →', cta2: 'Visit Tabsur Camp' },
-    footer: { tagline: 'From challenge to opportunity, from idea to impact', desc: 'We design and run innovation & venture systems.', colCompany: 'Company', colPrograms: 'Programs', colContact: 'Contact', linkAbout: 'About', linkServices: 'Services', linkLeadership: 'Leadership', linkTabsur: 'Tabsur Camp', linkMadinah: 'Madinah Tech — soon', linkMedai: 'MED AI Bootcamp & Hackathon — soon', copyright: '© 2026 CubeX · All rights reserved', mono: 'FROM CHALLENGE TO VENTURE' }
+    footer: { tagline: 'From challenge to opportunity, from idea to impact', desc: 'We design and run innovation & venture systems.', colCompany: 'Company', colPrograms: 'Programs', colContact: 'Contact', linkAbout: 'About', linkServices: 'Services', linkLeadership: 'Leadership', linkTabsur: 'Tabsur Camp', linkMadinah: 'Madinah Tech — soon', linkMedai: 'MED AI Bootcamp & Hackathon — Registration open', copyright: '© 2026 CubeX · All rights reserved', mono: 'FROM CHALLENGE TO VENTURE' }
   }
 }
 
@@ -168,6 +168,7 @@ export default function CubeX() {
               {[['#about', t.nav.about], ['#services', t.nav.services], ['#programs', t.nav.programs], ['#value', t.nav.value], ['#leadership', t.nav.leadership]].map(([href, label]) => (
                 <a key={href} href={href} style={{ fontSize: 14.5, fontWeight: 500, color: '#B3A6C7', whiteSpace: 'nowrap', padding: '6px 0', borderBottom: '1.5px solid transparent' }}>{label}</a>
               ))}
+              <Link to="/judge" style={{ fontSize: 14.5, fontWeight: 500, color: '#B3A6C7', whiteSpace: 'nowrap', padding: '6px 0', borderBottom: '1.5px solid transparent' }}>{t.nav.judging}</Link>
             </div>
             <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ position: 'relative' }}>
@@ -300,10 +301,12 @@ export default function CubeX() {
             </div>
 
             <div data-rise="" style={{ marginTop: 20, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 20 }}>
-              {[[t.programs.madinah, 'madinah-tech.png', 'Madinah Tech', { mixBlendMode: 'screen' }], [t.programs.medai, 'med-ai.png', 'MED AI', { borderRadius: 6 }]].map(([p, img, alt, imgStyle], i) => (
-                <article key={i} style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 24, borderRadius: 16, background: '#0E0818', border: '1px solid rgba(150,76,255,.16)' }}>
+              {[[t.programs.madinah, 'madinah-tech.png', 'Madinah Tech', { mixBlendMode: 'screen' }], [t.programs.medai, 'med-ai.png', 'MED AI', { borderRadius: 6 }]].map(([p, img, alt, imgStyle], i) => {
+                const Card = p.href ? 'a' : 'article'
+                return (
+                <Card key={i} href={p.href} style={{ color: 'inherit', textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 16, padding: 24, borderRadius: 16, background: '#0E0818', border: '1px solid rgba(150,76,255,.16)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                    <span style={{ display: 'inline-flex', padding: '6px 13px', borderRadius: 999, background: 'rgba(150,76,255,.16)', border: '1px solid rgba(150,76,255,.3)', color: '#C9A6FF', fontSize: 11, fontWeight: 600 }}>{p.badge}</span>
+                    <span style={{ display: 'inline-flex', padding: '6px 13px', borderRadius: 999, background: p.href ? 'rgba(93,232,168,.16)' : 'rgba(150,76,255,.16)', border: p.href ? '1px solid rgba(93,232,168,.3)' : '1px solid rgba(150,76,255,.3)', color: p.href ? '#5DE8A8' : '#C9A6FF', fontSize: 11, fontWeight: 600 }}>{p.badge}</span>
                   </div>
                   <span style={{ height: 44, display: 'flex', alignItems: 'center' }}>
                     <img src={A + img} alt={alt} style={{ height: '100%', width: 'auto', ...imgStyle }} />
@@ -311,8 +314,10 @@ export default function CubeX() {
                   <h3 style={{ fontSize: typography.card, fontWeight: 700, color: '#fff', letterSpacing: '-.02em' }}>{p.title}</h3>
                   <p style={{ fontSize: typography.body, lineHeight: 1.8, color: '#9C8FB4' }}>{p.desc}</p>
                   <span style={{ marginTop: 'auto', paddingTop: 14, borderTop: '1px solid rgba(150,76,255,.16)', fontSize: 12.5, color: '#7C6E92' }}>{p.meta}</span>
-                </article>
-              ))}
+                  {p.cta && <span style={{ alignSelf: 'flex-start', fontSize: 14.5, fontWeight: 600, color: '#fff', borderBottom: '1px solid rgba(255,255,255,.35)', paddingBottom: 4 }}>{p.cta}</span>}
+                </Card>
+                )
+              })}
             </div>
           </div>
         </section>
@@ -406,7 +411,7 @@ export default function CubeX() {
                 <ul style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 11, listStyle: 'none', padding: 0 }}>
                   <li><Link to="/tabsur" style={{ fontSize: 14.5, color: '#9C8FB4' }}>{t.footer.linkTabsur}</Link></li>
                   <li><span style={{ fontSize: 14.5, color: '#6B5F80' }}>{t.footer.linkMadinah}</span></li>
-                  <li><span style={{ fontSize: 14.5, color: '#6B5F80' }}>{t.footer.linkMedai}</span></li>
+                  <li><a href={t.programs.medai.href} style={{ fontSize: 14.5, color: '#B3A6C7' }}>{t.footer.linkMedai}</a></li>
                 </ul>
               </div>
               <div>
