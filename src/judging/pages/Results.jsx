@@ -1,30 +1,42 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { gsap } from 'gsap'
 import confetti from 'canvas-confetti'
+import { getJudgeSession } from '../judgeClient'
 import { supabase, isSupabaseActive } from '../../lib/supabase'
-import { JudgeNav, Page, Spinner, ErrorBox, EmptyState, StageBadge, Badge, Icon, useToast } from '../components/ui'
-import { RANK_META, REVEAL_STEPS, eventStatus, fmtScore, jdError, prefersReducedMotion, starsFromCriterion, rankRows } from '../lib'
+import { JudgeNav, Page, Spinner, ErrorBox, EmptyState, Badge, Icon } from '../components/ui'
+import { RANK_META, eventStatus, fmtScore, jdError, prefersReducedMotion, rankRows } from '../lib'
 
 const A = '/assets/cubex/'
-const GOLD_COLORS = ['#FFD166', '#F2B632', '#FFE8A3', '#FFFFFF', '#A96BFF']
-const canHover = () => typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: hover)').matches
+/* ألوان الكونفيتي لكل مركز */
+const PALETTE = {
+  1: ['#FFD166', '#F2B632', '#FFE8A3', '#FFFFFF', '#A96BFF'],
+  2: ['#F4F5F8', '#C9CDD8', '#FFFFFF', '#A96BFF', '#D6D9E2'],
+  3: ['#F3C9A4', '#D9915A', '#FFE0C2', '#FFFFFF', '#A96BFF'],
+}
+/* مراحل الحفل على الشاشة:
+   0 الثالث مغلق · 1 الثالث مكشوف · 2 الثاني مغلق · 3 الثاني مكشوف · 4 الأول مغلق · 5 الأول مكشوف · 6 منصة التتويج */
+const FINAL = 6
+const RANK_ORDER = [3, 2, 1]
+const viewOf = (stage) => Math.min(3, Math.floor(stage / 2)) // 0 الثالث · 1 الثاني · 2 الأول · 3 المنصة
+/* خطوة الريموت (reveal_step في قاعدة البيانات) ← مرحلة الشاشة. الخطوة 0 تترك التحكم للشاشة نفسها */
+const stageFromStep = (step) => ({ 1: 0, 2: 2, 3: 4, 4: 6 })[Number(step)] ?? null
+const NEXT_LABEL = { 0: 'الكشف عن المركز الثاني', 1: 'الكشف عن المركز الأول', 2: 'عرض منصة التتويج' }
 
 /* ═══════════ الصفحة ═══════════ */
 export default function Results() {
   const { slug } = useParams()
+  const session = getJudgeSession()
+  if (session?.token) return <Navigate to={`/judge/${session.slug}/judge`} replace />
   return <LiveResults slug={slug} />
 }
 
 function LiveResults({ slug }) {
-  const toast = useToast()
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [rows, setRows] = useState(null)
-  const [criteria, setCriteria] = useState([])
   const [resultsError, setResultsError] = useState('')
-  const [isAdmin, setIsAdmin] = useState(false)
   const published = Boolean(event?.results_published)
 
   const loadEvent = useCallback(async () => {
@@ -36,28 +48,17 @@ function LiveResults({ slug }) {
     setLoading(false)
   }, [slug])
 
+  /* الأسماء والدرجات فقط — لا تُجلب المعايير ولا تُعرض */
   const loadResults = useCallback(async () => {
     setResultsError('')
-    const [res, cr] = await Promise.all([
-      supabase.rpc('jd_results', { p_slug: slug }),
-      supabase.from('jd_criteria').select('id,name,weight,sort_order').eq('event_id', event?.id || '00000000-0000-0000-0000-000000000000').order('sort_order'),
-    ])
+    const res = await supabase.rpc('jd_results', { p_slug: slug })
     if (res.error) { setResultsError(jdError(res.error)); setRows([]); return }
     setRows(rankRows(res.data || []))
-    setCriteria(cr.data || [])
-  }, [slug, event?.id])
+  }, [slug])
 
   useEffect(() => { loadEvent() }, [loadEvent])
 
-  // جلسة أدمن؟ تظهر أزرار الكشف على الشاشة نفسها (RLS تحمي الكتابة)
-  useEffect(() => {
-    if (!isSupabaseActive) return
-    let active = true
-    supabase.auth.getSession().then(({ data }) => { if (active) setIsAdmin(Boolean(data?.session)) }).catch(() => {})
-    return () => { active = false }
-  }, [])
-
-  // متابعة مباشرة لخطوة الكشف وحالة النشر + استعلام احتياطي كل 20 ثانية
+  // متابعة مباشرة لحالة النشر وخطوة الريموت + استعلام احتياطي كل 20 ثانية
   useEffect(() => {
     if (!isSupabaseActive || !event?.id) return
     const channel = supabase.channel(`jd_event_results_${slug}`)
@@ -76,13 +77,6 @@ function LiveResults({ slug }) {
     if (published && rows === null) loadResults()
     if (!published && rows !== null) setRows(null)
   }, [published, rows, loadResults])
-
-  const goStep = useCallback(async (s) => {
-    const next = Math.max(0, Math.min(6, s))
-    const { error: err } = await supabase.from('jd_events').update({ reveal_step: next }).eq('id', event.id)
-    if (err) toast.err(jdError(err))
-    else setEvent(e => ({ ...e, reveal_step: next }))
-  }, [event?.id, toast])
 
   if (loading) return <Page nav={<JudgeNav />}><section className="jd-section"><Spinner label="جارٍ تحميل النتائج…" /></section></Page>
   if (error) return <Page nav={<JudgeNav />}><section className="jd-section"><ErrorBox onRetry={loadEvent}>{error}</ErrorBox></section></Page>
@@ -107,204 +101,58 @@ function LiveResults({ slug }) {
     )
   }
 
-  const step = Number(event.reveal_step || 0)
-  const controls = isAdmin ? <StageControls step={step} onStep={goStep} label="تحكم الأدمن" /> : null
-  if (step >= 1) return <><Stage event={event} rows={rows} criteria={criteria} step={Math.min(step, 6)} error={resultsError} onRetry={loadResults} />{controls}</>
-  return <><NormalResults event={event} rows={rows} criteria={criteria} error={resultsError} onRetry={loadResults} />{controls}</>
+  return <Ceremony event={event} rows={rows} error={resultsError} onRetry={loadResults} />
 }
 
-/* الوضع العادي: المنصة ثابتة + الترتيب الكامل */
-function NormalResults({ event, rows, criteria, error, onRetry }) {
-  return (
-    <Page nav={<JudgeNav />}>
-      <section className="jd-section" style={{ paddingTop: 'clamp(28px,4vw,56px)' }}>
-        <div className="jd-rise" style={{ textAlign: 'center' }}>
-          <span className="jd-pill"><span className="dot" />النتائج النهائية</span>
-          <h1 className="jd-title" style={{ fontSize: 'clamp(26px,3.6vw,48px)' }}>{event.name}</h1>
-          <p className="jd-sub" style={{ marginTop: 8 }}>اضغط على بطاقة فائز لعرض درجته في كل معيار.</p>
-        </div>
-        {rows === null && <div className="jd-mt-lg"><Spinner label="جارٍ تحميل الترتيب…" /></div>}
-        {rows !== null && error && <div className="jd-mt-lg"><ErrorBox onRetry={onRetry}>{error}</ErrorBox></div>}
-        {rows !== null && !error && rows.length === 0 && <div className="jd-mt-lg"><EmptyState title="لا توجد نتائج" text="لم تُسجَّل تقييمات لهذه الفعالية." /></div>}
-        {rows !== null && !error && rows.length > 0 && (
-          <>
-            <div className="jd-mt-lg jd-rise-2"><Podium rows={rows} criteria={criteria} animate={false} /></div>
-            <h2 className="jd-h3 jd-mt-lg">الترتيب الكامل</h2>
-            <p className="jd-sub">الدرجة من 100 لكل مشروع، ومتوسط النجوم في كل معيار.</p>
-            <div className="jd-mt jd-rise-3"><Ranking rows={rows} criteria={criteria} winners={event.winners_count || 3} animate={false} /></div>
-          </>
-        )}
-      </section>
-    </Page>
-  )
-}
-
-/* شريط التحكم على الشاشة (للأدمن، وفي وضع التجربة) */
-function StageControls({ step, onStep, label, auto, onAuto, exitTo }) {
-  const meta = REVEAL_STEPS[step] || REVEAL_STEPS[0]
-  return (
-    <div className="jd-stage-ctrl">
-      <div>
-        <span className="lbl"><Icon name="monitor" size={14} />{label} · {step}/6 — {meta.title}</span>
-        <button type="button" className="jd-btn jd-btn-ghost jd-btn-sm" onClick={() => onStep(step - 1)} disabled={step <= 0}>السابق</button>
-        <button type="button" className="jd-btn jd-btn-primary jd-btn-sm" onClick={() => onStep(step + 1)} disabled={step >= 6}>{step === 0 ? 'ابدأ الكشف' : 'الكشف التالي'}<Icon name="arrowLeft" size={14} /></button>
-        {onAuto && <button type="button" className="jd-btn jd-btn-soft jd-btn-sm" onClick={onAuto}><Icon name={auto ? 'x' : 'play'} size={14} />{auto ? 'إيقاف التلقائي' : 'تشغيل تلقائي'}</button>}
-        <button type="button" className="jd-btn jd-btn-ghost jd-btn-sm" onClick={() => onStep(0)} disabled={step === 0}>إعادة</button>
-        {exitTo && <Link to={exitTo} className="jd-btn jd-btn-ghost jd-btn-sm">خروج</Link>}
-      </div>
-    </div>
-  )
-}
-
-/* ═══════════ درجات المعايير كنجوم ═══════════ */
-function criterionStars(row, criteria) {
-  const names = criteria.length ? criteria.map(c => c.name) : Object.keys(row.per_criterion || {})
-  const weightOf = (name) => Number(criteria.find(c => c.name === name)?.weight) || 20
-  return names.map(name => {
-    const v = row.per_criterion?.[name]
-    const stars = v === undefined || v === null ? null : starsFromCriterion(v, weightOf(name))
-    return { name, stars }
-  }).filter(x => x.stars !== null)
-}
-
-function CriterionBars({ row, criteria, animate }) {
-  const items = criterionStars(row, criteria)
-  if (!items.length) return <p className="jd-small jd-dim">لا توجد تفاصيل لكل معيار.</p>
-  return (
-    <div className="jd-crit-bars">
-      {items.map(it => (
-        <div className="jd-crit-bar" key={it.name}>
-          <div className="lbl"><span>{it.name}</span><b>{fmtScore(it.stars)} ★</b></div>
-          <div className="trk"><div className="fil" style={{ width: animate ? `${(it.stars / 5) * 100}%` : `${(it.stars / 5) * 100}%` }} /></div>
-        </div>
-      ))}
-      <p className="jd-small jd-dim" style={{ margin: 0 }}>{row.judges_count} محكّم · {fmtScore(row.final_score)} / 100</p>
-    </div>
-  )
-}
-
-/* ═══════════ بطاقة فائز قابلة للقلب: التحويم يقلبها مؤقتًا، والنقر يثبّتها ═══════════ */
-function WinnerCard({ row, rank, criteria, size = 'sm', cardRef }) {
-  const meta = RANK_META[rank] || { label: `المركز ${rank}`, cls: 'purple', medal: '', rank: 'jd-badge-purple' }
-  const [pinned, setPinned] = useState(false)
-  const [hover, setHover] = useState(false)
-  const hoverable = canHover()
-  const flipped = pinned || hover
-  if (!row) {
-    return <div className={`jd-wcard sz-${size} jd-podium-empty`} ref={cardRef}><span className={`jd-reveal-rank ${meta.rank}`}>{meta.label}</span><span className="team">—</span></div>
-  }
-  return (
-    <div className={`jd-flip ${flipped ? 'is-flipped' : ''}`} ref={cardRef} role="button" tabIndex={0} aria-pressed={pinned} aria-label={`${meta.label}: ${row.team_name} — اضغط لعرض الدرجات`}
-      onClick={() => setPinned(p => !p)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setPinned(p => !p) } }}
-      onMouseEnter={hoverable ? () => setHover(true) : undefined} onMouseLeave={hoverable ? () => setHover(false) : undefined}>
-      <div className="jd-flip-inner">
-        <div className={`jd-flip-face jd-wcard sz-${size} rv-${meta.cls}`}>
-          <span className={`jd-reveal-rank ${meta.rank}`} data-in="">{meta.label}</span>
-          <div className={`jd-reveal-medal ${meta.medal}`} data-in="" style={size === 'sm' ? { width: 56, height: 56, fontSize: 26 } : undefined}>{rank}</div>
-          <span className="team" data-in="">{row.team_name}</span>
-          <span className="title" data-in="">{row.title}</span>
-          <span className="score" data-in=""><b>{fmtScore(row.final_score)}</b> / 100</span>
-          <span className="jd-flip-hint"><Icon name="refresh" size={11} />الدرجات</span>
-        </div>
-        <div className={`jd-flip-face jd-flip-back jd-wcard jd-wcard-back rv-${meta.cls}`}>
-          <h4>{row.team_name} — الدرجة في كل معيار</h4>
-          <CriterionBars row={row} criteria={criteria} animate={flipped} />
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ═══════════ المنصة: الأول في المنتصف، الثاني يسار، الثالث يمين ═══════════ */
-function Podium({ rows, criteria, animate }) {
-  const ref = useRef(null)
-  const byRank = (r) => rows.find(x => Number(x.rank) === r)
-  const order = [3, 1, 2] // في RTL: العمود الأول يمين (الثالث)، ثم المنتصف (الأول)، ثم يسار (الثاني)
-  useLayoutEffect(() => {
-    if (!animate || !ref.current || prefersReducedMotion()) return
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline()
-      tl.from('.jd-podium-block', { scaleY: 0, duration: .9, ease: 'power3.out', stagger: { each: .25, from: 'end' } })
-        .from('.jd-podium-card', { opacity: 0, y: 18, duration: .6, ease: 'power2.out', stagger: .15 }, '-=.4')
-    }, ref)
-    return () => ctx.revert()
-  }, [animate])
-  return (
-    <div className="jd-podium" ref={ref}>
-      {order.map(r => (
-        <div key={r} className="jd-podium-col">
-          <div className="jd-podium-card"><WinnerCard row={byRank(r)} rank={r} criteria={criteria} size="sm" /></div>
-          <div className={`jd-podium-block p${r}`}>{r}</div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-/* ═══════════ الترتيب الكامل ═══════════ */
-function Ranking({ rows, criteria, winners = 3, animate }) {
-  const ref = useRef(null)
-  useLayoutEffect(() => {
-    if (!animate || !ref.current || prefersReducedMotion()) return
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline()
-      tl.from('.jd-rank-row', { opacity: 0, y: 22, duration: .6, ease: 'power2.out', stagger: .08 })
-        .from('.jd-bar-fill', { scaleX: 0, duration: .8, ease: 'power3.out', stagger: .02 }, '-=.3')
-    }, ref)
-    return () => ctx.revert()
-  }, [animate, rows])
-  return (
-    <div className="jd-rank-list" ref={ref}>
-      {rows.map(r => {
-        const rank = Number(r.rank)
-        const meta = RANK_META[rank]
-        const items = criterionStars(r, criteria)
-        return (
-          <div key={r.project_id} className={`jd-rank-row ${rank <= winners ? 'is-winner' : ''}`}>
-            <div className={`jd-rank-num ${rank <= 3 ? `r${rank}` : ''}`}>{rank}</div>
-            <div className="jd-rank-main">
-              <b>{r.team_name}</b>
-              <span>{r.title}</span>
-              <div className="meta">
-                <StageBadge stage={r.stage} />
-                {rank <= winners && <Badge cls={meta ? meta.rank : 'jd-badge-purple'}>{meta ? meta.label : `المركز ${rank}`}</Badge>}
-                <span className="jd-dim jd-small">{r.judges_count} محكّم</span>
-              </div>
-            </div>
-            <div className="jd-rank-score"><b>{fmtScore(r.final_score)}</b><small>من 100</small></div>
-            {items.length > 0 && (
-              <div className="jd-rank-bars">
-                {items.map(it => (
-                  <div className="jd-bar" key={it.name}>
-                    <div className="jd-bar-label"><span>{it.name}</span><b>{fmtScore(it.stars)} ★</b></div>
-                    <div className="jd-bar-track"><div className="jd-bar-fill" style={{ width: `${(it.stars / 5) * 100}%` }} /></div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-/* ═══════════ وضع المسرح ═══════════ */
-function Stage({ event, rows, criteria, step, error, onRetry }) {
+/* ═══════════ حفل الكشف: الثالث ← الثاني ← الأول ← منصة التتويج ═══════════ */
+function Ceremony({ event, rows, error, onRetry }) {
   const reduced = prefersReducedMotion()
-  const [shown, setShown] = useState(step)
-  const viewRef = useRef(null)
+  const [stage, setStage] = useState(() => stageFromStep(event.reveal_step) ?? 0)
   const [fs, setFs] = useState(false)
+  const lockRef = useRef(0)
+  const viewRef = useRef(null)
+  const view = viewOf(stage)
+  const [shownView, setShownView] = useState(view) // ما يُعرض فعليًا (بعد انتهاء حركة الخروج)
 
+  // الريموت: تغيّر reveal_step من لوحة الأدمن يضبط المرحلة على كل الشاشات المفتوحة
+  useEffect(() => { const s = stageFromStep(event.reveal_step); if (s !== null) setStage(s) }, [event.reveal_step])
+
+  // حارس بسيط ضد النقر المزدوج أثناء الحركة
+  const go = useCallback((next) => {
+    const now = Date.now()
+    if (now < lockRef.current) return
+    lockRef.current = now + 900
+    setStage(s => Math.max(0, Math.min(FINAL, typeof next === 'function' ? next(s) : next)))
+  }, [])
+  const advance = useCallback(() => go(s => s + 1), [go])
+  const back = useCallback(() => go(s => s - 1), [go])
+
+  // لوحة المفاتيح وجهاز التقديم: مسافة / Enter / الأسهم / PageDown = التالي · PageUp / سهم أعلى / Backspace = السابق
   useEffect(() => {
-    if (shown === step) return
-    if (reduced || !viewRef.current) { setShown(step); return }
+    const onKey = (e) => {
+      const tag = e.target?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'A') return
+      if ([' ', 'Enter', 'ArrowLeft', 'ArrowRight', 'PageDown'].includes(e.key)) { e.preventDefault(); advance() }
+      else if (['PageUp', 'ArrowUp', 'Backspace'].includes(e.key)) { e.preventDefault(); back() }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [advance, back])
+
+  // الانتقال بين البطاقات: خروج ناعم ثم دخول البطاقة التالية
+  useEffect(() => {
+    if (shownView === view) return
+    if (reduced || !viewRef.current) { setShownView(view); return }
     const ctx = gsap.context(() => {
-      gsap.to(viewRef.current, { opacity: 0, y: -26, scale: .985, duration: .45, ease: 'power2.in', onComplete: () => setShown(step) })
+      gsap.to(viewRef.current, { opacity: 0, y: -34, scale: .97, duration: .42, ease: 'power2.in', onComplete: () => setShownView(view) })
     })
     return () => ctx.revert()
-  }, [step, shown, reduced])
-  useLayoutEffect(() => { if (viewRef.current) gsap.set(viewRef.current, { opacity: 1, y: 0, scale: 1 }) }, [shown])
+  }, [view, shownView, reduced])
+  useLayoutEffect(() => {
+    if (!viewRef.current) return
+    gsap.set(viewRef.current, { opacity: 1, y: 0, scale: 1 })
+    if (!reduced) gsap.from(viewRef.current, { opacity: 0, y: 40, duration: .6, ease: 'power3.out' })
+  }, [shownView, reduced])
 
   useEffect(() => {
     const onFs = () => setFs(Boolean(document.fullscreenElement))
@@ -315,144 +163,257 @@ function Stage({ event, rows, criteria, step, error, onRetry }) {
     try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen() } catch { /* غير مدعوم */ }
   }
 
-  const byRank = (r) => (rows || []).find(x => Number(x.rank) === r)
-  const waitingData = rows === null
+  const cardOpen = shownView === view ? stage % 2 === 1 : shownView < view
+  const rank = RANK_ORDER[shownView]
+  const row = rank ? (rows || []).find(x => Number(x.rank) === rank) : null
+  const revealedBefore = RANK_ORDER.slice(0, Math.min(shownView, 3))
+  const ready = !error && Array.isArray(rows) && rows.length > 0
   const winners = event.winners_count || 3
 
   return (
     <div className="jd-stage" dir="rtl">
-      <div className={`jd-stage-bg ${shown === 5 ? 'gold' : ''}`} aria-hidden="true" />
+      <div className={`jd-stage-bg ${stage >= 5 ? 'gold' : ''}`} aria-hidden="true" />
       <div className="jd-stage-top">
         <div className="jd-stage-brand">
           <img src={A + 'cube-wire.png'} alt="" />
           <b>Cube<span>X</span></b>
-          <span className="jd-dim jd-small" style={{ marginInlineStart: 8 }}>{event.name}</span>
+          <span className="jd-dim jd-small jd-stage-evname" style={{ marginInlineStart: 8 }}>{event.name}</span>
         </div>
         <div className="jd-stage-tools">
-          <span className="jd-badge jd-badge-purple jd-mono" title="خطوة الكشف الحالية">STEP {step}</span>
+          {stage > 0 && <button type="button" className="jd-btn jd-btn-ghost jd-btn-sm" onClick={() => go(0)}><Icon name="refresh" size={14} />إعادة</button>}
+          {stage < FINAL && <button type="button" className="jd-btn jd-btn-ghost jd-btn-sm" onClick={() => go(FINAL)}>تخطّي إلى الترتيب</button>}
           <button type="button" className="jd-btn jd-btn-ghost jd-btn-sm" onClick={toggleFs}>{fs ? 'إنهاء ملء الشاشة' : 'ملء الشاشة'}</button>
         </div>
       </div>
-      <div className="jd-stage-view" ref={viewRef} key={shown}>
+
+      <div className="jd-stage-view" ref={viewRef} key={shownView}>
         {error && <div style={{ width: 'min(100%, 640px)' }}><ErrorBox onRetry={onRetry}>{error}</ErrorBox></div>}
-        {!error && shown === 1 && <Waiting event={event} />}
-        {!error && shown === 2 && <Countdown />}
-        {!error && (shown === 3 || shown === 4 || shown === 5) && (waitingData ? <Spinner plain label="جارٍ تحميل النتائج…" /> : <Reveal rank={6 - shown} row={byRank(6 - shown)} criteria={criteria} />)}
-        {!error && shown === 6 && (waitingData ? <Spinner plain label="جارٍ تحميل النتائج…" /> : <FinalBoard rows={rows} criteria={criteria} winners={winners} />)}
+        {!error && rows === null && <Spinner plain label="جارٍ تحميل النتائج…" />}
+        {!error && Array.isArray(rows) && rows.length === 0 && <EmptyState title="لا توجد نتائج" text="لم تُسجَّل تقييمات لهذه الفعالية." />}
+        {ready && shownView < 3 && (
+          <div className="jd-cer">
+            <div className="jd-cer-head">
+              <p className="jd-stage-kicker">FINAL RESULTS</p>
+              <Steps view={shownView} open={cardOpen} />
+            </div>
+            <SealCard key={rank} rank={rank} row={row} open={cardOpen} onOpen={advance} reduced={reduced} />
+            {cardOpen && shownView === view && (
+              <button type="button" className={`jd-btn jd-btn-primary jd-btn-lg jd-next ${reduced ? '' : 'jd-next-delay'}`} onClick={advance}>
+                {NEXT_LABEL[shownView]}<Icon name="arrowLeft" size={16} />
+              </button>
+            )}
+          </div>
+        )}
+        {ready && shownView === 3 && <FinalBoard rows={rows} winners={winners} reduced={reduced} />}
       </div>
+
+      {ready && shownView < 3 && revealedBefore.length > 0 && <Tray rows={rows} ranks={revealedBefore} />}
     </div>
   )
 }
 
-function Waiting({ event }) {
-  const ref = useRef(null)
-  useLayoutEffect(() => {
-    if (!ref.current || prefersReducedMotion()) return
-    const ctx = gsap.context(() => { gsap.from(ref.current.children, { opacity: 0, y: 24, duration: .9, ease: 'power3.out', stagger: .18 }) }, ref)
-    return () => ctx.revert()
-  }, [])
+/* مؤشر التسلسل: ٣ ← ٢ ← ١ */
+function Steps({ view, open }) {
   return (
-    <div className="jd-stage-center" ref={ref}>
-      <img className="jd-stage-logo" src={A + 'cube-wire.png'} alt="" />
-      <p className="jd-stage-kicker">FINAL RESULTS</p>
-      <h1 className="jd-stage-event">{event.name}</h1>
-      <p className="jd-stage-final">النتائج النهائية</p>
+    <div className="jd-steps" aria-hidden="true">
+      {RANK_ORDER.map((r, i) => (
+        <span key={r} className="jd-steps-item">
+          <i className={`m${r} ${i < view || (i === view && open) ? 'is-done' : ''} ${i === view ? 'is-now' : ''}`}>{r}</i>
+          {i < RANK_ORDER.length - 1 && <s />}
+        </span>
+      ))}
     </div>
   )
 }
 
-function Countdown() {
+/* البطاقة المغلقة: الضغط يقلبها ويكشف الفائز مع كونفيتي وعدّاد للدرجة */
+function SealCard({ rank, row, open, onOpen, reduced }) {
+  const meta = RANK_META[rank]
   const ref = useRef(null)
-  const [n, setN] = useState(3)
-  const [done, setDone] = useState(false)
+  const scoreRef = useRef(null)
+  const [charging, setCharging] = useState(false)
+  const firedRef = useRef(false)
+  const score = Number(row?.final_score) || 0
+
   useEffect(() => {
-    if (prefersReducedMotion()) {
-      const t1 = setTimeout(() => setN(2), 1000), t2 = setTimeout(() => setN(1), 2000), t3 = setTimeout(() => setDone(true), 3000)
-      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
-    }
+    if (!open) { firedRef.current = false; return }
+    if (firedRef.current) return
+    firedRef.current = true
+    if (reduced) { if (scoreRef.current) scoreRef.current.textContent = fmtScore(score); return }
+    const counter = { v: 0 }
     const ctx = gsap.context(() => {
       const tl = gsap.timeline()
-      ;[3, 2, 1].forEach((v, i) => {
-        tl.call(() => setN(v))
-          .fromTo(ref.current, { scale: 2.6, opacity: 0, rotate: -6 }, { scale: 1, opacity: 1, rotate: 0, duration: .55, ease: 'back.out(1.6)' })
-          .to(ref.current, { scale: .7, opacity: 0, duration: .35, ease: 'power2.in', delay: .45 })
-        if (i === 2) tl.call(() => setDone(true))
-      })
-    })
+      tl.call(() => celebrate(rank), null, .5)
+        .from('[data-in]', { opacity: 0, y: 26, duration: .6, ease: 'power3.out', stagger: .12 }, .65)
+        .to(counter, { v: score, duration: 1.4, ease: 'power2.out', onUpdate: () => { if (scoreRef.current) scoreRef.current.textContent = fmtScore(counter.v) } }, .95)
+    }, ref)
     return () => ctx.revert()
-  }, [])
-  return (
-    <div className="jd-stage-center">
-      {!done && <div className="jd-count" ref={ref}>{n}</div>}
-      {done && <p className="jd-stage-final" style={{ animation: 'jdBreath 2s ease-in-out infinite' }}>…</p>}
-    </div>
-  )
-}
+  }, [open, rank, score, reduced])
 
-function Reveal({ rank, row, criteria }) {
-  const wrapRef = useRef(null)
-  useLayoutEffect(() => {
-    if (!wrapRef.current) return
-    if (prefersReducedMotion()) { if (rank === 1) fireGold(true); return }
-    const ctx = gsap.context(() => {
-      const tl = gsap.timeline()
-      tl.from(wrapRef.current, { y: window.innerHeight, opacity: 0, duration: 1.15, ease: 'power4.out' })
-        .from('[data-in]', { opacity: 0, y: 24, duration: .6, ease: 'power2.out', stagger: .14 }, '-=.5')
-      if (rank === 1) tl.call(() => fireGold(false), null, '-=.3')
-    }, wrapRef)
-    return () => ctx.revert()
-  }, [rank])
-  if (!row) {
-    return <div className="jd-stage-center"><p className="jd-stage-kicker">{RANK_META[rank]?.label}</p><p className="jd-muted">لا يوجد مشروع في هذا المركز.</p></div>
+  function handleClick() {
+    if (open || charging) return
+    if (reduced) { onOpen(); return }
+    setCharging(true)
+    setTimeout(() => { setCharging(false); onOpen() }, 320)
   }
+
   return (
-    <div className="jd-podium-wrap" ref={wrapRef}>
-      <WinnerCard row={row} rank={rank} criteria={criteria} size="lg" />
+    <div className={`jd-seal rv-${meta.cls} ${open ? 'is-open' : ''} ${charging ? 'is-charging' : ''}`} ref={ref}
+      role="button" tabIndex={open ? -1 : 0} aria-label={open ? `${meta.label}: ${row?.team_name || '—'}` : `${meta.label} — اضغط للكشف عن الفائز`} onClick={handleClick}>
+      <div className="jd-seal-inner">
+        <div className="jd-seal-face jd-seal-front" aria-hidden={open}>
+          <span className={`jd-reveal-rank jd-seal-rank ${meta.rank}`}>{meta.label}</span>
+          <div className={`jd-reveal-medal ${meta.medal}`}>{rank}</div>
+          <span className="jd-seal-q">مَن صاحب {meta.label}؟</span>
+          <span className="jd-seal-hint"><span className="dot" />اضغط للكشف عن الفائز</span>
+        </div>
+        <div className="jd-seal-face jd-seal-back" aria-hidden={!open}>
+          <span className={`jd-reveal-rank jd-seal-rank ${meta.rank}`} data-in="">{meta.label}</span>
+          <div className={`jd-reveal-medal ${meta.medal}`} data-in="">{rank}</div>
+          {row ? (
+            <>
+              <span className="jd-seal-team" data-in="">{row.team_name}</span>
+              <span className="jd-seal-title" data-in="">{row.title}</span>
+              <span className="jd-seal-score" data-in=""><b ref={scoreRef}>{reduced ? fmtScore(score) : '0.0'}</b><span>/ 100</span></span>
+            </>
+          ) : <span className="jd-seal-title" data-in="">لا يوجد مشروع في هذا المركز.</span>}
+        </div>
+      </div>
+      {open && row && <span className="jd-sr" aria-live="polite">{meta.label}: {row.team_name} — {fmtScore(score)} من 100</span>}
     </div>
   )
 }
 
-function fireGold(once) {
+/* كونفيتي بلون المركز — الأول يحصل على ألعاب نارية ممتدة */
+function celebrate(rank) {
   try {
-    const base = { colors: GOLD_COLORS, zIndex: 400, disableForReducedMotion: true }
-    confetti({ ...base, particleCount: 160, spread: 90, origin: { y: .65 }, startVelocity: 55, scalar: 1.2 })
-    if (once) return
-    const end = Date.now() + 2600
-    const frame = () => {
-      confetti({ ...base, particleCount: 6, angle: 60, spread: 60, origin: { x: 0, y: .7 } })
-      confetti({ ...base, particleCount: 6, angle: 120, spread: 60, origin: { x: 1, y: .7 } })
-      if (Date.now() < end) requestAnimationFrame(frame)
+    const base = { colors: PALETTE[rank] || PALETTE[3], zIndex: 400, disableForReducedMotion: true }
+    if (rank === 1) {
+      confetti({ ...base, particleCount: 220, spread: 100, origin: { y: .6 }, startVelocity: 62, scalar: 1.25 })
+      const end = Date.now() + 4200
+      const frame = () => {
+        confetti({ ...base, particleCount: 7, angle: 60, spread: 65, origin: { x: 0, y: .75 } })
+        confetti({ ...base, particleCount: 7, angle: 120, spread: 65, origin: { x: 1, y: .75 } })
+        if (Date.now() < end) requestAnimationFrame(frame)
+      }
+      frame()
+      let shots = 0
+      const iv = setInterval(() => {
+        confetti({ ...base, particleCount: 90, spread: 360, startVelocity: 36, gravity: .8, ticks: 130, scalar: 1.1, origin: { x: .2 + Math.random() * .6, y: .15 + Math.random() * .35 } })
+        if (++shots >= 7) clearInterval(iv)
+      }, 480)
+      return
     }
-    frame()
-    setTimeout(() => confetti({ ...base, particleCount: 220, spread: 120, origin: { y: .5 }, startVelocity: 45, gravity: .9, scalar: 1.1 }), 900)
+    confetti({ ...base, particleCount: rank === 2 ? 160 : 120, spread: 85, origin: { y: .62 }, startVelocity: 52, scalar: 1.15 })
+    setTimeout(() => {
+      confetti({ ...base, particleCount: 55, angle: 60, spread: 55, origin: { x: 0, y: .7 } })
+      confetti({ ...base, particleCount: 55, angle: 120, spread: 55, origin: { x: 1, y: .7 } })
+    }, 260)
   } catch { /* الكونفيتي زينة فقط */ }
 }
 
-function FinalBoard({ rows, criteria, winners }) {
-  const [showList, setShowList] = useState(prefersReducedMotion())
-  const headRef = useRef(null)
+/* الدرج السفلي: المراكز المكشوفة سابقًا تبقى ظاهرة */
+function Tray({ rows, ranks }) {
+  return (
+    <div className="jd-tray" aria-label="المراكز المكشوفة">
+      {ranks.map(r => {
+        const row = rows.find(x => Number(x.rank) === r)
+        const meta = RANK_META[r]
+        return (
+          <div key={r} className="jd-tray-chip">
+            <i className={meta.medal}>{r}</i>
+            <span className="lbl">{meta.label}</span>
+            <b>{row?.team_name || '—'}</b>
+            {row && <small>{fmtScore(row.final_score)}</small>}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ═══════════ منصة التتويج: الثلاثة معًا ثم الترتيب الكامل ═══════════ */
+function FinalBoard({ rows, winners, reduced }) {
+  const [showList, setShowList] = useState(reduced)
+  const ref = useRef(null)
   useLayoutEffect(() => {
-    if (prefersReducedMotion()) return
+    if (reduced || !ref.current) return
     const ctx = gsap.context(() => {
       const tl = gsap.timeline()
-      if (headRef.current) tl.from(headRef.current, { opacity: 0, y: -18, duration: .7, ease: 'power2.out' })
-      tl.call(() => setShowList(true), null, '+=1.8')
-    })
+      tl.from('.jd-final-head', { opacity: 0, y: -18, duration: .7, ease: 'power2.out' })
+        .from('.jd-podium-block', { scaleY: 0, duration: .9, ease: 'power3.out', stagger: { each: .22, from: 'end' } }, '-=.3')
+        .from('.jd-pod-card', { opacity: 0, y: 22, duration: .6, ease: 'power2.out', stagger: .15 }, '-=.5')
+        .call(() => setShowList(true), null, '+=1.1')
+    }, ref)
     return () => ctx.revert()
-  }, [])
+  }, [reduced])
+  const byRank = (r) => rows.find(x => Number(x.rank) === r)
   return (
-    <div className="jd-stage-final-wrap">
-      <div ref={headRef} style={{ textAlign: 'center' }}>
+    <div className="jd-stage-final-wrap" ref={ref}>
+      <div className="jd-final-head">
         <p className="jd-stage-kicker">WINNERS</p>
         <h2 className="jd-stage-event" style={{ fontSize: 'clamp(22px,3vw,44px)' }}>منصة التتويج</h2>
       </div>
-      <Podium rows={rows} criteria={criteria} animate />
-      {showList && (
-        <div className="jd-stage-scroll">
-          <h3 className="jd-h3" style={{ margin: '8px 0 12px', textAlign: 'center' }}>الترتيب الكامل</h3>
-          <Ranking rows={rows} criteria={criteria} winners={winners} animate />
-        </div>
-      )}
+      {/* في RTL: العمود الأول يمين (الثالث)، المنتصف (الأول)، يسار (الثاني) */}
+      <div className="jd-podium">
+        {[3, 1, 2].map(r => (
+          <div key={r} className="jd-podium-col">
+            <PodCard row={byRank(r)} rank={r} />
+            <div className={`jd-podium-block p${r}`}>{r}</div>
+          </div>
+        ))}
+      </div>
+      {showList && <Ranking rows={rows} winners={winners} reduced={reduced} />}
+    </div>
+  )
+}
+
+function PodCard({ row, rank }) {
+  const meta = RANK_META[rank]
+  return (
+    <div className={`jd-pod-card rv-${meta.cls} ${row ? '' : 'jd-podium-empty'}`}>
+      <span className={`jd-reveal-rank ${meta.rank}`}>{meta.label}</span>
+      <div className={`jd-reveal-medal sm ${meta.medal}`}>{rank}</div>
+      <span className="team">{row?.team_name || '—'}</span>
+      {row && <span className="title">{row.title}</span>}
+      {row && <span className="score"><b>{fmtScore(row.final_score)}</b> / 100</span>}
+    </div>
+  )
+}
+
+/* الترتيب الكامل: الرقم، الفريق، المشروع، الدرجة من 100 — بلا معايير */
+function Ranking({ rows, winners, reduced }) {
+  const ref = useRef(null)
+  useLayoutEffect(() => {
+    if (reduced || !ref.current) return
+    const ctx = gsap.context(() => {
+      gsap.from('.jd-rank-row', { opacity: 0, y: 22, duration: .55, ease: 'power2.out', stagger: .07 })
+      gsap.from('.jd-rank-bar i', { scaleX: 0, duration: .9, ease: 'power3.out', stagger: .07, delay: .3 })
+    }, ref)
+    return () => ctx.revert()
+  }, [reduced, rows])
+  return (
+    <div className="jd-final-sec" ref={ref}>
+      <h3 className="jd-h3">الترتيب الكامل</h3>
+      <div className="jd-rank-list">
+        {rows.map(r => {
+          const rank = Number(r.rank)
+          const meta = RANK_META[rank]
+          const pct = Math.max(0, Math.min(100, Number(r.final_score) || 0))
+          return (
+            <div key={r.project_id} className={`jd-rank-row ${rank <= winners ? 'is-winner' : ''} ${rank <= 3 ? `is-r${rank}` : ''}`}>
+              <div className={`jd-rank-num ${rank <= 3 ? `r${rank}` : ''}`}>{rank}</div>
+              <div className="jd-rank-main">
+                <b>{r.team_name}</b>
+                <span>{r.title}</span>
+                {rank <= winners && <div className="meta"><Badge cls={meta ? meta.rank : 'jd-badge-purple'}>{meta ? meta.label : 'فائز'}</Badge></div>}
+              </div>
+              <div className="jd-rank-score"><b>{fmtScore(r.final_score)}</b><small>من 100</small></div>
+              <div className="jd-rank-bar"><i style={{ width: `${pct}%` }} /></div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

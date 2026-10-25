@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { useJudge } from './JudgeArea'
 import { Alert, EmptyState, Icon, LevelPicker } from '../components/ui'
@@ -10,6 +10,12 @@ const NOTE_DEBOUNCE_MS = 900
 
 /* تقييم مشروع: معيار واحد في كل شاشة — سؤال المعيار، أسئلة إرشادية، اختيار مستوى موصوف (1–5)، وسبب مختصر اختياري */
 export default function JudgeScore() {
+  const { projectId } = useParams()
+  const { criteria } = useJudge()
+  return <ScoreForm key={`${projectId}:${criteria.map(c => c.id).join(',')}`} />
+}
+
+function ScoreForm() {
   const { projectId, slug } = useParams()
   const navigate = useNavigate()
   const { event, criteria, projects, scores, saveScore } = useJudge()
@@ -33,6 +39,7 @@ export default function JudgeScore() {
   const timers = useRef([])
   const noteTimer = useRef(null)
   const wasComplete = useRef(complete)
+  const savingRef = useRef(null)
 
   useEffect(() => () => { timers.current.forEach(clearTimeout); clearTimeout(noteTimer.current) }, [])
   useEffect(() => { setState(''); window.scrollTo({ top: 0 }) }, [step])
@@ -46,19 +53,30 @@ export default function JudgeScore() {
 
   async function persist(cid, score, note) {
     if (closed) { setState('error:التحكيم غير مفتوح الآن — لا يمكن الحفظ.'); return false }
-    setState('saving')
-    try {
-      await saveScore(projectId, cid, score, note)
-      setState('saved')
-      return true
-    } catch (err) {
-      setState(`error:${jdError(err)}`)
-      return false
+    if (savingRef.current) {
+      await savingRef.current
+      if (savingRef.current) return persist(cid, score, note)
     }
+    setState('saving')
+    const request = (async () => {
+      try {
+        await saveScore(projectId, cid, score, note)
+        setState('saved')
+        return true
+      } catch (err) {
+        setState(`error:${jdError(err)}`)
+        return false
+      }
+    })()
+    savingRef.current = request
+    const ok = await request
+    if (savingRef.current === request) savingRef.current = null
+    return ok
   }
 
   async function pick(cid, value) {
-    if (closed || state === 'saving') return
+    if (closed || savingRef.current) return
+    clearTimeout(noteTimer.current)
     await persist(cid, value, notes[cid])
   }
 
@@ -69,18 +87,31 @@ export default function JudgeScore() {
     if (!current) return // يُحفظ السبب مع الدرجة عند اختيارها
     noteTimer.current = setTimeout(() => persist(cid, current.score, value), NOTE_DEBOUNCE_MS)
   }
-  function flushNote(cid) {
+  async function flushNote(cid) {
     clearTimeout(noteTimer.current)
+    if (savingRef.current && !await savingRef.current) return false
     const current = mine[cid]
-    if (!current) return
+    if (!current) return true
     const value = (notes[cid] ?? '').trim() || null
-    if ((current.note || null) !== value) persist(cid, current.score, value)
+    if ((current.note || null) !== value) return persist(cid, current.score, value)
+    return true
   }
 
-  function finish() {
+  async function go(nextStep) {
+    if (!await flushNote(criteria[step]?.id)) return
+    setStep(nextStep)
+  }
+  async function returnToProjects(e) {
+    e?.preventDefault()
+    if (!await flushNote(criteria[step]?.id)) return
+    navigate(`/judge/${slug}/judge`)
+  }
+  async function finish() {
+    if (!await flushNote(criteria[step]?.id)) return
     if (complete && !wasComplete.current) { wasComplete.current = true; setDone(true) }
     else navigate(`/judge/${slug}/judge`)
   }
+
   useEffect(() => {
     if (!done) return
     later(() => navigate(`/judge/${slug}/judge`), RETURN_MS)
@@ -89,6 +120,7 @@ export default function JudgeScore() {
   if (!project) {
     return <section className="jd-section"><EmptyState icon="search" title="المشروع غير موجود" text="ربما حُذف أو لم يعد مؤهلًا للتحكيم." action={<Link to={`/judge/${slug}/judge`} className="jd-btn jd-btn-soft">العودة للقائمة</Link>} /></section>
   }
+  if (closed) return <Navigate to={`/judge/${slug}/judge`} replace />
   if (n === 0) return <section className="jd-section"><Alert kind="warn">لا توجد معايير تقييم لهذه الفعالية بعد — تواصل مع المنظّمين.</Alert></section>
 
   if (done) {
@@ -117,7 +149,7 @@ export default function JudgeScore() {
     <section style={{ padding: 'clamp(18px,3vw,28px) 0 48px' }}>
       <div className="jd-stepper">
         <div className="jd-row jd-row-between">
-          <Link to={`/judge/${slug}/judge`} className="jd-link"><Icon name="arrowRight" size={16} />المشاريع</Link>
+          <Link to={`/judge/${slug}/judge`} className="jd-link" onClick={returnToProjects}><Icon name="arrowRight" size={16} />المشاريع</Link>
           <span className="jd-small jd-dim">{scoredCount}/{n} معايير</span>
         </div>
         <div className="jd-project-head">
@@ -142,7 +174,7 @@ export default function JudgeScore() {
           )}
           {guide.note && <p className="jd-guide-note">{guide.note}</p>}
           <LevelPicker value={current?.score} onChange={(v) => pick(c.id, v)} disabled={closed || state === 'saving'} levels={guide.levels} label={`مستوى ${c.name}`} />
-          <textarea className="jd-textarea jd-reason" placeholder={current ? 'سبب مختصر لدرجتك (اختياري)…' : 'اختر المستوى أولًا، ثم أضف سببًا مختصرًا (اختياري)'} value={notes[c.id] ?? ''} onChange={e => onNote(c.id, e.target.value)} onBlur={() => flushNote(c.id)} disabled={closed || !current} maxLength={500} />
+          <textarea className="jd-textarea jd-reason" placeholder={current ? 'سبب مختصر لدرجتك (اختياري)…' : 'اختر المستوى أولًا، ثم أضف سببًا مختصرًا (اختياري)'} value={notes[c.id] ?? ''} onChange={e => onNote(c.id, e.target.value)} disabled={closed || !current || state === 'saving'} maxLength={500} />
           <div className={`jd-save-state ${state === 'saved' ? 'ok' : isErr ? 'err' : ''}`} aria-live="polite" style={{ justifyContent: 'center' }}>
             {state === 'saving' && <><span className="jd-spinner jd-spinner-sm" /> جارٍ الحفظ…</>}
             {state === 'saved' && <><Icon name="check" size={14} /> تم الحفظ</>}
@@ -153,10 +185,10 @@ export default function JudgeScore() {
         </div>
 
         <div className="jd-step-nav">
-          <button type="button" className="jd-btn jd-btn-ghost" onClick={() => setStep(s => Math.max(0, s - 1))} disabled={step === 0}><Icon name="arrowRight" size={16} />السابق</button>
+          <button type="button" className="jd-btn jd-btn-ghost" onClick={() => go(Math.max(0, step - 1))} disabled={step === 0 || state === 'saving'}><Icon name="arrowRight" size={16} />السابق</button>
           {!isLast
-            ? <button type="button" className={`jd-btn ${current ? 'jd-btn-primary' : 'jd-btn-soft'}`} onClick={() => setStep(s => Math.min(n - 1, s + 1))} disabled={!current}>التالي<Icon name="arrowLeft" size={16} /></button>
-            : <button type="button" className={`jd-btn ${complete ? 'jd-btn-green' : 'jd-btn-soft'}`} onClick={finish} disabled={!current}>{complete ? <><Icon name="check" size={16} />إنهاء التقييم</> : 'العودة للمشاريع'}</button>}
+            ? <button type="button" className={`jd-btn ${current ? 'jd-btn-primary' : 'jd-btn-soft'}`} onClick={() => go(Math.min(n - 1, step + 1))} disabled={!current || state === 'saving'}>التالي<Icon name="arrowLeft" size={16} /></button>
+            : <button type="button" className={`jd-btn ${complete ? 'jd-btn-green' : 'jd-btn-soft'}`} onClick={finish} disabled={!current || state === 'saving'}>{complete ? <><Icon name="check" size={16} />إنهاء التقييم</> : 'العودة للمشاريع'}</button>}
         </div>
         <p className="jd-coi">إن كان لديك تعارض مصالح مع هذا الفريق فلا تقيّمه وأبلغ المنظّمين. سجّل درجاتك باستقلال قبل أي نقاش.</p>
       </div>

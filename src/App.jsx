@@ -7,6 +7,7 @@ import Home from './pages/Home'
 import Register from './pages/Register'
 import Admin from './pages/Admin'
 import SponsorRegister from './pages/SponsorRegister'
+import ScrollToTop from './components/ScrollToTop'
 // منصة التحكيم تُحمَّل عند الطلب (chunk مستقل) حتى لا تثقل الصفحة الرئيسية
 const JudgeApp = lazy(() => import('./judging/JudgeApp'))
 
@@ -23,6 +24,8 @@ export default function App() {
   const recovery = recoveryTarget(location)
   if (recovery) return <Navigate to={recovery} replace />
   return (
+    <>
+    <ScrollToTop />
     <Routes>
       {/* ─── صفحة كيوبكس: الصفحة الرئيسية للشركة ─── */}
       <Route path="/" element={<CubeX />} />
@@ -54,5 +57,6 @@ export default function App() {
         }
       />
     </Routes>
+    </>
   )
 }

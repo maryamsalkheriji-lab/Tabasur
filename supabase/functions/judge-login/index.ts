@@ -8,7 +8,7 @@ import { SignJWT } from "npm:jose@5.9.6";
 
 const cors = {
   "Access-Control-Allow-Origin": "https://cubex.com.sa",
-  "Access-Control-Allow-Headers": "authorization, content-type",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useJudge } from './JudgeArea'
 import { Badge, EmptyState, Icon, Progress } from '../components/ui'
 import { STATUS_META, projectMeta } from '../lib'
@@ -33,7 +33,6 @@ export default function JudgeDashboard() {
           <h2>انتهى التحكيم، شكرًا لك</h2>
           <p>{session.judge?.name}، أُغلق باب التقييم لفعالية «{event.name}». تقييماتك محفوظة ولا يمكن تعديلها الآن.</p>
           <p className="jd-small jd-dim">أكملت {doneCount} من {projects.length} مشاريع.</p>
-          {event.results_published && <Link to={`/judge/${slug}/results`} className="jd-btn jd-btn-primary"><Icon name="trophy" size={16} />عرض النتائج</Link>}
         </div>
       </section>
     )

@@ -26,6 +26,7 @@ export default function JudgeArea() {
 
   const load = useCallback(async (silent = false) => {
     if (!valid) return
+    if (judgeSessionExpired()) { logout(); return }
     if (reloadingRef.current) return
     reloadingRef.current = true
     if (!silent) { setLoading(true); setError('') }
@@ -62,17 +63,19 @@ export default function JudgeArea() {
     const channel = supabase.channel(`jd_event_judge_${slug}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jd_events', filter: `slug=eq.${slug}` }, (payload) => {
         setData(d => d.event ? { ...d, event: { ...d.event, ...payload.new } } : d)
+        load(true)
       })
       .subscribe()
     const onVisible = () => { if (document.visibilityState === 'visible') load(true) }
     document.addEventListener('visibilitychange', onVisible)
-    return () => { supabase.removeChannel(channel); document.removeEventListener('visibilitychange', onVisible) }
+    const timer = setInterval(() => { if (document.visibilityState === 'visible') load(true) }, 20000)
+    return () => { clearInterval(timer); supabase.removeChannel(channel); document.removeEventListener('visibilitychange', onVisible) }
   }, [valid, slug, load])
 
   /* حفظ درجة معيار فورًا: upsert في jd_scores (أو sessionStorage في وضع التجربة) */
   const saveScore = useCallback(async (projectId, criterionId, score, note) => {
     const row = { judge_id: session.judge.id, project_id: projectId, criterion_id: criterionId, score, note: (note || '').trim() || null }
-    const { data: d, error: err } = await client.from('jd_scores').upsert(row, { onConflict: 'judge_id,project_id,criterion_id' }).select().maybeSingle()
+    const { data: d, error: err } = await client.from('jd_scores').upsert(row, { onConflict: 'judge_id,project_id,criterion_id' }).select().single()
     if (err) {
       if (/row-level security/i.test(err.message || '')) load(true)
       throw err

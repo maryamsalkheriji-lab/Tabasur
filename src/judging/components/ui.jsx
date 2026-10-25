@@ -6,6 +6,7 @@ const A = '/assets/cubex/'
 
 /* ─── أيقونات خطية بسيطة (inline SVG) ─── */
 const ICONS = {
+  menu: 'M4 6h16M4 12h16M4 18h16',
   check: 'M5 12.5l4.5 4.5L19 7.5',
   x: 'M6 6l12 12M18 6L6 18',
   clock: 'M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z',
@@ -58,7 +59,7 @@ export function Icon({ name, size = 18, className = '', style }) {
 /* ─── الشريط العلوي + الفوتر ─── */
 export function JudgeNav({ links = [], cta = null, children }) {
   return (
-    <nav className="jd-nav">
+    <nav className="jd-nav" aria-label="التنقل الرئيسي">
       <div className="jd-nav-inner">
         <Link to="/judge" className="jd-brand" aria-label="منصة التحكيم — كيوبكس">
           <img src={A + 'cube-wire.png'} alt="" />
@@ -67,13 +68,13 @@ export function JudgeNav({ links = [], cta = null, children }) {
             <small>JUDGING · منصة التحكيم</small>
           </span>
         </Link>
+        {children && <div className="jd-nav-status">{children}</div>}
         <div className="jd-nav-links">
           <NavLink to="/judge" end>الرئيسية</NavLink>
           <a href="/">موقع كيوبكس</a>
           {links.map(l => l.to
             ? <NavLink key={l.label} to={l.to} end={l.end}>{l.label}</NavLink>
             : <button key={l.label} type="button" onClick={l.onClick}>{l.label}</button>)}
-          {children}
           {cta && <Link to={cta.to} className="jd-nav-cta">{cta.icon && <Icon name={cta.icon} size={16} />}{cta.label}</Link>}
         </div>
       </div>

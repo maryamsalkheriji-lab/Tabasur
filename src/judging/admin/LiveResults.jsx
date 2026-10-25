@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Spinner, ErrorBox, EmptyState, StageBadge, Icon, HelpBox } from '../components/ui'
-import { jdError, fmtScore, starsFromCriterion, rankRows } from '../lib'
+import { jdError, fmtScore, downloadCSV } from '../lib'
+import { loadTeamReport, teamReportCSV } from '../reports'
 
 /* الترتيب الحي: يُحسب في قاعدة البيانات (jd_results) ويظهر للأدمن حتى قبل النشر */
 export default function LiveResults({ supabase, event }) {
@@ -12,28 +13,26 @@ export default function LiveResults({ supabase, event }) {
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
-    const [res, cr] = await Promise.all([
-      supabase.rpc('jd_results', { p_slug: event.slug }),
-      supabase.from('jd_criteria').select('id,name,weight,sort_order').eq('event_id', event.id).order('sort_order'),
-    ])
-    if (res.error) { setError(jdError(res.error)); setRows([]) }
-    else setRows(rankRows(res.data || []))
-    setCriteria(cr.data || [])
-    setLoading(false)
+    try {
+      const report = await loadTeamReport(supabase, event)
+      setRows(report.rows); setCriteria(report.criteria)
+    } catch (err) { setError(jdError(err)); setRows([]) }
+    finally { setLoading(false) }
   }, [supabase, event.slug, event.id])
   useEffect(() => { load() }, [load])
 
   const names = criteria.length ? criteria.map(c => c.name) : []
-  const weightOf = (name) => Number(criteria.find(c => c.name === name)?.weight) || 20
+  const weightOf = (name) => Number(criteria.find(c => c.name === name)?.weight) || 0
 
   return (
     <div className="jd-stack" style={{ gap: 16 }}>
       <HelpBox title="كيف تُحسب الدرجة؟">
-        درجة المعيار = الدرجة (1–5) ÷ 5 × وزن المعيار، والنتيجة النهائية من 100 هي متوسط مجموع درجات المحكّمين — تُحسب في قاعدة البيانات. عند التعادل يُقدَّم الأعلى في «الاختبار والتعلّم» ثم «جودة الـMVP» (وفق وثيقة المعايير). لا يراها المحكّمون ولا العامة قبل النشر.
+        درجة المعيار = الدرجة (1–5) ÷ 5 × وزن المعيار، والنتيجة النهائية من 100 هي متوسط مجموع درجات المحكّمين — تُحسب في قاعدة البيانات. عند التعادل يُقدَّم الأعلى في «الاختبار وإثبات فاعلية المنتج» ثم «اكتمال المنتج وعمله فعليًا» (وفق وثيقة المعايير). لا تظهر النتائج في حسابات المحكّمين. تظهر للعامة بعد النشر فقط. تُحتسب التقييمات المكتملة فقط؛ كل خانة تعرض نقاط المعيار من وزنه.
       </HelpBox>
       <div className="jd-row jd-row-between">
         <p className="jd-muted jd-small">{event.results_published ? 'النتائج منشورة للعامة.' : 'غير منشورة بعد — يراها الأدمن فقط.'}</p>
         <div className="jd-row">
+          <button type="button" className="jd-btn jd-btn-primary jd-btn-sm" disabled={loading || !!error || !rows?.length} onClick={() => downloadCSV(`team-results-${event.slug}.csv`, teamReportCSV(rows, criteria))}><Icon name="list" size={14} />تنزيل درجات الفرق</button>
           <Link to={`/judge/${event.slug}/results`} target="_blank" rel="noopener noreferrer" className="jd-btn jd-btn-ghost jd-btn-sm"><Icon name="external" size={14} />صفحة النتائج</Link>
           <button type="button" className="jd-btn jd-btn-soft jd-btn-sm" onClick={load} disabled={loading}><Icon name="refresh" size={14} />{loading ? '…' : 'تحديث'}</button>
         </div>
@@ -43,17 +42,17 @@ export default function LiveResults({ supabase, event }) {
       ) : (
         <div className="jd-table-wrap">
           <table className="jd-table">
-            <thead><tr><th className="w-num">#</th><th>الفريق</th><th>المشروع</th><th>المرحلة</th><th className="w-num">الدرجة /100</th><th className="w-num">محكّمون</th>{names.map(n => <th key={n} className="w-num" title={n}>{n.replace(/^هل\s+/, '').replace(/؟$/, '')}</th>)}</tr></thead>
+            <thead><tr><th className="w-num">#</th><th>الفريق</th><th>المشروع</th><th>المرحلة</th><th className="w-num">الدرجة /100</th><th className="w-num">محكّمون</th>{names.map(n => <th key={n} className="w-num" title={n}>{n} / {weightOf(n)}</th>)}</tr></thead>
             <tbody>
               {rows.map(r => (
                 <tr key={r.project_id}>
-                  <td className="num"><b style={{ color: Number(r.rank) <= (event.winners_count || 3) ? 'var(--jd-gold)' : '#fff' }}>{r.rank}</b></td>
+                  <td className="num"><b style={{ color: r.rank != null && Number(r.rank) <= (event.winners_count || 3) ? 'var(--jd-gold)' : '#fff' }}>{r.rank ?? '—'}</b></td>
                   <td><b style={{ color: '#fff' }}>{r.team_name}</b></td>
                   <td>{r.title}</td>
                   <td><StageBadge stage={r.stage} /></td>
-                  <td className="num"><b style={{ color: '#fff' }}>{fmtScore(r.final_score)}</b></td>
+                  <td className="num"><b style={{ color: '#fff' }}>{r.final_score == null ? '—' : fmtScore(r.final_score)}</b></td>
                   <td className="num">{r.judges_count}</td>
-                  {names.map(n => { const st = starsFromCriterion(r.per_criterion?.[n], weightOf(n)); return <td key={n} className="num muted">{st === null ? '—' : `${fmtScore(st)} ★`}</td> })}
+                  {names.map(n => <td key={n} className="num muted">{r.per_criterion?.[n] == null ? '—' : fmtScore(r.per_criterion[n])}</td>)}
                 </tr>
               ))}
             </tbody>

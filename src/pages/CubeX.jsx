@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { registrationPeriod } from '../lib/camp'
 import './CubeX.css'
 
 const A = '/assets/cubex/'
+const MADINAH_TECH_URL = 'https://www.madinahcultivator.com/'
 
 const typography = {
   section: 'clamp(34px,4vw,58px)',
@@ -28,15 +30,15 @@ const DICT = {
       { tag: '04', title: 'بناء الشركات', desc: 'من الفكرة إلى شركة ناشئة قابلة للنمو.' }
     ]},
     programs: { eyebrow: 'برامجنا ومبادراتنا', title: 'برامج تصنع الأثر',
-      tabsur: { badge: 'التسجيل مفتوح', title: 'معسكر تَبصَّر', sub: 'TABSUR · تسويق المدن', desc: '4 أيام لرواية تحوّل المدينة المنورة بصريًا.', cta: 'زيارة الموقع ←' },
-      madinah: { badge: 'قريبًا', title: 'مدينة تِك', desc: 'مبادرة تقنية تجمع المواهب وروّاد الأعمال لتطوير الأفكار وتحويلها إلى حلول مبتكرة.', meta: 'الموعد يُعلن لاحقًا' },
-      medai: { href: 'https://medai.sa/ar', cta: 'زيارة الموقع ←', badge: 'التسجيل مفتوح', title: 'معسكر وهاكاثون ملتقى الذكاء الاصطناعي', desc: 'تحدٍّ تقني لحلول ذكية لمشكلات حقيقية.', meta: 'فِرَق من 2–4' }
+      tabsur: { badge: `التسجيل: ${registrationPeriod.ar}`, title: 'معسكر تَبصَّر', sub: 'TABSUR · تسويق المدن', desc: '4 أيام لرواية تحوّل المدينة المنورة بصريًا.', cta: 'زيارة الموقع ←' },
+      madinah: { href: MADINAH_TECH_URL, cta: 'زيارة الموقع ←', badge: 'التسجيل مفتوح', title: 'مدينة تِك', desc: 'مبادرة تقنية تجمع المواهب وروّاد الأعمال لتطوير الأفكار وتحويلها إلى حلول مبتكرة.', meta: 'تعرّف على البرنامج' },
+      medai: { href: 'https://medai.sa/ar', cta: 'زيارة الموقع ←', ended: true, badge: 'انتهى الملتقى', title: 'معسكر وهاكاثون ملتقى الذكاء الاصطناعي', desc: 'تحدٍّ تقني لحلول ذكية لمشكلات حقيقية.', meta: 'فِرَق من 2–4' }
     },
     value: { eyebrow: 'الأثر', title: 'الأثر الذي نصنعه', points: ['قرارات أوضح وتسريع تطوير الأفكار', 'مبادرات بأهداف واضحة', 'خبرات وشراكات مؤثرة', 'رفع جاهزية الفرق', 'تقليل مخاطر التنفيذ', 'قياس النتائج وفرص نمو مستدامة'] },
     partners: { title: 'شركاء النجاح', pending: 'نعلن عن شركاء النجاح قريبًا.' },
     leadership: { kicker: 'CEO', name: 'وفاء العمري', role: 'الرئيس التنفيذي', bio: 'تقود كيوبكس من فهم عميق للتحديات المؤسسية.', extra: 'تصميم البرامج، وبناء الشراكات، وتحويل المبادرة إلى نتيجة — هذا ما يقودها كل يوم.', tags: ['منظومات الابتكار', 'ريادة الأعمال', 'الشراكات الاستراتيجية'] },
     contact: { title: 'عندك تحدٍّ يستحق حلًّا؟', desc: 'ابدأ معنا من التحدي.', cta1: 'تواصل مع كيوبكس ←', cta2: 'موقع معسكر تَبصَّر' },
-    footer: { tagline: 'شريكك من التحدي إلى الفرصة، ومن الفكرة إلى الأثر', desc: 'نصمّم وننفّذ منظومات الابتكار وريادة الأعمال.', colCompany: 'الشركة', colPrograms: 'البرامج', colContact: 'تواصل', linkAbout: 'من نحن', linkServices: 'خدماتنا', linkLeadership: 'القيادة', linkTabsur: 'معسكر تَبصَّر', linkMadinah: 'مدينة تِك — قريبًا', linkMedai: 'معسكر وهاكاثون MED AI — التسجيل مفتوح', copyright: '© 2026 كيوبكس · جميع الحقوق محفوظة', mono: 'FROM CHALLENGE TO VENTURE' }
+    footer: { tagline: 'شريكك من التحدي إلى الفرصة، ومن الفكرة إلى الأثر', desc: 'نصمّم وننفّذ منظومات الابتكار وريادة الأعمال.', colCompany: 'الشركة', colPrograms: 'البرامج', colContact: 'تواصل', linkAbout: 'من نحن', linkServices: 'خدماتنا', linkLeadership: 'القيادة', linkTabsur: 'معسكر تَبصَّر', linkMadinah: 'مدينة تِك', linkMedai: 'معسكر وهاكاثون MED AI — انتهى الملتقى', copyright: '© 2026 كيوبكس · جميع الحقوق محفوظة', mono: 'FROM CHALLENGE TO VENTURE' }
   },
   en: {
     nav: { sub: 'Innovation · Ventures', about: 'About', services: 'Services', programs: 'Programs', value: 'Impact', leadership: 'Leadership', judging: 'Judging', contact: 'Contact', langCurrent: 'EN', langAr: 'العربية', langEn: 'English' },
@@ -54,15 +56,15 @@ const DICT = {
       { tag: '04', title: 'Venture Building', desc: 'From idea to a scalable startup.' }
     ]},
     programs: { eyebrow: 'Programs & Initiatives', title: 'Programs that make an impact',
-      tabsur: { badge: 'Registration open', title: 'Tabsur Camp', sub: 'TABSUR · CITY MARKETING', desc: "4 days retelling Madinah's transformation, visually.", cta: 'Visit website →' },
-      madinah: { badge: 'Coming soon', title: 'Madinah Tech', desc: 'A technology initiative bringing talent and entrepreneurs together to develop ideas into innovative solutions.', meta: 'Date announced soon' },
-      medai: { href: 'https://medai.sa/ar', cta: 'Visit website →', badge: 'Registration open', title: 'AI Forum Bootcamp & Hackathon', desc: 'A technical challenge for real-world AI solutions.', meta: 'Teams of 2–4' }
+      tabsur: { badge: `Registration: ${registrationPeriod.en}`, title: 'Tabsur Camp', sub: 'TABSUR · CITY MARKETING', desc: "4 days retelling Madinah's transformation, visually.", cta: 'Visit website →' },
+      madinah: { href: MADINAH_TECH_URL, cta: 'Visit website →', badge: 'Registration open', title: 'Madinah Tech', desc: 'A technology initiative bringing talent and entrepreneurs together to develop ideas into innovative solutions.', meta: 'Explore the program' },
+      medai: { href: 'https://medai.sa/ar', cta: 'Visit website →', ended: true, badge: 'Event ended', title: 'AI Forum Bootcamp & Hackathon', desc: 'A technical challenge for real-world AI solutions.', meta: 'Teams of 2–4' }
     },
     value: { eyebrow: 'Impact', title: 'The impact we create', points: ['Clearer decisions & faster ideas', 'Initiatives with clear goals', 'Expert & strategic partners', 'Stronger team readiness', 'Lower execution risk', 'Measurable results & growth'] },
     partners: { title: 'Our Partners', pending: 'Our partners will be announced soon.' },
     leadership: { kicker: 'CEO', name: 'Wafa Alomari', role: 'Chief Executive Officer', bio: 'Leads CubeX with a deep understanding of institutional challenges.', extra: 'Program design, partnerships, and turning initiative into results — every day.', tags: ['Innovation Systems', 'Entrepreneurship', 'Strategic Partnerships'] },
     contact: { title: 'Have a challenge worth solving?', desc: 'Start with us — from challenge to venture.', cta1: 'Talk to CubeX →', cta2: 'Visit Tabsur Camp' },
-    footer: { tagline: 'From challenge to opportunity, from idea to impact', desc: 'We design and run innovation & venture systems.', colCompany: 'Company', colPrograms: 'Programs', colContact: 'Contact', linkAbout: 'About', linkServices: 'Services', linkLeadership: 'Leadership', linkTabsur: 'Tabsur Camp', linkMadinah: 'Madinah Tech — soon', linkMedai: 'MED AI Bootcamp & Hackathon — Registration open', copyright: '© 2026 CubeX · All rights reserved', mono: 'FROM CHALLENGE TO VENTURE' }
+    footer: { tagline: 'From challenge to opportunity, from idea to impact', desc: 'We design and run innovation & venture systems.', colCompany: 'Company', colPrograms: 'Programs', colContact: 'Contact', linkAbout: 'About', linkServices: 'Services', linkLeadership: 'Leadership', linkTabsur: 'Tabsur Camp', linkMadinah: 'Madinah Tech', linkMedai: 'MED AI Bootcamp & Hackathon — Event ended', copyright: '© 2026 CubeX · All rights reserved', mono: 'FROM CHALLENGE TO VENTURE' }
   }
 }
 
@@ -83,7 +85,6 @@ function revealStyle(open) {
   return { maxHeight: open ? 360 : 0, opacity: open ? 1 : 0, overflow: 'hidden', transition: 'max-height .45s cubic-bezier(.2,.7,.2,1), opacity .3s ease' }
 }
 const NOTE_BG = ['#1B0F30', '#241041', '#150C24']
-const NOTE_ROT = [-2.2, 1.8, -1.4, 2.1, -1.7, 1.5]
 const BAR_BASE = [[8, 18, 26, 12, 20], [16, 24, 10, 22, 14], [20, 12, 18, 26, 10], [10, 22, 16, 8, 24]]
 function buildBars(i, open) {
   return BAR_BASE[i % BAR_BASE.length].map((h) => ({ width: 5, height: open ? h * 1.45 : h, background: '#A96BFF', borderRadius: 2, transition: 'height .4s cubic-bezier(.2,.7,.2,1)' }))
@@ -91,8 +92,22 @@ function buildBars(i, open) {
 function slideDescStyle(open) {
   return { marginTop: 8, fontSize: typography.body, lineHeight: 1.8, color: '#9C8FB4', opacity: open ? 1 : 0, transform: open ? 'translateY(0)' : 'translateY(6px)', transition: 'opacity .35s ease, transform .35s ease' }
 }
-function noteStyle(i) {
-  return { background: NOTE_BG[i % NOTE_BG.length], border: '1px solid rgba(150,76,255,.28)', borderRadius: 20, padding: '20px 22px 24px', minHeight: 150, display: 'flex', flexDirection: 'column', transform: `rotate(${NOTE_ROT[i % NOTE_ROT.length]}deg)`, boxShadow: '0 20px 40px -22px rgba(0,0,0,.75)' }
+function moveValueCard(event) {
+  if (event.pointerType !== 'mouse' || !window.matchMedia('(hover: hover) and (prefers-reduced-motion: no-preference)').matches) return
+  const card = event.currentTarget
+  const rect = card.getBoundingClientRect()
+  const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width))
+  const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height))
+  card.style.setProperty('--glow-x', `${x * 100}%`)
+  card.style.setProperty('--glow-y', `${y * 100}%`)
+  card.style.setProperty('--tilt-x', `${(0.5 - y) * 5}deg`)
+  card.style.setProperty('--tilt-y', `${(x - 0.5) * 5}deg`)
+}
+function resetValueCard(event) {
+  delete event.currentTarget.dataset.pressed
+  for (const property of ['--glow-x', '--glow-y', '--tilt-x', '--tilt-y']) {
+    event.currentTarget.style.removeProperty(property)
+  }
 }
 
 const pill = { display: 'inline-flex', padding: '7px 15px', borderRadius: 999, background: 'rgba(150,76,255,.12)', border: '1px solid rgba(150,76,255,.26)', fontSize: typography.label, fontWeight: 700, color: '#C9A6FF' }
@@ -108,9 +123,11 @@ export default function CubeX() {
   const dir = lang === 'ar' ? 'rtl' : 'ltr'
 
   useEffect(() => {
-    const onDoc = (e) => { if (langOpen && navRef.current && !navRef.current.contains(e.target)) setLangOpen(false) }
+    const onDoc = (e) => { if (navRef.current && !navRef.current.contains(e.target)) { setLangOpen(false) } }
+    const onKey = e => { if (e.key === 'Escape') { setLangOpen(false); navRef.current?.querySelector('button[aria-label="Language"]')?.focus() } }
+    document.addEventListener('keydown', onKey)
     document.addEventListener('click', onDoc)
-    return () => document.removeEventListener('click', onDoc)
+    return () => { document.removeEventListener('click', onDoc); document.removeEventListener('keydown', onKey) }
   }, [langOpen])
 
   useEffect(() => {
@@ -149,30 +166,30 @@ export default function CubeX() {
 
   const capCards = t.about.cards.map((c, i) => ({ ...c, cells: buildCells(i), open: hoverCard === i }))
   const serviceCards = t.services.items.map((c, i) => ({ ...c, bars: buildBars(i, hoverService === i), open: hoverService === i }))
-  const valueCards = t.value.points.map((text, i) => ({ text, numLabel: String(i + 1).padStart(2, '0'), style: noteStyle(i) }))
+  const valueCards = t.value.points.map((text, i) => ({ text, numLabel: String(i + 1).padStart(2, '0'), style: { '--value-bg': NOTE_BG[i % NOTE_BG.length] } }))
 
   return (
-    <div dir={dir} lang={lang} style={{ direction: dir, background: '#07040E', overflowX: 'hidden', color: '#EDE7F7', fontFamily: "'IBM Plex Sans Arabic',system-ui,sans-serif", lineHeight: 1.75 }}>
+    <div dir={dir} lang={lang} style={{ direction: dir, background: '#07040E', overflowX: 'clip', color: '#EDE7F7', fontFamily: "'IBM Plex Sans Arabic',system-ui,sans-serif", lineHeight: 1.75 }}>
       <div className="cx">
 
-        <nav ref={navRef} style={{ position: 'sticky', top: 0, zIndex: 80, background: 'rgba(7,4,14,.82)', backdropFilter: 'blur(18px)', borderBottom: '1px solid rgba(150,76,255,.14)' }}>
-          <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 clamp(18px,3.4vw,48px)', height: 'clamp(68px,7vw,86px)', display: 'flex', alignItems: 'center', gap: 'clamp(14px,2.6vw,40px)' }}>
-            <a href="#top" style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 11 }}>
+        <nav ref={navRef} className="cx-nav" aria-label={lang === 'ar' ? 'التنقل الرئيسي' : 'Main navigation'} style={{ position: 'sticky', top: 0, zIndex: 80, background: 'rgba(7,4,14,.97)', backdropFilter: 'blur(18px)', borderBottom: '1px solid rgba(150,76,255,.14)' }}>
+          <div className="cx-nav-inner">
+            <a className="cx-nav-brand" href="#top" style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 11 }}>
               <img src={A + 'cube-wire.png'} alt="" style={{ height: 34, width: 'auto', filter: 'drop-shadow(0 0 12px rgba(150,76,255,.6))' }} />
               <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
                 <span style={{ fontSize: 19, fontWeight: 600, letterSpacing: '-.02em', color: '#fff' }}>Cube<span style={{ color: '#A96BFF' }}>X</span></span>
                 <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, letterSpacing: '.16em', color: '#7C6E92' }}>{t.nav.sub}</span>
               </span>
             </a>
-            <div style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'clamp(12px,1.8vw,28px)', overflowX: 'auto' }}>
+            <div id="cx-nav-links" className="cx-nav-links">
               {[['#about', t.nav.about], ['#services', t.nav.services], ['#programs', t.nav.programs], ['#value', t.nav.value], ['#leadership', t.nav.leadership]].map(([href, label]) => (
                 <a key={href} href={href} style={{ fontSize: 14.5, fontWeight: 500, color: '#B3A6C7', whiteSpace: 'nowrap', padding: '6px 0', borderBottom: '1.5px solid transparent' }}>{label}</a>
               ))}
               <Link to="/judge" style={{ fontSize: 14.5, fontWeight: 500, color: '#B3A6C7', whiteSpace: 'nowrap', padding: '6px 0', borderBottom: '1.5px solid transparent' }}>{t.nav.judging}</Link>
             </div>
-            <div style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="cx-nav-actions">
               <div style={{ position: 'relative' }}>
-                <button onClick={(e) => { e.stopPropagation(); setLangOpen((o) => !o) }} aria-label="Language" style={{ display: 'flex', alignItems: 'center', gap: 7, height: 40, padding: '0 13px', borderRadius: 999, border: '1px solid rgba(150,76,255,.28)', color: '#D8CCEC', fontSize: 12.5, fontWeight: 500, background: 'none', cursor: 'pointer' }}>
+                <button onClick={(e) => { e.stopPropagation(); setLangOpen((o) => !o) }} aria-label="Language" aria-expanded={langOpen} style={{ display: 'flex', alignItems: 'center', gap: 7, height: 40, padding: '0 13px', borderRadius: 999, border: '1px solid rgba(150,76,255,.28)', color: '#D8CCEC', fontSize: 12.5, fontWeight: 500, background: 'none', cursor: 'pointer' }}>
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3c2.6 3 2.6 15 0 18M12 3c-2.6 3-2.6 15 0 18"></path></svg>
                   <span style={{ fontFamily: "'IBM Plex Mono',monospace", letterSpacing: '.06em' }}>{t.nav.langCurrent}</span>
                 </button>
@@ -189,7 +206,7 @@ export default function CubeX() {
                   </div>
                 )}
               </div>
-              <a href="#contact" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, height: 40, padding: '0 20px', borderRadius: 999, background: '#964CFF', color: '#fff', fontSize: 14, fontWeight: 600, boxShadow: '0 12px 30px -14px rgba(150,76,255,.9)' }}>{t.nav.contact}</a>
+              <a className="cx-desktop-contact" href="#contact" style={{ whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: 8, height: 40, padding: '0 20px', borderRadius: 999, background: '#964CFF', color: '#fff', fontSize: 14, fontWeight: 600, boxShadow: '0 12px 30px -14px rgba(150,76,255,.9)' }}>{t.nav.contact}</a>
             </div>
           </div>
         </nav>
@@ -198,7 +215,7 @@ export default function CubeX() {
           <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'radial-gradient(70% 60% at 78% 8%,rgba(150,76,255,.30) 0%,rgba(150,76,255,0) 62%),radial-gradient(55% 55% at 6% 96%,rgba(107,46,204,.26) 0%,rgba(107,46,204,0) 66%)' }} />
           <div aria-hidden="true" style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(150,76,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(150,76,255,.05) 1px,transparent 1px)', backgroundSize: '64px 64px', maskImage: 'radial-gradient(80% 70% at 50% 30%,#000 0%,transparent 78%)', WebkitMaskImage: 'radial-gradient(80% 70% at 50% 30%,#000 0%,transparent 78%)' }} />
           <div style={{ position: 'relative', zIndex: 3, maxWidth: 1400, margin: '0 auto', padding: '0 clamp(18px,3.4vw,48px)' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.15fr) minmax(0,.85fr)', gap: 'clamp(24px,4vw,64px)', alignItems: 'center' }}>
+            <div className="cx-hero-grid" style={{ display: 'grid', gap: 'clamp(24px,4vw,64px)', alignItems: 'center' }}>
               <div>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, whiteSpace: 'nowrap', padding: '8px 15px', borderRadius: 999, background: 'rgba(150,76,255,.12)', border: '1px solid rgba(150,76,255,.3)', fontSize: 12.5, fontWeight: 500, color: '#C9A6FF' }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#A96BFF', animation: 'cxPulse 2.4s ease-in-out infinite' }} />
@@ -306,7 +323,7 @@ export default function CubeX() {
                 return (
                 <Card key={i} href={p.href} style={{ color: 'inherit', textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 16, padding: 24, borderRadius: 16, background: '#0E0818', border: '1px solid rgba(150,76,255,.16)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                    <span style={{ display: 'inline-flex', padding: '6px 13px', borderRadius: 999, background: p.href ? 'rgba(93,232,168,.16)' : 'rgba(150,76,255,.16)', border: p.href ? '1px solid rgba(93,232,168,.3)' : '1px solid rgba(150,76,255,.3)', color: p.href ? '#5DE8A8' : '#C9A6FF', fontSize: 11, fontWeight: 600 }}>{p.badge}</span>
+                    <span style={{ display: 'inline-flex', padding: '6px 13px', borderRadius: 999, background: p.ended ? 'rgba(179,166,199,.12)' : 'rgba(93,232,168,.16)', border: p.ended ? '1px solid rgba(179,166,199,.24)' : '1px solid rgba(93,232,168,.3)', color: p.ended ? '#B3A6C7' : '#5DE8A8', fontSize: 11, fontWeight: 600 }}>{p.badge}</span>
                   </div>
                   <span style={{ height: 44, display: 'flex', alignItems: 'center' }}>
                     <img src={A + img} alt={alt} style={{ height: '100%', width: 'auto', ...imgStyle }} />
@@ -328,11 +345,22 @@ export default function CubeX() {
               <span style={pill}>{t.value.eyebrow}</span>
               <h2 style={{ marginTop: 20, fontSize: typography.section, fontWeight: 800, lineHeight: 1.3, letterSpacing: '-.03em', color: '#fff' }}>{t.value.title}</h2>
             </div>
-            <div data-rise="" style={{ marginTop: 40, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,280px),1fr))', gap: 20 }}>
+            <div data-rise="" className="cx-value-grid">
               {valueCards.map((card, i) => (
-                <div key={i} style={card.style}>
-                  <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,.35)' }}>{card.numLabel}</span>
-                  <p style={{ marginTop: 12, fontSize: typography.body, fontWeight: 700, color: '#fff', lineHeight: 1.4, letterSpacing: '-.01em' }}>{card.text}</p>
+                <div
+                  key={i}
+                  className="cx-value-card"
+                  style={card.style}
+                  tabIndex={0}
+                  onPointerMove={moveValueCard}
+                  onPointerDown={(event) => { event.currentTarget.dataset.pressed = 'true' }}
+                  onPointerUp={resetValueCard}
+                  onPointerLeave={resetValueCard}
+                  onPointerCancel={resetValueCard}
+                  onBlur={resetValueCard}
+                >
+                  <span className="cx-value-number" aria-hidden="true">{card.numLabel}</span>
+                  <p className="cx-value-text" style={{ marginTop: 12, fontSize: typography.body, fontWeight: 700, color: '#fff', lineHeight: 1.4, letterSpacing: '-.01em' }}>{card.text}</p>
                 </div>
               ))}
             </div>
@@ -410,7 +438,7 @@ export default function CubeX() {
                 <h5 style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, letterSpacing: '.2em', color: '#A96BFF', fontWeight: 500 }}>{t.footer.colPrograms}</h5>
                 <ul style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 11, listStyle: 'none', padding: 0 }}>
                   <li><Link to="/tabsur" style={{ fontSize: 14.5, color: '#9C8FB4' }}>{t.footer.linkTabsur}</Link></li>
-                  <li><span style={{ fontSize: 14.5, color: '#6B5F80' }}>{t.footer.linkMadinah}</span></li>
+                  <li><a href={t.programs.madinah.href} style={{ fontSize: 14.5, color: '#9C8FB4' }}>{t.footer.linkMadinah}</a></li>
                   <li><a href={t.programs.medai.href} style={{ fontSize: 14.5, color: '#B3A6C7' }}>{t.footer.linkMedai}</a></li>
                 </ul>
               </div>

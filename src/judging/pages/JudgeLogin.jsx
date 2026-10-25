@@ -77,7 +77,6 @@ export default function JudgeLogin() {
           <p className="jd-small jd-dim" style={{ textAlign: 'center' }}>الرمز شخصي ويُنشئ جلسة صالحة 12 ساعة على هذا الجهاز. لا حاجة لبريد أو كلمة مرور.</p>
           <div className="jd-row" style={{ justifyContent: 'center' }}>
             <Link to="/judge" className="jd-link">الرئيسية</Link>
-            {event?.results_published && <Link to={`/judge/${slug}/results`} className="jd-link">النتائج</Link>}
           </div>
         </div>
       </section>

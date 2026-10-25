@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Toggle, ConfirmDialog, Alert, Icon, HelpBox } from '../components/ui'
 import { jdError, downloadCSV, fmtDateTime } from '../lib'
+import { loadTeamReport, teamReportCSV, fetchAllRows } from '../reports'
 import { csvCell } from '../../lib/security'
 
 /* التحكم: مفتاحان كبيران + تصدير CSV */
@@ -8,6 +9,7 @@ export default function Control({ supabase, event, patchEvent, toast }) {
   const [confirm, setConfirm] = useState(null)
   const [busy, setBusy] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
 
   async function applyToggle() {
     if (!confirm) return
@@ -24,22 +26,21 @@ export default function Control({ supabase, event, patchEvent, toast }) {
     setExporting(true)
     try {
       const [judges, projects, criteria] = await Promise.all([
-        supabase.from('jd_judges').select('id,name').eq('event_id', event.id),
-        supabase.from('jd_projects').select('id,team_name,title,stage,eligible').eq('event_id', event.id),
-        supabase.from('jd_criteria').select('id,name,sort_order').eq('event_id', event.id).order('sort_order'),
+        fetchAllRows(() => supabase.from('jd_judges').select('id,name').eq('event_id', event.id).order('id')),
+        fetchAllRows(() => supabase.from('jd_projects').select('id,team_name,title,stage,eligible').eq('event_id', event.id).order('id')),
+        fetchAllRows(() => supabase.from('jd_criteria').select('id,name,sort_order').eq('event_id', event.id).order('sort_order').order('id')),
       ])
-      const firstErr = [judges, projects, criteria].find(r => r.error)?.error
-      if (firstErr) throw firstErr
-      const projectIds = (projects.data || []).map(p => p.id)
+      const projectIds = projects.map(p => p.id)
       let scores = []
-      if (projectIds.length) {
-        const { data, error } = await supabase.from('jd_scores').select('judge_id,project_id,criterion_id,score,note,updated_at').in('project_id', projectIds)
-        if (error) throw error
-        scores = data || []
+      for (let offset = 0; offset < projectIds.length; offset += 100) {
+        scores.push(...await fetchAllRows(() => supabase.from('jd_scores')
+          .select('judge_id,project_id,criterion_id,score,note,updated_at')
+          .in('project_id', projectIds.slice(offset, offset + 100))
+          .order('judge_id').order('project_id').order('criterion_id')))
       }
-      const J = Object.fromEntries((judges.data || []).map(j => [j.id, j]))
-      const P = Object.fromEntries((projects.data || []).map(p => [p.id, p]))
-      const C = Object.fromEntries((criteria.data || []).map(c => [c.id, c]))
+      const J = Object.fromEntries(judges.map(j => [j.id, j]))
+      const P = Object.fromEntries(projects.map(p => [p.id, p]))
+      const C = Object.fromEntries(criteria.map(c => [c.id, c]))
       const lines = [['المحكّم', 'الفريق', 'المشروع', 'المرحلة', 'مؤهل', 'المعيار', 'النجوم (1-5)', 'الملاحظة', 'آخر تحديث'].map(csvCell).join(',')]
       scores
         .sort((a, b) => (J[a.judge_id]?.name || '').localeCompare(J[b.judge_id]?.name || '') || (P[a.project_id]?.team_name || '').localeCompare(P[b.project_id]?.team_name || '') || ((C[a.criterion_id]?.sort_order || 0) - (C[b.criterion_id]?.sort_order || 0)))
@@ -51,6 +52,28 @@ export default function Control({ supabase, event, patchEvent, toast }) {
     } finally {
       setExporting(false)
     }
+  }
+
+  async function exportTeams() {
+    setExporting(true)
+    try {
+      const { rows, criteria } = await loadTeamReport(supabase, event)
+      downloadCSV(`team-results-${event.slug}.csv`, teamReportCSV(rows, criteria))
+      toast.ok(`صُدّرت درجات ${rows.length} فريقًا`)
+    } catch (err) { toast.err(jdError(err)) }
+    finally { setExporting(false) }
+  }
+
+  async function resetScores() {
+    setBusy(true)
+    try {
+      const { error } = await supabase.rpc('jd_reset_scores', { p_event_id: event.id })
+      if (error) throw error
+      patchEvent(event.id, { judging_open: false, results_published: false, reveal_step: 0 })
+      setConfirmReset(false)
+      toast.ok('حُذفت التقييمات القديمة وبقيت المشاريع والمحكّمون والمعايير')
+    } catch (err) { toast.err(jdError(err)) }
+    finally { setBusy(false) }
   }
 
   return (
@@ -69,10 +92,23 @@ export default function Control({ supabase, event, patchEvent, toast }) {
       {event.judging_open && event.results_published && <Alert kind="warn">التحكيم مفتوح والنتائج منشورة في الوقت نفسه — أي تعديل من محكّم سيغيّر الترتيب المعلن.</Alert>}
       <div className="jd-panel">
         <div className="jd-panel-head">
+          <div><h2 className="jd-h3">تنزيل درجات الفرق</h2><p className="jd-sub">ملف CSV يفتح في Excel: كل فريق، درجة كل معيار حسب وزنه، والدرجة النهائية من 100. يشمل الفرق التي لم تُقيّم.</p></div>
+          <button type="button" className="jd-btn jd-btn-primary" onClick={exportTeams} disabled={exporting}>{exporting ? 'جارٍ التصدير…' : 'تنزيل درجات الفرق'}</button>
+        </div>
+      </div>
+      <div className="jd-panel">
+        <div className="jd-panel-head">
           <div><h2 className="jd-h3"><Icon name="list" size={18} />تصدير التقييمات</h2><p className="jd-sub">ملف CSV بكل النجوم: المحكّم، الفريق، المشروع، المعيار، النجوم، الملاحظة.</p></div>
           <button type="button" className="jd-btn jd-btn-soft" onClick={exportCSV} disabled={exporting}><Icon name="copy" size={15} />{exporting ? 'جارٍ التصدير…' : 'تصدير CSV'}</button>
         </div>
       </div>
+      <div className="jd-panel">
+        <div className="jd-panel-head">
+          <div><h2 className="jd-h3">حذف التقييمات القديمة</h2><p className="jd-sub">مسح تقييمات الفعالية الحالية مع الاحتفاظ بجميع المشاريع والمحكّمين والمعايير. يُغلق التحكيم ويُلغى نشر النتائج.</p></div>
+          <button type="button" className="jd-btn jd-btn-danger" disabled={busy} onClick={() => setConfirmReset(true)}><Icon name="trash" size={15} />حذف التقييمات</button>
+        </div>
+      </div>
+      <ConfirmDialog open={confirmReset} title="حذف جميع تقييمات هذه الفعالية؟" text={`ستُحذف جميع درجات وملاحظات «${event.name}» نهائيًا. نزّل ملف التقييمات أولًا إن كنت تحتاج نسخة. تبقى المشاريع والمحكّمون والمعايير دون حذف.`} confirmLabel="حذف التقييمات نهائيًا" danger busy={busy} onConfirm={resetScores} onCancel={() => !busy && setConfirmReset(false)} />
       <ConfirmDialog
         open={Boolean(confirm)}
         title={confirm?.key === 'judging_open' ? (confirm?.value ? 'فتح التحكيم؟' : 'إغلاق التحكيم؟') : (confirm?.value ? 'نشر النتائج للعامة؟' : 'إلغاء نشر النتائج؟')}

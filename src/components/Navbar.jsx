@@ -1,12 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { sponsors } from '../lib/camp'
 import styles from './Navbar.module.css'
 
 export default function Navbar({ theme, onToggleTheme }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const navRef = useRef(null)
+  const toggleRef = useRef(null)
+  useEffect(() => {
+    if (!menuOpen) return
+    const close = e => {
+      if (e.type === 'keydown' && e.key === 'Escape') { setMenuOpen(false); toggleRef.current?.focus() }
+      if (e.type === 'pointerdown' && !navRef.current?.contains(e.target)) setMenuOpen(false)
+    }
+    document.addEventListener('keydown', close)
+    document.addEventListener('pointerdown', close)
+    return () => { document.removeEventListener('keydown', close); document.removeEventListener('pointerdown', close) }
+  }, [menuOpen])
 
   return (
-    <nav className={styles.nav}>
+    <nav ref={navRef} className={styles.nav} aria-label="التنقل الرئيسي">
       <div className={styles.identity}>
         <Link className={styles.brand} to="/tabsur" onClick={() => setMenuOpen(false)} aria-label="معسكر تَبصَّر">
           <span className={styles.brandMark}>
@@ -24,13 +37,13 @@ export default function Navbar({ theme, onToggleTheme }) {
         </Link>
       </div>
 
-      <div className={`${styles.navLinks} ${menuOpen ? styles.navOpen : ''}`}>
+      <div id="tabsur-navigation" className={`${styles.navLinks} ${menuOpen ? styles.navOpen : ''}`}>
         <a href="/tabsur#about"    onClick={() => setMenuOpen(false)}>المعسكر</a>
         <a href="/tabsur#pillars"  onClick={() => setMenuOpen(false)}>المسارات</a>
         <a href="/tabsur#who"      onClick={() => setMenuOpen(false)}>الفئة المستهدفة</a>
         <a href="/tabsur#timeline" onClick={() => setMenuOpen(false)}>الأيام</a>
         <a href="/tabsur#partners" onClick={() => setMenuOpen(false)}>الجهات المسؤولة</a>
-        <a href="/tabsur#sponsors" onClick={() => setMenuOpen(false)}>الرعاة</a>
+        <a href="/tabsur#sponsors" onClick={() => setMenuOpen(false)}>{sponsors.length ? 'الرعاة' : 'تسجيل الرعاة'}</a>
       </div>
 
       <div className={styles.navRight}>
@@ -50,6 +63,10 @@ export default function Navbar({ theme, onToggleTheme }) {
           سجّل الآن
         </Link>
         <button
+          ref={toggleRef}
+          type="button"
+          aria-expanded={menuOpen}
+          aria-controls="tabsur-navigation"
           className={styles.burger}
           onClick={() => setMenuOpen(o => !o)}
           aria-label="القائمة"

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase'
 import BgParticles from '../components/BgParticles'
@@ -14,8 +14,7 @@ function arabicToAscii(s) {
 
 async function submitSponsor(payload) {
   if (!isSupabaseActive) {
-    await new Promise(resolve => setTimeout(resolve, 800))
-    return { ok: true, simulated: true }
+    return { ok: false, unavailable: true }
   }
 
   try {
@@ -60,7 +59,7 @@ export default function SponsorRegister() {
   const [loading, setLoading] = useState(false)
   const [formError, setFormError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [simulated, setSimulated] = useState(false)
+  const submitting = useRef(false)
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -99,12 +98,14 @@ export default function SponsorRegister() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (submitting.current) return
     const nextErrors = validate()
     if (Object.keys(nextErrors).length) {
       setErrors(nextErrors)
       return
     }
 
+    submitting.current = true
     setLoading(true)
     setFormError('')
 
@@ -117,22 +118,29 @@ export default function SponsorRegister() {
       created_at: new Date().toISOString(),
     })
 
-    setLoading(false)
     if (result.ok) {
-      setSimulated(Boolean(result.simulated))
-
       gsap.to('.card-form-view', {
         opacity: 0,
         y: -12,
         duration: 0.45,
         ease: 'power2.in',
-        onComplete: () => setSuccess(true),
+        onComplete: () => {
+          setSuccess(true)
+          setLoading(false)
+          window.scrollTo({ top: 0, behavior: 'instant' })
+        },
       })
-    } else if (result.duplicate) {
+      return
+    }
+    submitting.current = false
+    setLoading(false)
+    if (result.duplicate) {
       setErrors({ email: 'هذا البريد مسجّل من قبل.' })
       setFormError('هذا البريد مسجّل من قبل — سنكتفي بطلبكم السابق.')
+    } else if (result.unavailable) {
+      setFormError('التسجيل غير متاح مؤقتًا. لم يُحفظ طلبك، يرجى المحاولة لاحقًا.')
     } else {
-      setFormError('تعذّر إرسال الطلب. تأكد من إعداد جدول sponsor_registrations في Supabase ثم حاول مرة أخرى.')
+      setFormError('تعذّر إرسال الطلب. تحقّق من اتصالك ثم حاول مرة أخرى.')
     }
   }
 
@@ -148,7 +156,7 @@ export default function SponsorRegister() {
           </span>
         </Link>
         <Link className={styles.navBack} to="/tabsur#sponsors">
-          <span>قسم الرعاة</span>
+          <span>تسجيل الرعاة</span>
           <span className={styles.arrow}>→</span>
         </Link>
       </nav>
@@ -181,6 +189,11 @@ export default function SponsorRegister() {
               <span><strong>سنتواصل معكم</strong> لمناقشة باقات الرعاية المناسبة</span>
             </div>
           </div>
+          {!isSupabaseActive && (
+            <div className={styles.supabaseHint} role="status">
+              التسجيل غير متاح مؤقتًا. يرجى المحاولة لاحقًا.
+            </div>
+          )}
         </aside>
 
         <section className={`${styles.card} ${styles.sponsorCard} fade-up`}>
@@ -217,7 +230,7 @@ export default function SponsorRegister() {
                 {formError && <div className="form-error-banner">{formError}</div>}
 
                 <div className={styles.actions}>
-                  <button className={`btn btn-primary ${loading ? styles.isLoading : ''}`} type="submit" disabled={loading}>
+                  <button className={`btn btn-primary ${loading ? styles.isLoading : ''}`} type="submit" disabled={loading || !isSupabaseActive}>
                     {loading && <span className={styles.spinner} />}
                     {loading ? 'جارٍ الإرسال...' : 'إرسال طلب الرعاية'}
                   </button>
@@ -233,7 +246,7 @@ export default function SponsorRegister() {
               </div>
               <h2 className={styles.successTitle}>وصل طلب الرعاية</h2>
               <p className={styles.successMsg}>شكرًا لكم. سنراجع بيانات الجهة ونتواصل مع الشخص المسؤول قريبًا لمناقشة فرص الرعاية.</p>
-              <RegistrationEmailStatus email={form.email} fullName={form.contactName} kind="sponsor" simulated={simulated} />
+              <RegistrationEmailStatus email={form.email.trim()} fullName={form.contactName.trim()} kind="sponsor" />
               <div className={styles.successActions}>
                 <Link className="btn btn-primary" to="/tabsur">العودة للرئيسية</Link>
               </div>

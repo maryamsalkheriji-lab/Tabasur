@@ -63,7 +63,7 @@
 /* Burger */
 .burger {
   display: flex; flex-direction: column; gap: 5px;
-  width: 36px; height: 36px; padding: 8px;
+  width: 44px; height: 44px; padding: 8px;
   border-radius: 8px; background: var(--paper); border: 1px solid var(--rule);
   cursor: pointer; justify-content: center; align-items: center;
 }
@@ -81,14 +81,15 @@
 @media (max-width: 1279px) {
   .navLinks {
     display: flex; flex-direction: column;
-    position: fixed;
+    position: absolute;
     top: 100%; inset-inline: 0;
     background: var(--nav-menu-surface, rgba(248,244,237,0.98));
     backdrop-filter: blur(18px);
     border-bottom: 1px solid var(--rule);
     padding: 20px clamp(20px,4vw,48px) 28px;
     gap: 4px;
-    transform: translateY(-110%); opacity: 0; pointer-events: none;
+    transform: translateY(-8px); opacity: 0; visibility: hidden; pointer-events: none;
+    max-height: calc(100dvh - 90px); overflow-y: auto; align-items: stretch;
     transition: transform .3s cubic-bezier(.2,.7,.2,1), opacity .3s ease;
     z-index: 49;
   }
@@ -97,6 +98,7 @@
   .navOpen {
     transform: translateY(0) !important;
     opacity: 1 !important;
+    visibility: visible;
     pointer-events: all !important;
   }
   .adminLink { margin-top: 8px; width: fit-content; }
@@ -120,7 +122,7 @@
   .en { display:none; }
   .navRight { gap:6px; }
   .navCta { padding:9px 12px;font-size:12px; }
-  .themeToggle { width:40px;height:40px; }
+  .themeToggle { width:44px;height:44px; }
   .navLinks { top:65px; }
 }
 
@@ -138,3 +140,6 @@
   .navLinks { top:100%; }
   .brand .brandMark { width:28px;height:34px; }
 }
+
+.navCta { min-height:44px; display:inline-flex; align-items:center; justify-content:center; }
+.nav a:focus-visible, .nav button:focus-visible { outline:2px solid var(--teal-600); outline-offset:3px; }

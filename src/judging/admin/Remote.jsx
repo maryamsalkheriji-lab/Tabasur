@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Alert, Badge } from '../components/ui'
-import { REVEAL_STEPS, jdError } from '../lib'
+import { REVEAL_STEPS, MAX_REVEAL_STEP, jdError } from '../lib'
 
 export default function Remote({ supabase, event, patchEvent, toast }) {
   const [busy, setBusy] = useState(false)
   const current = Number(event.reveal_step || 0)
 
   async function go(step) {
-    const s = Math.max(0, Math.min(6, step))
+    const s = Math.max(0, Math.min(MAX_REVEAL_STEP, step))
     if (s === current || busy) return
     setBusy(true)
     const { error } = await supabase.from('jd_events').update({ reveal_step: s }).eq('id', event.id)
@@ -31,7 +31,7 @@ export default function Remote({ supabase, event, patchEvent, toast }) {
       </div>
       <div className="jd-remote-nav">
         <button type="button" className="jd-btn jd-btn-ghost jd-btn-lg" onClick={() => go(current - 1)} disabled={busy || current <= 0}>→ السابق</button>
-        <button type="button" className="jd-btn jd-btn-primary jd-btn-lg" onClick={() => go(current + 1)} disabled={busy || current >= 6}>التالي ←</button>
+        <button type="button" className="jd-btn jd-btn-primary jd-btn-lg" onClick={() => go(current + 1)} disabled={busy || current >= MAX_REVEAL_STEP}>التالي ←</button>
       </div>
       <div className="jd-remote-steps">
         {REVEAL_STEPS.filter(s => s.step > 0).map(s => (

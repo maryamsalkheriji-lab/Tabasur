@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase'
 import { isHttpUrl } from '../lib/security'
+import { registrationPeriod } from '../lib/camp'
 import BgParticles from '../components/BgParticles'
 import RegistrationEmailStatus from '../components/RegistrationEmailStatus'
 import { useRegisterAnimations, gsap } from '../lib/animations'
@@ -20,9 +21,7 @@ function makeReceipt() {
 
 async function submitToSupabase(payload) {
   if (!isSupabaseActive) {
-    // ⚠️ وضع المحاكاة — يعمل حتى بدون Supabase مربوط
-    await new Promise(r => setTimeout(r, 900))
-    return { ok: true, simulated: true }
+    return { ok: false, unavailable: true }
   }
   try {
     const { error } = await supabase
@@ -67,7 +66,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [formError, setFormError] = useState('')
   const [success, setSuccess] = useState(false)
-  const [simulated, setSimulated] = useState(false)
+  const submitting = useRef(false)
   const [receiptId, setReceiptId] = useState('')
 
   function handleChange(e) {
@@ -93,7 +92,7 @@ export default function Register() {
     if (!/^05\d{8}$/.test(mobile))
       errs.mobile = 'رقم غير صحيح — يجب أن يبدأ بـ 05 ويتكوّن من 10 أرقام'
     // بريد — إجباري
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) || form.email.length > 254)
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || form.email.trim().length > 254)
       errs.email = 'الرجاء كتابة بريد إلكتروني صحيح'
     // المدينة — اختيارية
     if (form.city && form.city.trim().length > 100)
@@ -128,8 +127,10 @@ export default function Register() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (submitting.current) return
     const errs = validate()
     if (Object.keys(errs).length) { setErrors(errs); return }
+    submitting.current = true
     setLoading(true)
     setFormError('')
 
@@ -148,25 +149,34 @@ export default function Register() {
       created_at: new Date().toISOString()
     })
 
-    setLoading(false)
     if (result.ok) {
-      setSimulated(Boolean(result.simulated))
       const nextReceiptId = makeReceipt()
       setReceiptId(nextReceiptId)
 
       gsap.to('.card-form-view', {
         opacity: 0, y: -12, duration: 0.5, ease: 'power2.in',
-        onComplete: () => setSuccess(true)
+        onComplete: () => {
+          setSuccess(true)
+          setLoading(false)
+          window.scrollTo({ top: 0, behavior: 'instant' })
+        }
       })
-    } else if (result.duplicate) {
+      return
+    }
+    submitting.current = false
+    setLoading(false)
+    if (result.duplicate) {
       setErrors({ email: 'هذا البريد مسجّل من قبل.' })
       setFormError('هذا البريد مسجّل من قبل — إن كنت سجّلت سابقًا فلا داعي للتكرار.')
+    } else if (result.unavailable) {
+      setFormError('التسجيل غير متاح مؤقتًا. لم يُحفظ طلبك، يرجى المحاولة لاحقًا.')
     } else {
       setFormError('تعذّر إرسال طلبك، قد يكون الاتصال منقطعاً. انتظر دقيقتين ثم حاول مرة أخرى.')
     }
   }
 
   function resetForm() {
+    submitting.current = false
     setForm({ fullName:'', city:'', mobile:'', email:'', specialty:'', experience:'', aiExperience:'', portfolio:'', socialAccount:'', notes:'' })
     setErrors({})
     setFormError('')
@@ -200,13 +210,13 @@ export default function Register() {
         <aside className={`${styles.intro} fade-up`}>
           <div className={styles.introEyebrow}>التسجيل · دفعة 2026</div>
           <h1>انضمّ إلى <span className={styles.accent}>تَبصَّر</span></h1>
-          <p>ثلاثون مقعدًا فقط، نختار من خلالها أصواتًا بصريّة جديدة لتوثيق المدينة المنورة. أكمل النموذج، وسنتواصل معك خلال أسبوع.</p>
+          <p>نستهدف ١٠٠ موهبة لصناعة محتوى بصري يوثّق المدينة المنورة. أكمل النموذج، وسنتواصل معك خلال أسبوع.</p>
 
           <div className={styles.meta}>
             {[
               { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2C7.5 2 4 5.5 4 10c0 6 8 12 8 12s8-6 8-12c0-4.5-3.5-8-8-8z"/><circle cx="12" cy="10" r="3"/></svg>, text: <><strong>المدينة المنورة</strong> · المملكة العربية السعودية</> },
               { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>, text: <><strong>النسخة الأولى</strong> · أربعة أيام مكثفة</> },
-              { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>, text: <><strong>التسجيل مفتوح</strong> 13 سبتمبر 2026</> },
+              { icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>, text: <><strong>فترة التسجيل</strong> {registrationPeriod.ar}</> },
             ].map((r, i) => (
               <div key={i} className={styles.metaRow}>
                 <span className={styles.metaIcon}>{r.icon}</span>
@@ -218,7 +228,7 @@ export default function Register() {
           {/* حالة Supabase */}
           {!isSupabaseActive && (
             <div className={styles.supabaseHint}>
-              ⚠️ <strong>وضع المحاكاة:</strong> الإرسال يعمل لكن البيانات لا تُحفظ. أضف بيانات Supabase في ملف <code>.env</code> لتفعيل الحفظ الفعلي.
+              التسجيل غير متاح مؤقتًا. يرجى المحاولة لاحقًا.
             </div>
           )}
         </aside>
@@ -345,13 +355,13 @@ export default function Register() {
 
                 <div className={styles.actions}>
                   <button type="submit" className={`btn btn-primary ${loading ? styles.isLoading : ''}`}
-                    disabled={loading}>
+                    disabled={loading || !isSupabaseActive}>
                     {loading && <span className={styles.spinner} aria-hidden="true" />}
                     <span>إرسال التسجيل</span>
                     {!loading && <span className="arrow">→</span>}
                   </button>
                   <p className={styles.tos}>
-                    بإرسالك هذا النموذج، توافق على <a href="#">سياسة الخصوصية</a> ومعالجة بياناتك لأغراض الاختيار والتواصل.
+                    بإرسالك هذا النموذج، توافق على معالجة بياناتك لأغراض الاختيار والتواصل.
                   </p>
                 </div>
               </form>
@@ -376,7 +386,7 @@ export default function Register() {
                 سنراجع أعمالك ونتواصل معك خلال أسبوع على البريد أو الجوال.
               </p>
 
-              <RegistrationEmailStatus email={form.email} fullName={form.fullName} receiptId={receiptId} kind="participant" simulated={simulated} />
+              <RegistrationEmailStatus email={form.email.trim()} fullName={form.fullName.trim()} receiptId={receiptId} kind="participant" />
 
               {/* كلام محفّز */}
               <div className={styles.successQuote}>

@@ -1,6 +1,7 @@
 .layout {
   --deep-surface: #02313A;
   min-height: 100vh;
+  overflow-x: clip;
   background: var(--bg);
   color: var(--ink-700);
   color-scheme: light;

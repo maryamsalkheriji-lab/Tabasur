@@ -33,8 +33,8 @@ export default function Footer() {
             <h5>تواصل</h5>
             <ul>
               <li><a href="mailto:hello@tabsur.camp">hello@tabsur.camp</a></li>
-              <li><a href="#">‎@tabsur.camp</a></li>
-              <li><a href="#">المدينة المنورة · KSA</a></li>
+              <li><span>‎@tabsur.camp</span></li>
+              <li><span>المدينة المنورة · KSA</span></li>
             </ul>
           </div>
         </div>

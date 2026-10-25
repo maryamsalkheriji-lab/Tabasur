@@ -15,6 +15,7 @@ export default function Judges({ supabase, event, toast }) {
   const [formError, setFormError] = useState('')
   const [created, setCreated] = useState(null)
   const [confirmRevoke, setConfirmRevoke] = useState(null)
+  const [confirmDelete, setConfirmDelete] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true); setError('')
@@ -65,6 +66,17 @@ export default function Judges({ supabase, event, toast }) {
     setRows(list => list.map(r => (r.id === id ? { ...r, revoked: true } : r)))
     toast.ok('أُلغي المحكّم — لن يستطيع الدخول بالرمز بعد الآن')
   }
+  async function removeJudge() {
+    setBusy(true)
+    try {
+      const { error } = await supabase.rpc('jd_delete_judge', { p_event_id: event.id, p_judge_id: confirmDelete.id })
+      if (error) throw error
+      setConfirmDelete(null)
+      toast.ok('حُذف المحكّم وتقييماته')
+      await load()
+    } catch (err) { toast.err(jdError(err)) }
+    finally { setBusy(false) }
+  }
   async function copy(text, label) {
     const ok = await copyText(text)
     ok ? toast.ok(`تم نسخ ${label}`) : toast.err('تعذّر النسخ — انسخه يدويًا')
@@ -77,7 +89,7 @@ export default function Judges({ supabase, event, toast }) {
   return (
     <div className="jd-stack" style={{ gap: 16 }}>
       <HelpBox title="كيف يدخل المحكّم؟">
-        أنشئ محكّمًا بالاسم فيُولَّد له رمز دخول بصيغة XXXX-XXXX يظهر مرة واحدة فقط. أرسل له الرمز أو «رابط الدعوة» بقناة خاصة؛ يفتح الرابط من جواله ويبدأ التقييم. كل محكّم يرى درجاته هو فقط.
+        أنشئ محكّمًا بالاسم فيُولَّد له رمز دخول بصيغة XXXX-XXXX يظهر مرة واحدة فقط. أرسل له الرمز أو «رابط الدعوة» بقناة خاصة؛ يفتح الرابط من جواله ويبدأ التقييم. المحكّم يختار أي مشروع ويقيّمه، ولا يرى النتائج أو درجات المحكّمين الآخرين.
       </HelpBox>
       <div className="jd-row jd-row-between">
         <p className="jd-muted jd-small">{rows.length} محكّم · {projectsCount} مشروع مؤهل لكل محكّم</p>
@@ -100,7 +112,10 @@ export default function Judges({ supabase, event, toast }) {
                 </div>
                 <div className="jd-row jd-row-between">
                   <Badge cls={st.cls}>{st.label}</Badge>
-                  {!r.revoked && <button type="button" className="jd-btn jd-btn-danger jd-btn-sm" onClick={() => setConfirmRevoke(r)} disabled={busy}><Icon name="x" size={14} />إلغاء</button>}
+                  <div className="jd-row">
+                    <button type="button" className="jd-btn jd-btn-danger jd-btn-sm" onClick={() => setConfirmDelete(r)} disabled={busy}><Icon name="trash" size={14} />حذف</button>
+                    {!r.revoked && <button type="button" className="jd-btn jd-btn-danger jd-btn-sm" onClick={() => setConfirmRevoke(r)} disabled={busy}><Icon name="x" size={14} />إلغاء</button>}
+                  </div>
                 </div>
                 <div className="jd-kv">
                   <span>آخر دخول</span><b>{fmtDateTime(r.last_login_at)}</b>
@@ -130,6 +145,7 @@ export default function Judges({ supabase, event, toast }) {
         </div>
         <div className="jd-copy-row"><input className="jd-input jd-mono" readOnly value={created ? inviteLink(event.slug, created.access_code) : ''} onFocus={e => e.target.select()} aria-label="رابط الدعوة" /></div>
       </Modal>
+      <ConfirmDialog open={Boolean(confirmDelete)} title="حذف المحكّم نهائيًا؟" text={`سيُحذف «${confirmDelete?.name}» وجميع تقييماته من هذه الفعالية، وتتغير النتائج بناءً على ذلك. تبقى بيانات المشاريع. لا يمكن التراجع عن الحذف.`} confirmLabel="حذف المحكّم وتقييماته" danger busy={busy} onConfirm={removeJudge} onCancel={() => !busy && setConfirmDelete(null)} />
       <ConfirmDialog open={Boolean(confirmRevoke)} title="إلغاء المحكّم؟" text={`لن يستطيع «${confirmRevoke?.name}» الدخول بالرمز بعد الآن. تقييماته المحفوظة تبقى.`} confirmLabel="إلغاء المحكّم" danger busy={busy} onConfirm={() => revoke(confirmRevoke.id)} onCancel={() => setConfirmRevoke(null)} />
     </div>
   )

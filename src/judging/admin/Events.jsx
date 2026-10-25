@@ -26,8 +26,12 @@ export default function Events({ supabase, events, event, reloadEvents, setEvent
     const payload = { name, slug, description: form.description.trim() || null, winners_count: winners }
     const q = editing === 'new' ? supabase.from('jd_events').insert(payload).select().single() : supabase.from('jd_events').update(payload).eq('id', editing.id).select().single()
     const { data, error: err } = await q
+    if (err) { setBusy(false); setError(jdError(err)); return }
+    if (editing === 'new') {
+      const { error: criteriaError } = await supabase.rpc('jd_apply_standard_criteria', { p_event_id: data.id })
+      if (criteriaError) toast.err(`أُنشئت الفعالية، لكن تعذّر إضافة المعايير: ${jdError(criteriaError)}`)
+    }
     setBusy(false)
-    if (err) { setError(jdError(err)); return }
     toast.ok(editing === 'new' ? 'أُنشئت الفعالية' : 'تم حفظ التعديلات')
     await reloadEvents(true)
     if (editing === 'new' && data?.id) setEventId(data.id)
@@ -88,7 +92,7 @@ export default function Events({ supabase, events, event, reloadEvents, setEvent
   )
 }
 
-/* معايير الفعالية النشطة: استيراد المعايير القياسية الخمسة (وزن 20 لكل معيار) أو تعديلها */
+/* معايير الفعالية النشطة: استيراد المعايير السبعة بأوزان مجموعها 100 أو تعديلها */
 function CriteriaPanel({ supabase, event, toast }) {
   const [rows, setRows] = useState([])
   const [drafts, setDrafts] = useState({})
@@ -109,18 +113,14 @@ function CriteriaPanel({ supabase, event, toast }) {
   const dirty = (r) => Boolean(drafts[r.id])
   const draft = (id, key, v) => setDrafts(d => ({ ...d, [id]: { ...(d[id] || {}), [key]: v } }))
   const total = Math.round(rows.reduce((a, r) => a + (Number(value(r, 'weight')) || 0), 0) * 100) / 100
-  const isStandard = rows.length === STANDARD_CRITERIA.length && rows.every((r, i) => r.name === STANDARD_CRITERIA[i].name && Number(r.weight) === 20)
+  const isStandard = rows.length === STANDARD_CRITERIA.length && rows.every((r, i) => r.name === STANDARD_CRITERIA[i].name && Number(r.weight) === STANDARD_CRITERIA[i].weight)
 
   async function importStandard() {
     setBusy('import')
-    if (rows.length) {
-      const { error: delErr } = await supabase.from('jd_criteria').delete().eq('event_id', event.id)
-      if (delErr) { setBusy(''); setConfirm(null); toast.err(jdError(delErr)); return }
-    }
-    const { error: err } = await supabase.from('jd_criteria').insert(STANDARD_CRITERIA.map(c => ({ event_id: event.id, name: c.name, description: c.description, weight: c.weight, sort_order: c.sort_order })))
+    const { error: err } = await supabase.rpc('jd_apply_standard_criteria', { p_event_id: event.id, p_replace_scores: rows.length > 0 })
     setBusy(''); setConfirm(null)
     if (err) { toast.err(jdError(err)); return }
-    toast.ok('تم استيراد المعايير القياسية الخمسة')
+    toast.ok('تم استيراد المعايير القياسية السبعة')
     load()
   }
   async function saveRow(r) {
@@ -158,15 +158,16 @@ function CriteriaPanel({ supabase, event, toast }) {
       <div className="jd-panel-head">
         <div>
           <h2 className="jd-h3"><Icon name="list" size={18} />معايير التقييم — {event.name}</h2>
-          <p className="jd-sub">المحكّم يرى اسم المعيار وجملته ويقيّم بالنجوم من 1 إلى 5. الأوزان متساوية (20 لكل معيار) ولا تُعرض للمحكّمين.</p>
+          <p className="jd-sub">المحكّم يرى اسم المعيار وجملته ويقيّم بالنجوم من 1 إلى 5. الأوزان: 30، 15، 15، 15، 10، 10، 5 — الإجمالي 100% ولا تُعرض للمحكّمين.</p>
         </div>
         <div className="jd-row">
-          <button type="button" className="jd-btn jd-btn-soft" onClick={() => (rows.length ? setConfirm({ kind: 'import' }) : importStandard())} disabled={Boolean(busy) || isStandard}><Icon name="spark" size={15} />{isStandard ? 'المعايير القياسية مفعّلة' : 'استيراد المعايير القياسية'}</button>
+          <button type="button" className="jd-btn jd-btn-soft" onClick={() => (rows.length ? setConfirm({ kind: 'import' }) : importStandard())} disabled={loading || !!error || Boolean(busy) || isStandard || event.judging_open || event.results_published}><Icon name="spark" size={15} />{isStandard ? 'المعايير القياسية مفعّلة' : 'استيراد المعايير القياسية'}</button>
           <button type="button" className="jd-btn jd-btn-ghost jd-btn-sm" onClick={addRow} disabled={Boolean(busy)}><Icon name="plus" size={14} />معيار</button>
         </div>
       </div>
+      {(event.judging_open || event.results_published) && <p className="jd-muted jd-small">أغلق التحكيم وألغِ نشر النتائج من «التحكم» قبل استبدال المعايير.</p>}
       {loading ? <Spinner label="جارٍ تحميل المعايير…" plain /> : error ? <ErrorBox onRetry={load}>{error}</ErrorBox> : rows.length === 0 ? (
-        <EmptyState icon="list" title="لا توجد معايير بعد" text="استورد المعايير القياسية الخمسة (هل يعمل فعلًا؟ … هل العرض مقنع؟) بضغطة واحدة." action={<button type="button" className="jd-btn jd-btn-primary" onClick={importStandard} disabled={Boolean(busy)}><Icon name="spark" size={16} />استيراد المعايير القياسية</button>} />
+        <EmptyState icon="list" title="لا توجد معايير بعد" text="استورد المعايير السبعة المطلوبة وأوزانها بإجمالي 100%." action={<button type="button" className="jd-btn jd-btn-primary" onClick={importStandard} disabled={Boolean(busy) || event.judging_open || event.results_published}><Icon name="spark" size={16} />استيراد المعايير القياسية</button>} />
       ) : (
         <div className="jd-stack">
           {total !== 100 && <div className="jd-alert jd-alert-warn">مجموع الأوزان {total} وليس 100 — الدرجة النهائية من 100 تعتمد عليه. استورد المعايير القياسية أو اضبط الأوزان.</div>}
@@ -188,7 +189,7 @@ function CriteriaPanel({ supabase, event, toast }) {
           ))}
         </div>
       )}
-      <ConfirmDialog open={confirm?.kind === 'import'} title="استبدال المعايير الحالية؟" text={`سيتم حذف ${rows.length} معيارًا موجودًا (وأي تقييمات مرتبطة بها) واستيراد المعايير القياسية الخمسة.`} confirmLabel="حذف واستيراد" danger busy={busy === 'import'} onConfirm={importStandard} onCancel={() => setConfirm(null)} />
+      <ConfirmDialog open={confirm?.kind === 'import'} title="استبدال المعايير الحالية؟" text={`سيتم حذف ${rows.length} معيارًا موجودًا (وأي تقييمات مرتبطة بها) واستيراد المعايير القياسية السبعة. تبقى المشاريع والمحكّمون كما هم. يجب إغلاق التحكيم وإلغاء نشر النتائج أولًا.`} confirmLabel="حذف واستيراد" danger busy={busy === 'import'} onConfirm={importStandard} onCancel={() => setConfirm(null)} />
       <ConfirmDialog open={confirm?.kind === 'delete'} title="حذف المعيار؟" text="ستُحذف أيضًا أي نجوم سجّلها المحكّمون لهذا المعيار." confirmLabel="حذف" danger busy={Boolean(busy) && busy === confirm?.id} onConfirm={() => deleteRow(confirm.id)} onCancel={() => setConfirm(null)} />
     </div>
   )

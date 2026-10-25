@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import CTATorus from '../components/CTATorus'
 import { useHomeAnimations } from '../lib/animations'
+import { registrationPeriod, sponsors } from '../lib/camp'
 import styles from './Home.module.css'
 
 const heroVideoSrc = '/assets/hero-video.mp4'
@@ -35,6 +36,8 @@ function Hero() {
             <a className={`btn ${styles.heroGhost}`} href="#about">اكتشف الفكرة</a>
           </div>
           <div className={`${styles.heroFacts} reveal`}>
+            <span>التسجيل: {registrationPeriod.ar}</span>
+            <i />
             <span>المدينة المنورة · السعودية</span>
             <i />
             <span>4 أيام مكثفة</span>
@@ -362,7 +365,7 @@ function Outputs() {
 /* ─── Partners ─── */
 function Partners() {
   const partnerLogo = '/assets/amana-organizer.png'
-  const cubexLogo = '/assets/cubex-logo.png'
+  const cubexLogo = '/assets/cubex-share-dark.png'
 
   return (
     <section className={`section partners ${styles.partners}`} id="partners">
@@ -418,19 +421,12 @@ function Partners() {
 
 /* ─── Sponsors — شريط يدور تلقائيًا ─── */
 function Sponsors() {
-  /* ✏️ أضف الرعاة هنا: name = اسم الجهة، logo = مسار الشعار في public/assets
-     اترك logo فارغًا (null) ليظهر مكان الشعار كعنصر بديل. */
-  const sponsors = [
-    { name: 'شعار الجهة', logo: null },
-    { name: 'شعار الجهة', logo: null },
-    { name: 'شعار الجهة', logo: null },
-    { name: 'شعار الجهة', logo: null },
-  ]
   /* دورة عريضة تكفي الشاشات الكبيرة، ثم تُنسخ كاملة لحركة بلا أي فراغ. */
   const marqueeSponsors = [...sponsors, ...sponsors]
 
   return (
     <section className={`section sponsors ${styles.sponsors}`} id="sponsors">
+      {sponsors.length > 0 && <>
       <div className="container">
         <div className="section-head reveal">
           <span className="eyebrow">الرعاة</span>
@@ -459,6 +455,7 @@ function Sponsors() {
         </div>
       </div>
 
+      </>}
       <div className="container">
         <div className={`${styles.sponsorsCta} reveal`}>
           <div>
@@ -490,6 +487,7 @@ function CTA() {
         <Link to="/register" className="btn btn-primary reveal" style={{fontSize:'17px',padding:'19px 38px'}}>
           سجّل الآن <span className="arrow">→</span>
         </Link>
+        <p className="reveal">فترة التسجيل: {registrationPeriod.ar}</p>
         <span className="reveal" style={{fontSize:'12px',color:'var(--ink-400)',letterSpacing:'0.1em',marginTop:'4px'}}>
           تجربة إنتاجية مكثفة · شهادة مشاركة · مخرجات قابلة للنشر
         </span>

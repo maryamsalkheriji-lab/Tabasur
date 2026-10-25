@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase, isSupabaseActive } from '../../lib/supabase'
 import { JudgeNav, Page, Spinner, EmptyState, ErrorBox, Badge, Icon } from '../components/ui'
 import { eventStatus, jdError } from '../lib'
+import { getJudgeSession } from '../judgeClient'
 
 const A = '/assets/cubex/'
 
@@ -70,7 +71,7 @@ export default function Landing() {
                   <div className="jd-card-foot">
                     <div className="jd-row">
                       <Link className="jd-btn jd-btn-primary jd-btn-sm" to={`/judge/${ev.slug}`}><Icon name="star" size={15} />دخول المحكّمين</Link>
-                      {ev.results_published && <Link className="jd-btn jd-btn-ghost jd-btn-sm" to={`/judge/${ev.slug}/results`}><Icon name="trophy" size={15} />النتائج</Link>}
+                      {!getJudgeSession()?.token && ev.results_published && <Link className="jd-btn jd-btn-ghost jd-btn-sm" to={`/judge/${ev.slug}/results`}><Icon name="trophy" size={15} />النتائج</Link>}
                     </div>
                     <span>{ev.winners_count || 3} مراكز</span>
                   </div>
