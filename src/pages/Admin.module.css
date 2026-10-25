@@ -364,3 +364,77 @@
 .authLink:disabled { opacity:.6;cursor:default; }
 .authButton:disabled { opacity:.65;cursor:default;transform:none; }
 .authHint { font-size:12px;color:var(--ink-400);line-height:1.7;margin:0; }
+
+/* ── الجوال: منع تمدد الصفحة خارج الشاشة + جدول على شكل بطاقات ── */
+@media (max-width:979px) {
+  .adminLayout { grid-template-columns:minmax(0,1fr); }
+  .chartsRow > *, .statsRow > *, .statBody { min-width:0; }
+  .timelineCol { min-width:0; }
+  .sidebar { position:static; grid-template-columns:1fr 1fr; padding:6px; gap:6px; }
+  .sideItem { grid-template-columns:28px 1fr auto; padding:9px 10px; gap:8px; font-size:14px; }
+  .sideIcon { width:28px; height:28px; border-radius:8px; }
+}
+
+@media (max-width:640px) {
+  .header { position:static; padding:10px 14px; gap:10px; }
+  .headerMark { width:36px; height:44px; }
+  .headerTitle { font-size:16px; }
+  .headerSub { font-size:8px; letter-spacing:0.18em; }
+  .headerActions { width:100%; display:grid; grid-template-columns:1fr 1.3fr auto; gap:8px; }
+  .refreshBtn, .exportBtn, .logoutBtn { justify-content:center; padding:10px 12px; font-size:13px; }
+
+  .adminLayout { padding:14px 12px 22px; gap:14px; }
+  .body { gap:14px; }
+
+  .statsRow { gap:10px; }
+  .statCard { padding:14px 12px; gap:10px; flex-direction:column; border-radius:14px; }
+  .statCard:hover { transform:none; }
+  .statIcon { width:34px; height:34px; border-radius:10px; }
+  .statIcon svg { width:18px; height:18px; }
+  .statValue { font-size:22px; overflow-wrap:anywhere; }
+  .statLabel { font-size:12px; }
+
+  .chartsRow { gap:12px; }
+  .chartCard { padding:16px 14px; border-radius:14px; }
+  .timeline { gap:3px; }
+  .timelineLabel { font-size:8px; }
+  .timelineCol:not(:first-child):not(:last-child) .timelineLabel { visibility:hidden; }
+
+  .tableCard { border-radius:14px; }
+  .tableHead { padding:14px 12px; }
+  .filters { width:100%; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .searchWrap { grid-column:1 / -1; }
+  .searchInput { width:100%; font-size:16px; }
+  .filterSelect { width:100%; min-width:0; font-size:14px; padding:9px 14px 9px 36px; }
+
+  .tableWrap { overflow:visible; }
+  .cardTable thead { display:none; }
+  .cardTable, .cardTable tbody { display:block; }
+  .cardTable tr {
+    display:grid; grid-template-columns:1fr 1fr; gap:8px 12px;
+    margin:10px 12px; padding:14px; border:1px solid var(--rule); border-radius:14px; background:var(--paper);
+  }
+  .cardTable tbody tr:hover { background:var(--paper); }
+  .cardTable td { display:flex; flex-direction:column; align-items:flex-start; gap:4px; padding:0; border:0 !important; white-space:normal; min-width:0; overflow-wrap:anywhere; }
+  .cardTable td[data-label]::before { content:attr(data-label); font-size:11px; font-weight:700; color:var(--ink-500); font-family:"Cairo", system-ui, sans-serif; }
+  .cardTable td.num { display:none; }
+  .cardTable td.cellName, .cardTable td.cellAction { grid-column:1 / -1; }
+  .cardTable td.cellName { padding-bottom:8px; border-bottom:1px solid var(--rule) !important; }
+  .cardTable td.mono { grid-column:1 / -1; }
+  .cardTable td.cellAction { align-items:stretch; }
+  .cardTable .detailBtn { width:100%; padding:10px; font-size:13px; }
+  .rowSelected { border-color:var(--green-500) !important; }
+
+  .pagination { flex-wrap:wrap; padding:12px; }
+  .pagination button { width:auto; min-width:38px; height:38px; padding:0 10px; }
+
+  /* لوحة التفاصيل تظهر من أسفل الشاشة بدل ما تنزل تحت الجدول */
+  .detailPanel {
+    position:fixed; inset:auto 0 0 0; z-index:60; max-height:85svh; overflow-y:auto;
+    border-radius:20px 20px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom));
+    box-shadow:0 -20px 60px -10px rgba(0,0,0,.35);
+  }
+  .detailHead { margin-bottom:14px; padding-bottom:12px; }
+  .detailName { font-size:17px; }
+  .detailValue { overflow-wrap:anywhere; }
+}

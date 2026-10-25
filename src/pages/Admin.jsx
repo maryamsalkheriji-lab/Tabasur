@@ -652,7 +652,7 @@ export default function Admin() {
               ) : (
                 <>
                   <div className={styles.tableWrap}>
-                    <table className={styles.table}>
+                    <table className={`${styles.table} ${styles.cardTable}`}>
                       <thead>
                         <tr>
                           <th>#</th>
@@ -671,7 +671,7 @@ export default function Admin() {
                         {paged.map((r,i) => (
                           <tr key={r.id} className={selected?.id===r.id ? styles.rowSelected : ''}>
                             <td className={styles.num}>{(page-1)*PER_PAGE+i+1}</td>
-                            <td>
+                            <td className={styles.cellName}>
                               <div className={styles.nameCell}>
                                 <div className={styles.avatar} style={{background:`hsl(${((r.full_name||'').charCodeAt(0)*7)%360},45%,65%)`}}>
                                   {(r.full_name||'؟')[0]}
@@ -679,18 +679,18 @@ export default function Admin() {
                                 <span className={styles.nameText}>{r.full_name}</span>
                               </div>
                             </td>
-                            <td className={styles.mono}>{r.email}</td>
-                            <td className={styles.mono}>{r.mobile}</td>
-                            <td>{r.city||'—'}</td>
-                            <td><span className={styles.specBadge}>{SPECIALTY_LABELS[r.specialty]||r.specialty}</span></td>
-                            <td>{EXP_LABELS[r.experience]||'—'}</td>
-                            <td>
+                            <td className={styles.mono} data-label="البريد">{r.email}</td>
+                            <td className={styles.mono} data-label="الجوال">{r.mobile}</td>
+                            <td data-label="المدينة">{r.city||'—'}</td>
+                            <td data-label="التخصّص"><span className={styles.specBadge}>{SPECIALTY_LABELS[r.specialty]||r.specialty}</span></td>
+                            <td data-label="الخبرة">{EXP_LABELS[r.experience]||'—'}</td>
+                            <td data-label="أدوات AI">
                               <span className={styles.aiBadge} style={{color:AI_COLORS[r.ai_experience]||'var(--ink-500)',borderColor:AI_COLORS[r.ai_experience]||'var(--ink-200)'}}>
                                 {AI_LABELS[r.ai_experience]||'—'}
                               </span>
                             </td>
-                            <td className={styles.dateCell}>{fmtDate(r.created_at)}</td>
-                            <td>
+                            <td className={styles.dateCell} data-label="تاريخ التسجيل">{fmtDate(r.created_at)}</td>
+                            <td className={styles.cellAction}>
                               <button className={styles.detailBtn} onClick={()=>setSelected(selected?.id===r.id?null:r)}>
                                 {selected?.id===r.id ? '✕' : 'تفاصيل'}
                               </button>
@@ -830,7 +830,7 @@ export default function Admin() {
                 </div>
               ) : (
                 <div className={styles.tableWrap}>
-                  <table className={styles.table}>
+                  <table className={`${styles.table} ${styles.cardTable}`}>
                     <thead>
                       <tr>
                         <th>#</th>
@@ -845,7 +845,7 @@ export default function Admin() {
                       {filteredSponsors.map((r,i) => (
                         <tr key={r.id || `${r.contact_email}-${i}`}>
                           <td className={styles.num}>{i+1}</td>
-                          <td>
+                          <td className={styles.cellName}>
                             <div className={styles.nameCell}>
                               <div className={styles.avatar} style={{background:'var(--green-600)'}}>
                                 {(r.organization_name||'؟')[0]}
@@ -853,10 +853,10 @@ export default function Admin() {
                               <span className={styles.nameText}>{r.organization_name}</span>
                             </div>
                           </td>
-                          <td>{r.contact_name}</td>
-                          <td className={styles.mono}>{r.contact_email}</td>
-                          <td className={styles.mono}>{r.contact_mobile}</td>
-                          <td className={styles.dateCell}>{fmtDate(r.created_at)}</td>
+                          <td data-label="اسم المسؤول">{r.contact_name}</td>
+                          <td className={styles.mono} data-label="البريد">{r.contact_email}</td>
+                          <td className={styles.mono} data-label="رقم المسؤول">{r.contact_mobile}</td>
+                          <td className={styles.dateCell} data-label="تاريخ التسجيل">{fmtDate(r.created_at)}</td>
                         </tr>
                       ))}
                     </tbody>
