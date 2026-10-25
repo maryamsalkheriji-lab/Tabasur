@@ -33,7 +33,6 @@ export default function Footer() {
             <h5>تواصل</h5>
             <ul>
               <li><a href="mailto:info@cubex.com.sa">info@cubex.com.sa</a></li>
-              <li><span>‎@tabsur.camp</span></li>
               <li><span>المدينة المنورة · KSA</span></li>
             </ul>
           </div>
