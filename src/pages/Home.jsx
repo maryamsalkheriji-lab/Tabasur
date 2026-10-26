@@ -429,8 +429,8 @@ function logoWidth(ratio) {
 }
 
 function Sponsors() {
-  /* دورة عريضة تكفي الشاشات الكبيرة، ثم تُنسخ كاملة لحركة بلا أي فراغ. */
-  const marqueeSponsors = [...sponsors, ...sponsors]
+  /* كل شعار يتحرك وحده في خانة ثابتة من الدورة؛ النسختان تجعلان الدورة أعرض من أكبر شاشة. */
+  const loopSponsors = [...sponsors, ...sponsors]
 
   return (
     <section className={`section sponsors ${styles.sponsors}`} id="sponsors">
@@ -444,24 +444,25 @@ function Sponsors() {
         </div>
       </div>
 
-      <div className={styles.sponsorsMarquee}>
-        <div className={styles.sponsorsTrack} style={{ '--sponsor-duration': `${sponsors.length * 7}s` }}>
-          {[0, 1].map((copy) => (
-            <div className={styles.sponsorsGroup} key={copy} aria-hidden={copy === 1}>
-              {marqueeSponsors.map((sponsor, i) => (
-                <article className={styles.sponsorCard} key={`${sponsor.name}-${i}`}>
-                  <img
-                    src={sponsor.logo}
-                    alt={copy === 0 && i < sponsors.length ? sponsor.name : ''}
-                    style={{ width: logoWidth(sponsor.ratio) }}
-                    decoding="async"
-                    draggable="false"
-                  />
-                </article>
-              ))}
-            </div>
-          ))}
-        </div>
+      <div
+        className={styles.sponsorsMarquee}
+        style={{ '--sponsor-count': loopSponsors.length, '--sponsor-duration': `${loopSponsors.length * 3.5}s` }}
+      >
+        {loopSponsors.map((sponsor, i) => (
+          <article
+            className={styles.sponsorCard}
+            key={`${sponsor.name}-${i}`}
+            style={{ '--sponsor-index': i }}
+            aria-hidden={i >= sponsors.length}
+          >
+            <img
+              src={sponsor.logo}
+              alt={i < sponsors.length ? sponsor.name : ''}
+              style={{ width: logoWidth(sponsor.ratio) }}
+              draggable="false"
+            />
+          </article>
+        ))}
       </div>
 
       </>}

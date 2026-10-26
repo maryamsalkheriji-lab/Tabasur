@@ -304,55 +304,57 @@
 .sponsors { background: var(--paper); }
 
 .sponsorsMarquee {
+  --card-w:clamp(190px,17vw,250px);
+  --card-gap:clamp(14px,1.6vw,22px);
+  --slot:calc(var(--card-w) + var(--card-gap));
+  --loop:calc(var(--sponsor-count) * var(--slot));
   position:relative;
   width:100%;
-  opacity:1;
+  height:calc(var(--card-w) / 1.8 + 2 * clamp(10px,1.4vw,20px));
   direction:ltr;
   overflow:hidden;
-  padding-block:clamp(10px,1.4vw,20px);
-  /* تلاشي الحواف حتى تدخل الكروت وتخرج بناعمية */
-  mask-image:linear-gradient(to left, transparent 0, #000 9%, #000 91%, transparent 100%);
-  -webkit-mask-image:linear-gradient(to left, transparent 0, #000 9%, #000 91%, transparent 100%);
 }
-.sponsorsTrack {
-  display:flex;
-  width:max-content;
-  direction:ltr;
-  animation:sponsorRoll var(--sponsor-duration,50s) linear infinite;
+/* تلاشي الحواف بطبقة لونية ثابتة بدل mask-image (القناع فوق عناصر متحركة يسبب أخطاء رسم في Chrome) */
+.sponsorsMarquee::before,
+.sponsorsMarquee::after {
+  content:"";position:absolute;top:0;bottom:0;width:9%;z-index:2;pointer-events:none;
 }
-.sponsorsGroup {
-  display:flex;
-  flex:none;
-  gap:clamp(14px,1.6vw,22px);
-  padding-inline-end:clamp(14px,1.6vw,22px);
-}
-@keyframes sponsorRoll {
-  from { transform:translate3d(0,0,0); }
-  to   { transform:translate3d(-50%,0,0); }
-}
+.sponsorsMarquee::before { left:0;background:linear-gradient(to right, var(--paper), transparent); }
+.sponsorsMarquee::after { right:0;background:linear-gradient(to left, var(--paper), transparent); }
 
+/* كل كرت يتحرك وحده: يبدأ عند خانته في الدورة ويعود لبدايتها خارج الشاشة، فلا يتراكب كرتان أبدًا */
 .sponsorCard {
-  flex:0 0 clamp(190px,17vw,250px);
-  aspect-ratio:1.8;
+  position:absolute;
+  top:50%;left:0;
+  box-sizing:border-box;
+  width:var(--card-w);
+  height:calc(var(--card-w) / 1.8);
+  margin-top:calc(var(--card-w) / -3.6);
   padding:clamp(18px,1.8vw,26px) clamp(22px,2.2vw,32px);
   border-radius:clamp(16px,1.6vw,22px);
   background:#fff;
   border:1px solid var(--rule);
   box-shadow:var(--shadow-soft);
   display:grid;place-items:center;
+  animation:sponsorRoll var(--sponsor-duration,50s) linear infinite;
+  animation-delay:calc(var(--sponsor-duration,50s) * var(--sponsor-index) / var(--sponsor-count) * -1);
   transition:border-color .4s ease, box-shadow .4s ease;
+}
+@keyframes sponsorRoll {
+  from { transform:translateX(calc(var(--loop) - var(--slot))); }
+  to   { transform:translateX(calc(var(--slot) * -1)); }
 }
 .sponsorCard img {
   display:block;height:auto;max-width:100%;max-height:100%;
   object-fit:contain;user-select:none;
 }
-/* بدون transform: تحريك الكرت داخل شريط متحرك يترك نسخة عالقة منه في Chrome فتتراكب الشعارات */
 .sponsorCard:hover { border-color:var(--green-400);box-shadow:var(--shadow-card); }
-.sponsorsMarquee:hover .sponsorsTrack { animation-play-state:paused; }
+.sponsorsMarquee:hover .sponsorCard { animation-play-state:paused; }
 
 @media (prefers-reduced-motion: reduce) {
-  .sponsorsTrack { animation:none; }
-  .sponsorsMarquee { overflow-x:auto; }
+  .sponsorsMarquee { display:flex;gap:var(--card-gap);height:auto;overflow-x:auto;padding:12px var(--card-gap); }
+  .sponsorsMarquee::before, .sponsorsMarquee::after { display:none; }
+  .sponsorCard { position:static;flex:none;margin:0;animation:none; }
 }
 
 .sponsorsCta {
@@ -433,8 +435,8 @@
   .partnersGrid {
     grid-template-columns: 1fr;
   }
-  .sponsorCard {
-    flex-basis: 170px;
+  .sponsorsMarquee {
+    --card-w: 170px;
   }
   .partnerCard {
     min-height: auto;
