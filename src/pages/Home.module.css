@@ -319,7 +319,6 @@
   width:max-content;
   direction:ltr;
   animation:sponsorRoll var(--sponsor-duration,50s) linear infinite;
-  will-change:transform;
 }
 .sponsorsGroup {
   display:flex;
@@ -341,13 +340,14 @@
   border:1px solid var(--rule);
   box-shadow:var(--shadow-soft);
   display:grid;place-items:center;
-  transition:border-color .4s ease, box-shadow .4s ease, transform .4s cubic-bezier(.2,.7,.2,1);
+  transition:border-color .4s ease, box-shadow .4s ease;
 }
 .sponsorCard img {
   display:block;height:auto;max-width:100%;max-height:100%;
   object-fit:contain;user-select:none;
 }
-.sponsorCard:hover { border-color:var(--green-400);box-shadow:var(--shadow-card);transform:translateY(-3px); }
+/* بدون transform: تحريك الكرت داخل شريط متحرك يترك نسخة عالقة منه في Chrome فتتراكب الشعارات */
+.sponsorCard:hover { border-color:var(--green-400);box-shadow:var(--shadow-card); }
 .sponsorsMarquee:hover .sponsorsTrack { animation-play-state:paused; }
 
 @media (prefers-reduced-motion: reduce) {
