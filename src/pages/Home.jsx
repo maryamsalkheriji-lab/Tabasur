@@ -420,6 +420,14 @@ function Partners() {
 }
 
 /* ─── Sponsors — شريط يدور تلقائيًا ─── */
+/* مساحة ثابتة لكل شعار (نسبة من عرض الإطار) تجعل الطولي والعريض بنفس الثقل البصري. */
+const LOGO_BOX_RATIO = 1.8
+const LOGO_AREA = 0.42
+function logoWidth(ratio) {
+  const w = Math.sqrt(LOGO_AREA * ratio / LOGO_BOX_RATIO)
+  return `${Math.min(w, 1, ratio / LOGO_BOX_RATIO) * 100}%`
+}
+
 function Sponsors() {
   /* دورة عريضة تكفي الشاشات الكبيرة، ثم تُنسخ كاملة لحركة بلا أي فراغ. */
   const marqueeSponsors = [...sponsors, ...sponsors]
@@ -430,24 +438,25 @@ function Sponsors() {
       <div className="container">
         <div className="section-head reveal">
           <span className="eyebrow">الرعاة</span>
-          <h2>دعم يصنع أثرًا لا ظهورًا فقط</h2>
-          <p className="lead">في تَبصَّر، الرعاة شركاء في تمكين المواهب وبناء الصورة الذهنية الحديثة للمدينة من خلال محتوى حقيقي قابل للانتشار.</p>
+          <h2>شركاء يصنعون الأثر معنا</h2>
+          <p className="lead">في تَبصَّر، الرعاة شركاء في تمكين المواهب وبناء الصورة الذهنية الحديثة للمدينة من خلال محتوى حقيقي قابل للانتشار.</p>
           <div className="divider" />
         </div>
       </div>
 
       <div className={styles.sponsorsMarquee}>
-        <div className={styles.sponsorsTrack}>
+        <div className={styles.sponsorsTrack} style={{ '--sponsor-duration': `${sponsors.length * 7}s` }}>
           {[0, 1].map((copy) => (
             <div className={styles.sponsorsGroup} key={copy} aria-hidden={copy === 1}>
               {marqueeSponsors.map((sponsor, i) => (
                 <article className={styles.sponsorCard} key={`${sponsor.name}-${i}`}>
-                  <div className={`${styles.sponsorMark} ${sponsor.dark ? styles.sponsorMarkDark : ''}`}>
-                    {sponsor.logo
-                      ? <img src={sponsor.logo} alt={copy === 0 ? sponsor.name : ''} draggable="false" />
-                      : <span className={styles.sponsorPlaceholder}>شعار الجهة</span>}
-                  </div>
-                  <h3 className={styles.sponsorName}>{sponsor.name}</h3>
+                  <img
+                    src={sponsor.logo}
+                    alt={copy === 0 && i < sponsors.length ? sponsor.name : ''}
+                    style={{ width: logoWidth(sponsor.ratio) }}
+                    decoding="async"
+                    draggable="false"
+                  />
                 </article>
               ))}
             </div>
