@@ -10,9 +10,11 @@ import Judges from './Judges'
 import Control from './Control'
 import LiveResults from './LiveResults'
 import Remote from './Remote'
+import Attendance from './Attendance'
 
 const TABS = [
   { key: 'events',   label: 'الفعاليات', icon: 'flag' },
+  { key: 'attendance', label: 'تأكيد الحضور', icon: 'check' },
   { key: 'projects', label: 'المشاريع', icon: 'layers' },
   { key: 'judges',   label: 'المحكّمون', icon: 'users' },
   { key: 'control',  label: 'التحكم', icon: 'settings' },
@@ -214,6 +216,7 @@ function AdminPanel({ auth, nav }) {
         {!loading && !error && (
           <>
             {tab === 'events' && <Events {...ctx} />}
+            {tab === 'attendance' && event && <Attendance key={event.id} {...ctx} />}
             {tab !== 'events' && !event && <Alert kind="info">أنشئ فعالية أولًا من تبويب «الفعاليات».</Alert>}
             {tab === 'projects' && event && <Projects key={event.id} {...ctx} />}
             {tab === 'judges' && event && <Judges key={event.id} {...ctx} />}

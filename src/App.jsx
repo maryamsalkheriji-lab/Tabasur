@@ -10,6 +10,7 @@ import SponsorRegister from './pages/SponsorRegister'
 import ScrollToTop from './components/ScrollToTop'
 // منصة التحكيم تُحمَّل عند الطلب (chunk مستقل) حتى لا تثقل الصفحة الرئيسية
 const JudgeApp = lazy(() => import('./judging/JudgeApp'))
+const RSVP = lazy(() => import('./pages/RSVP'))
 
 // رابط إعادة تعيين كلمة المرور من Supabase قد يهبط على الصفحة الرئيسية
 // (حسب Site URL في إعدادات Auth)، فنحوّله إلى لوحة الأدمن مع التوكن.
@@ -29,6 +30,7 @@ export default function App() {
     <Routes>
       {/* ─── صفحة كيوبكس: الصفحة الرئيسية للشركة ─── */}
       <Route path="/" element={<CubeX />} />
+      <Route path="/rsvp/:slug?" element={<Suspense fallback={null}><RSVP /></Suspense>} />
 
       {/* ─── صفحة التسجيل: لها ناف وفوتر خاصين ─── */}
       <Route path="/register" element={<Register />} />
