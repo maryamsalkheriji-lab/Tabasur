@@ -10,7 +10,6 @@ export const sponsors = [
   { name: 'أثر — Athar', logo: '/assets/sponsors/athar.png', ratio: 3.02 },
   { name: 'المدينة — Madinah', logo: '/assets/sponsors/madinah.png', ratio: 0.58 },
   { name: 'سوتس — Suits', logo: '/assets/sponsors/suits.png', ratio: 2.74 },
-  { name: 'اسأل المدينة — Ask Almadina', logo: '/assets/sponsors/ask-almadina.png', ratio: 0.82 },
   { name: 'العنان للسفر — Alanan Travel', logo: '/assets/sponsors/alanan.png', ratio: 3.02 },
   { name: 'Zero', logo: '/assets/sponsors/zero.png', ratio: 2.78 },
 ]
