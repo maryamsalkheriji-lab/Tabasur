@@ -400,9 +400,12 @@ export default function Register() {
 
               {/* الأزرار */}
               <div className={styles.successActions}>
-                <Link className="btn btn-primary" to="/tabsur">
-                  <span>{r.success.home}</span>
+                <Link className="btn btn-primary" to="/tabsur/remote">
+                  <span>{r.success.online}</span>
                   <span className="arrow">→</span>
+                </Link>
+                <Link className="btn btn-ghost" to="/tabsur">
+                  {r.success.home}
                 </Link>
                 <button className="btn btn-ghost" onClick={resetForm} type="button">
                   {r.success.another}

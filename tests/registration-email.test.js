@@ -6,7 +6,7 @@ import handler from '../api/send-registration-email.js'
 import { sendRegistrationEmail } from '../src/lib/registration-email.js'
 
 const SUPABASE_URL = 'https://example-project.supabase.co'
-const ENV_KEYS = ['ZEPTOMAIL_TOKEN', 'SUPABASE_URL', 'VITE_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'VERCEL_ENV', 'PUBLIC_SITE_URL', 'ALLOWED_ORIGINS']
+const ENV_KEYS = ['ZEPTOMAIL_TOKEN', 'SUPABASE_URL', 'VITE_SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'VERCEL_ENV', 'PUBLIC_SITE_URL', 'ALLOWED_ORIGINS', 'WHATSAPP_GROUP_URL']
 const savedEnv = Object.fromEntries(ENV_KEYS.map(k => [k, process.env[k]]))
 const originalFetch = globalThis.fetch
 
@@ -21,6 +21,7 @@ beforeEach(() => {
   delete process.env.VERCEL_ENV
   delete process.env.PUBLIC_SITE_URL
   delete process.env.ALLOWED_ORIGINS
+  delete process.env.WHATSAPP_GROUP_URL
 })
 
 afterEach(() => {
@@ -296,4 +297,24 @@ test('client distinguishes missing API, SPA HTML, explicit failure and acceptanc
   }
   globalThis.fetch = async () => { throw new TypeError('offline') }
   assert.equal((await sendRegistrationEmail(payload)).code, 'EMAIL_CONNECTION_FAILED')
+})
+
+test('participants receive the bilingual online-track acceptance with the guide and posts attached', async () => {
+  process.env.WHATSAPP_GROUP_URL = 'https://chat.whatsapp.com/TESTGROUP123'
+  const calls = mockBackend({ registration: { full_name: 'Real Person', created_at: new Date().toISOString() } })
+  const res = response()
+  await handler({ method: 'POST', body: payload }, res)
+  assert.equal(res.statusCode, 200)
+  const mail = calls.mails[0].body
+  assert.match(mail.subject, /المسار الأونلاين/)
+  assert.match(mail.subject, /Online track/)
+  assert.ok(mail.htmlbody.includes('https://cubex.com.sa/tabsur/remote'))
+  assert.ok(mail.textbody.includes('https://cubex.com.sa/tabsur/remote'))
+  assert.ok(mail.htmlbody.includes('Hello Real Person'))
+  assert.doesNotMatch(mail.htmlbody, /وصلنا طلبك|سنراجع بياناتك|مسرح|نوفمبر/)
+  assert.deepEqual(mail.attachments.map(a => a.name), ['معسكر_تبصّر_الدليل_عن_بعد.pdf', 'معسكر_تبصّر_المسار_الأونلاين.jpg', 'Tabsur_Camp_Online_Track.jpg'])
+  assert.equal(mail.inline_images.length, 3)
+  assert.ok(mail.htmlbody.includes('cid:tabsur-header'))
+  assert.ok(mail.htmlbody.includes('https://chat.whatsapp.com/TESTGROUP123'), 'whatsapp button from WHATSAPP_GROUP_URL')
+  assert.ok(mail.textbody.includes('https://chat.whatsapp.com/TESTGROUP123'))
 })

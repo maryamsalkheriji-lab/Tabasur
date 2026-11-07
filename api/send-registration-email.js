@@ -1,3 +1,6 @@
+import { buildOnlineAcceptanceEmail } from '../server/email/online-acceptance.js'
+import { loadOnlineEmailAssets } from '../server/email/assets.js'
+
 const ZEPTOMAIL_API_URL = 'https://api.zeptomail.com/v1.1/email'
 
 // ─── حماية الإرسال ───
@@ -116,6 +119,53 @@ function escapeHtml(value = '') {
     .replace(/'/g, '&#39;')
 }
 
+// رسالة استلام طلب الرعاية (كما كانت). المشاركون يستلمون رسالة القبول في المسار الأونلاين من server/email/online-acceptance.js.
+function sponsorReceiptEmail({ registeredName, receiptId, fromAddress, imageUrl }) {
+  const safeName = escapeHtml(registeredName)
+  const safeReceipt = escapeHtml(receiptId || '')
+
+  const subject = 'تم استلام طلب الرعاية في تَبصَّر'
+  const kicker = 'تم استلام طلب الرعاية'
+  const title = safeName ? `مرحبًا ${safeName}` : 'مرحبًا'
+  const message = 'شكرًا لتواصلكم مع تَبصَّر. وصلنا طلب الرعاية بنجاح، وسنراجع بيانات الجهة ثم نتواصل مع الشخص المسؤول لمناقشة فرص الشراكة والدعم.'
+
+  const html = `
+    <div dir="rtl" style="margin:0;background:#FAF6EF;padding:28px;font-family:Arial,'Tahoma',sans-serif;color:#2D251E;">
+      <div style="max-width:680px;margin:0 auto;background:#FFFDFC;border:1px solid rgba(45,37,30,.12);border-radius:22px;overflow:hidden;">
+        <img src="${imageUrl}" alt="تَبصَّر · معسكر تسويق المدن" style="display:block;width:100%;height:auto;background:#FAF6EF;" />
+        <div style="padding:28px 30px 32px;text-align:right;">
+          <p style="margin:0 0 8px;color:#668066;font-size:14px;font-weight:700;">${kicker}</p>
+          <h1 style="margin:0 0 14px;font-size:30px;line-height:1.25;color:#2D251E;">${title}</h1>
+          <p style="margin:0;color:#5D4B3D;font-size:17px;line-height:1.9;">
+            ${message}
+          </p>
+          ${safeReceipt ? `<div style="margin-top:22px;display:inline-block;padding:10px 16px;border-radius:999px;background:#E8EFE5;color:#526652;font-size:13px;font-weight:700;">رقم الطلب: ${safeReceipt}</div>` : ''}
+          <p style="margin:24px 0 0;color:#5D4B3D;font-size:14px;line-height:1.8;">
+            لأي استفسار، راسلنا على
+            <a href="mailto:${fromAddress}" style="color:#2D251E;">${fromAddress}</a>
+          </p>
+          <p style="margin:18px 0 0;color:#9A8A7D;font-size:13px;line-height:1.7;">
+            تَبصَّر · معسكر تسويق المدن
+          </p>
+        </div>
+      </div>
+    </div>
+  `
+
+  const text = [
+    kicker,
+    '',
+    registeredName ? `مرحبًا ${registeredName}` : 'مرحبًا',
+    '',
+    message,
+    receiptId ? `\nرقم الطلب: ${receiptId}` : '',
+    '',
+    `لأي استفسار: ${fromAddress}`,
+    'تَبصَّر · معسكر تسويق المدن',
+  ].filter(Boolean).join('\n')
+  return { subject, html, text }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST')
@@ -169,51 +219,12 @@ export default async function handler(req, res) {
 
     const publicSite = process.env.PUBLIC_SITE_URL || 'https://cubex.com.sa'
     const imageUrl = `${publicSite.replace(/\/$/, '')}/assets/tabsur-registration-email.jpeg`
-    const safeName = escapeHtml(registeredName)
-    const safeReceipt = escapeHtml(receiptId || '')
     const isSponsor = kind === 'sponsor'
-
-    const subject = isSponsor ? 'تم استلام طلب الرعاية في تَبصَّر' : 'تم تسجيلك بنجاح في معسكر تَبصَّر'
-    const kicker = isSponsor ? 'تم استلام طلب الرعاية' : 'تم تسجيلك بنجاح'
-    const title = safeName ? `مرحبًا ${safeName}` : 'مرحبًا'
-    const message = isSponsor
-      ? 'شكرًا لتواصلكم مع تَبصَّر. وصلنا طلب الرعاية بنجاح، وسنراجع بيانات الجهة ثم نتواصل مع الشخص المسؤول لمناقشة فرص الشراكة والدعم.'
-      : 'شكرًا لتسجيلك في معسكر تَبصَّر. وصلنا طلبك بنجاح، وسنراجع بياناتك ثم نتواصل معك عبر البريد الإلكتروني أو رقم الجوال خلال الفترة القادمة.'
-
-    const html = `
-      <div dir="rtl" style="margin:0;background:#FAF6EF;padding:28px;font-family:Arial,'Tahoma',sans-serif;color:#2D251E;">
-        <div style="max-width:680px;margin:0 auto;background:#FFFDFC;border:1px solid rgba(45,37,30,.12);border-radius:22px;overflow:hidden;">
-          <img src="${imageUrl}" alt="تَبصَّر · معسكر تسويق المدن" style="display:block;width:100%;height:auto;background:#FAF6EF;" />
-          <div style="padding:28px 30px 32px;text-align:right;">
-            <p style="margin:0 0 8px;color:#668066;font-size:14px;font-weight:700;">${kicker}</p>
-            <h1 style="margin:0 0 14px;font-size:30px;line-height:1.25;color:#2D251E;">${title}</h1>
-            <p style="margin:0;color:#5D4B3D;font-size:17px;line-height:1.9;">
-              ${message}
-            </p>
-            ${safeReceipt ? `<div style="margin-top:22px;display:inline-block;padding:10px 16px;border-radius:999px;background:#E8EFE5;color:#526652;font-size:13px;font-weight:700;">رقم الطلب: ${safeReceipt}</div>` : ''}
-            <p style="margin:24px 0 0;color:#5D4B3D;font-size:14px;line-height:1.8;">
-              لأي استفسار، راسلنا على
-              <a href="mailto:${fromAddress}" style="color:#2D251E;">${fromAddress}</a>
-            </p>
-            <p style="margin:18px 0 0;color:#9A8A7D;font-size:13px;line-height:1.7;">
-              تَبصَّر · معسكر تسويق المدن
-            </p>
-          </div>
-        </div>
-      </div>
-    `
-
-    const text = [
-      kicker,
-      '',
-      registeredName ? `مرحبًا ${registeredName}` : 'مرحبًا',
-      '',
-      message,
-      receiptId ? `\nرقم الطلب: ${receiptId}` : '',
-      '',
-      `لأي استفسار: ${fromAddress}`,
-      'تَبصَّر · معسكر تسويق المدن',
-    ].filter(Boolean).join('\n')
+    // المشاركون: قبول في المسار الأونلاين (عربي + إنجليزي) مع الدليل والمنشور مرفقين. الرعاة: استلام الطلب كما هو.
+    const mail = isSponsor
+      ? sponsorReceiptEmail({ registeredName, receiptId, fromAddress, imageUrl })
+      : buildOnlineAcceptanceEmail({ name: registeredName, fromAddress, publicSite, whatsappUrl: process.env.WHATSAPP_GROUP_URL, receiptId: receiptId || '', assets: await loadOnlineEmailAssets(publicSite) })
+    const { subject, html, text, attachments = [], inline_images = [] } = mail
 
     const response = await fetch(ZEPTOMAIL_API_URL, {
       method: 'POST',
@@ -230,6 +241,8 @@ export default async function handler(req, res) {
         subject,
         htmlbody: html,
         textbody: text,
+        ...(attachments.length ? { attachments } : {}),
+        ...(inline_images.length ? { inline_images } : {}),
         track_opens: false,
         track_clicks: false,
       }),

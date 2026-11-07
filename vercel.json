@@ -1,6 +1,7 @@
 {
   "functions": {
-    "api/analyze-project.js": { "maxDuration": 60 }
+    "api/analyze-project.js": { "maxDuration": 60 },
+    "api/send-registration-email.js": { "maxDuration": 30, "includeFiles": "public/email/**" }
   },
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
