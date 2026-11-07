@@ -21,10 +21,17 @@ export function onlinePageUrl(publicSite) {
   return `${String(publicSite || 'https://cubex.com.sa').replace(/\/$/, '')}${ONLINE_PAGE_PATH}`
 }
 
-// رابط المجموعة يأتي من متغير البيئة WHATSAPP_GROUP_URL (المستودع عام)؛ أي قيمة غير رابط دعوة واتساب تُهمل.
+// رابط مجموعة واتساب المشاركين (نفس المجموعة المرسلة في قبول المسار الحضوري).
+// يمكن تجاوزه بمتغير البيئة WHATSAPP_GROUP_URL دون تعديل الكود؛ أي قيمة ليست رابط دعوة واتساب تُهمل ويُستخدم الرابط المدمج.
+export const DEFAULT_WHATSAPP_GROUP_URL = 'https://chat.whatsapp.com/D3MQGrILAF9KLft52hcHSc'
+
 export function safeWhatsappUrl(value) {
   const url = String(value || '').trim()
   return /^https:\/\/(chat\.whatsapp\.com|wa\.me)\/[A-Za-z0-9_?=&%+.-]+$/.test(url) ? url : ''
+}
+
+export function whatsappGroupUrl(override) {
+  return safeWhatsappUrl(override) || DEFAULT_WHATSAPP_GROUP_URL
 }
 
 const AR = {
@@ -146,7 +153,7 @@ export function renderOnlineAcceptanceText({ name = '', fromAddress, pageUrl, wh
 // assets من loadOnlineEmailAssets؛ أي ملف ناقص يُستبدل برابطه على الموقع بدل أن تفشل الرسالة.
 export function buildOnlineAcceptanceEmail({ name = '', fromAddress, publicSite = 'https://cubex.com.sa', whatsappUrl = '', receiptId = '', assets = {}, subjectPrefix = '' }) {
   const pageUrl = onlinePageUrl(publicSite)
-  const whatsapp = safeWhatsappUrl(whatsappUrl)
+  const whatsapp = whatsappGroupUrl(whatsappUrl)
   const inlineSrc = key => (assets[key] ? `cid:${INLINE[key]}` : emailAssetUrl(publicSite, key))
   const html = renderOnlineAcceptanceHtml({
     name, fromAddress, pageUrl, whatsappUrl: whatsapp, receiptId,

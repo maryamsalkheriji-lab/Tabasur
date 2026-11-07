@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { buildOnlineAcceptanceEmail, onlinePageUrl, ONLINE_ACCEPTANCE_SUBJECT } from '../server/email/online-acceptance.js'
+import { buildOnlineAcceptanceEmail, onlinePageUrl, ONLINE_ACCEPTANCE_SUBJECT, DEFAULT_WHATSAPP_GROUP_URL } from '../server/email/online-acceptance.js'
 import { loadOnlineEmailAssets, clearEmailAssetCache, ONLINE_EMAIL_FILES } from '../server/email/assets.js'
 
 const fromAddress = 'info@cubex.com.sa'
@@ -35,14 +35,15 @@ test('the acceptance email is bilingual, points to the online page and WhatsApp,
   assert.ok(bytes < 6 * 1024 * 1024, `payload too large: ${bytes}`)
 })
 
-test('the WhatsApp section only appears for a real invite link', () => {
+test('the WhatsApp button always points to the group; bad overrides fall back to the built-in link', () => {
+  assert.match(DEFAULT_WHATSAPP_GROUP_URL, /^https:\/\/chat\.whatsapp\.com\/[A-Za-z0-9]+$/)
   const without = buildOnlineAcceptanceEmail({ name: 'x', fromAddress, assets: {} })
-  assert.equal(without.whatsappUrl, '')
-  assert.ok(!without.html.includes('whatsapp.com') && !without.html.includes('واتساب') && !without.text.includes('WhatsApp'))
+  assert.equal(without.whatsappUrl, DEFAULT_WHATSAPP_GROUP_URL)
+  assert.ok(without.html.includes(DEFAULT_WHATSAPP_GROUP_URL) && without.html.includes('واتساب') && without.text.includes('WhatsApp'))
   for (const bad of ['javascript:alert(1)', 'https://evil.example/chat.whatsapp.com/x', 'http://chat.whatsapp.com/abc', 'https://chat.whatsapp.com/abc"><script>']) {
     const mail = buildOnlineAcceptanceEmail({ name: 'x', fromAddress, whatsappUrl: bad, assets: {} })
-    assert.equal(mail.whatsappUrl, '', bad)
-    assert.ok(!mail.html.includes('whatsapp.com'), bad)
+    assert.equal(mail.whatsappUrl, DEFAULT_WHATSAPP_GROUP_URL, bad)
+    assert.ok(!mail.html.includes('evil.example') && !mail.html.includes('<script>'), bad)
   }
   const ok = buildOnlineAcceptanceEmail({ name: 'x', fromAddress, whatsappUrl: ' https://chat.whatsapp.com/D3MQ_x-9?s=qt&p=i ', assets: {} })
   assert.equal(ok.whatsappUrl, 'https://chat.whatsapp.com/D3MQ_x-9?s=qt&p=i')

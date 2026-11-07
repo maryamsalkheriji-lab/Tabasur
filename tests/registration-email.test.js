@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { Readable } from 'node:stream'
 import { registrationEmailPlugin } from '../server/registration-email-plugin.js'
 import handler from '../api/send-registration-email.js'
+import { DEFAULT_WHATSAPP_GROUP_URL } from '../server/email/online-acceptance.js'
 import { sendRegistrationEmail } from '../src/lib/registration-email.js'
 
 const SUPABASE_URL = 'https://example-project.supabase.co'
@@ -317,4 +318,13 @@ test('participants receive the bilingual online-track acceptance with the guide 
   assert.ok(mail.htmlbody.includes('cid:tabsur-header'))
   assert.ok(mail.htmlbody.includes('https://chat.whatsapp.com/TESTGROUP123'), 'whatsapp button from WHATSAPP_GROUP_URL')
   assert.ok(mail.textbody.includes('https://chat.whatsapp.com/TESTGROUP123'))
+})
+
+test('the WhatsApp button is present even when WHATSAPP_GROUP_URL is not configured', async () => {
+  const calls = mockBackend()
+  const res = response()
+  await handler({ method: 'POST', body: payload }, res)
+  assert.equal(res.statusCode, 200)
+  assert.ok(calls.mails[0].body.htmlbody.includes(DEFAULT_WHATSAPP_GROUP_URL))
+  assert.ok(calls.mails[0].body.textbody.includes(DEFAULT_WHATSAPP_GROUP_URL))
 })
