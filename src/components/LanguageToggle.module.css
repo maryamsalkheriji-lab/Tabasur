@@ -1,0 +1,10 @@
+.toggle {
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;flex-shrink:0;
+  height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--rule);background:var(--paper);
+  color:var(--teal-600);font-weight:800;font-size:12px;letter-spacing:.04em;line-height:1;white-space:nowrap;
+  transition:background .2s,transform .2s,box-shadow .2s;
+}
+.toggle:hover { background:var(--green-100);transform:translateY(-2px);box-shadow:0 0 0 4px var(--green-100); }
+.toggle svg { width:20px;height:20px;flex:none; }
+.toggle[data-lang='ar'] span { font-size:13px;letter-spacing:0; }
+@media (max-width:480px) { .toggle { padding:0 10px;gap:5px; } }

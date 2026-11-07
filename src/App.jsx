@@ -8,9 +8,11 @@ import Register from './pages/Register'
 import Admin from './pages/Admin'
 import SponsorRegister from './pages/SponsorRegister'
 import ScrollToTop from './components/ScrollToTop'
+import { LanguageProvider } from './lib/language'
 // منصة التحكيم تُحمَّل عند الطلب (chunk مستقل) حتى لا تثقل الصفحة الرئيسية
 const JudgeApp = lazy(() => import('./judging/JudgeApp'))
 const RSVP = lazy(() => import('./pages/RSVP'))
+const RemoteCamp = lazy(() => import('./pages/RemoteCamp'))
 
 // رابط إعادة تعيين كلمة المرور من Supabase قد يهبط على الصفحة الرئيسية
 // (حسب Site URL في إعدادات Auth)، فنحوّله إلى لوحة الأدمن مع التوكن.
@@ -33,10 +35,10 @@ export default function App() {
       <Route path="/rsvp/:slug?" element={<Suspense fallback={null}><RSVP /></Suspense>} />
 
       {/* ─── صفحة التسجيل: لها ناف وفوتر خاصين ─── */}
-      <Route path="/register" element={<Register />} />
+      <Route path="/register" element={<LanguageProvider><Register /></LanguageProvider>} />
 
       {/* ─── صفحة تسجيل الرعاة ─── */}
-      <Route path="/sponsor-register" element={<SponsorRegister />} />
+      <Route path="/sponsor-register" element={<LanguageProvider><SponsorRegister /></LanguageProvider>} />
 
       {/* ─── صفحة الأدمن: مستقلة بالكامل ─── */}
       <Route path="/admin" element={<Admin />} />
@@ -48,14 +50,17 @@ export default function App() {
       <Route
         path="/tabsur/*"
         element={
-          <TabsurLayout>
+          <LanguageProvider>
+            <TabsurLayout>
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="remote" element={<Suspense fallback={<div style={{ minHeight: '100svh' }} />}><RemoteCamp /></Suspense>} />
                 {/* كثيرون يكتبون /tabsur/admin — لوحة الإدارة على /admin */}
                 <Route path="admin/*" element={<Navigate to="/admin" replace />} />
                 <Route path="*" element={<Navigate to="/tabsur" replace />} />
               </Routes>
-          </TabsurLayout>
+            </TabsurLayout>
+          </LanguageProvider>
         }
       />
     </Routes>

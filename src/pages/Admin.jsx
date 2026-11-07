@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase'
 import { useAdminSession, translateAuthError } from '../lib/adminAuth'
 import { toSafeHttpUrl, csvCell } from '../lib/security'
+import { paginationItems } from '../lib/pagination'
 import styles from './Admin.module.css'
 
 /* ─── Helpers ─── */
@@ -316,7 +317,12 @@ export default function Admin() {
   })
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE)
-  const paged = filtered.slice((page-1)*PER_PAGE, page*PER_PAGE)
+  const currentPage = Math.min(page, Math.max(1, totalPages))
+  const paged = filtered.slice((currentPage-1)*PER_PAGE, currentPage*PER_PAGE)
+
+  useEffect(() => {
+    setPage(previous => Math.min(previous, Math.max(1, totalPages)))
+  }, [totalPages])
 
   function toggleSort(k) {
     if (sortKey === k) setSortDir(d => d==='asc'?'desc':'asc')
@@ -670,7 +676,7 @@ export default function Admin() {
                       <tbody>
                         {paged.map((r,i) => (
                           <tr key={r.id} className={selected?.id===r.id ? styles.rowSelected : ''}>
-                            <td className={styles.num}>{(page-1)*PER_PAGE+i+1}</td>
+                            <td className={styles.num}>{(currentPage-1)*PER_PAGE+i+1}</td>
                             <td className={styles.cellName}>
                               <div className={styles.nameCell}>
                                 <div className={styles.avatar} style={{background:`hsl(${((r.full_name||'').charCodeAt(0)*7)%360},45%,65%)`}}>
@@ -680,7 +686,7 @@ export default function Admin() {
                               </div>
                             </td>
                             <td className={styles.mono} data-label="البريد">{r.email}</td>
-                            <td className={styles.mono} data-label="الجوال">{r.mobile}</td>
+                            <td className={styles.mono} data-label="الجوال"><span dir="ltr">{r.mobile}</span></td>
                             <td data-label="المدينة">{r.city||'—'}</td>
                             <td data-label="التخصّص"><span className={styles.specBadge}>{SPECIALTY_LABELS[r.specialty]||r.specialty}</span></td>
                             <td data-label="الخبرة">{EXP_LABELS[r.experience]||'—'}</td>
@@ -702,13 +708,32 @@ export default function Admin() {
                   </div>
 
                   {totalPages > 1 && (
-                    <div className={styles.pagination}>
-                      <button disabled={page===1} onClick={()=>setPage(p=>p-1)}>السابق</button>
-                      {Array.from({length:totalPages},(_,i)=>(
-                        <button key={i+1} className={page===i+1?styles.pageActive:''} onClick={()=>setPage(i+1)}>{i+1}</button>
-                      ))}
-                      <button disabled={page===totalPages} onClick={()=>setPage(p=>p+1)}>التالي</button>
-                    </div>
+                    <nav className={styles.pagination} aria-label="صفحات المسجّلين" dir="rtl">
+                      <div className={styles.paginationControls}>
+                        <div className={styles.pageActions}>
+                          <button type="button" aria-label="الصفحة الأولى" disabled={currentPage===1} onClick={()=>setPage(1)}>الأولى</button>
+                          <button type="button" aria-label="الصفحة السابقة" disabled={currentPage===1} onClick={()=>setPage(currentPage-1)}>السابق</button>
+                        </div>
+                        <div className={styles.pageNumbers}>
+                          {paginationItems(currentPage, totalPages).map(item => typeof item === 'number' ? (
+                            <button type="button" key={item} aria-label={`الصفحة ${item}`} aria-current={currentPage===item ? 'page' : undefined}
+                              className={currentPage===item ? styles.pageActive : ''} onClick={()=>setPage(item)}>{item}</button>
+                          ) : <span key={item} className={styles.pageGap} aria-hidden="true">…</span>)}
+                        </div>
+                        <div className={styles.pageActions}>
+                          <button type="button" aria-label="الصفحة التالية" disabled={currentPage===totalPages} onClick={()=>setPage(currentPage+1)}>التالي</button>
+                          <button type="button" aria-label="الصفحة الأخيرة" disabled={currentPage===totalPages} onClick={()=>setPage(totalPages)}>الأخيرة</button>
+                        </div>
+                      </div>
+                      <div className={styles.paginationMeta}>
+                        <span role="status">الصفحة {currentPage} من {totalPages}</span>
+                        <label className={styles.pageJump} htmlFor="admin-page-jump">انتقل إلى صفحة
+                          <select id="admin-page-jump" value={currentPage} onChange={event=>setPage(Number(event.target.value))}>
+                            {Array.from({ length:totalPages }, (_, i)=><option key={i+1} value={i+1}>{i+1}</option>)}
+                          </select>
+                        </label>
+                      </div>
+                    </nav>
                   )}
                 </>
               )}
@@ -730,7 +755,7 @@ export default function Admin() {
                 <div className={styles.detailGrid}>
                   {[
                     {l:'البريد الإلكتروني', v:selected.email},
-                    {l:'رقم الجوال',        v:selected.mobile},
+                    {l:'رقم الجوال',        v:<span dir="ltr">{selected.mobile}</span>},
                     {l:'المدينة',            v:selected.city||'—'},
                     {l:'التخصص',            v:SPECIALTY_LABELS[selected.specialty]||selected.specialty},
                     {l:'سنوات الخبرة',      v:EXP_LABELS[selected.experience]||'—'},
@@ -855,7 +880,7 @@ export default function Admin() {
                           </td>
                           <td data-label="اسم المسؤول">{r.contact_name}</td>
                           <td className={styles.mono} data-label="البريد">{r.contact_email}</td>
-                          <td className={styles.mono} data-label="رقم المسؤول">{r.contact_mobile}</td>
+                          <td className={styles.mono} data-label="رقم المسؤول"><span dir="ltr">{r.contact_mobile}</span></td>
                           <td className={styles.dateCell} data-label="تاريخ التسجيل">{fmtDate(r.created_at)}</td>
                         </tr>
                       ))}

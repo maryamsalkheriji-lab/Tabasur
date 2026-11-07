@@ -1,9 +1,11 @@
 import { loadEnv } from 'vite'
 import emailHandler from '../api/send-registration-email.js'
 import analyzeHandler from '../api/analyze-project.js'
+import remoteUploadHandler from '../api/remote-upload.js'
 
 // يربط دوال /api/* بسيرفر التطوير والمعاينة بنفس سلوك Vercel (قراءة الجسم كنص JSON).
 const ROUTES = {
+  '/api/remote-upload': { handler: remoteUploadHandler, readBody: false },
   '/api/send-registration-email': { handler: emailHandler, maxBody: 16384 },
   '/api/analyze-project': { handler: analyzeHandler, maxBody: 16384 },
 }
@@ -18,7 +20,7 @@ export function registrationEmailPlugin() {
     server.middlewares.use(async (req, res, next) => {
       const route = ROUTES[req.url?.split('?')[0]]
       if (!route) return next()
-      if (req.method !== 'POST') return route.handler(req, res)
+      if (req.method !== 'POST' || route.readBody === false) return route.handler(req, res)
       try {
         const chunks = []
         let size = 0

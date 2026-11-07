@@ -1,0 +1,103 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { COUNTRIES, PINNED_COUNTRIES, detectInternational, flagOf, getCountry, searchCountries, validateMobile } from '../src/lib/phone.js'
+
+test('country list covers the world with consistent entries', () => {
+  assert.ok(COUNTRIES.length >= 230, `only ${COUNTRIES.length} countries`)
+  assert.equal(new Set(COUNTRIES.map(country => country.iso)).size, COUNTRIES.length)
+  for (const country of COUNTRIES) {
+    assert.match(country.iso, /^[A-Z]{2}$/)
+    assert.match(country.dial, /^\d{1,3}$/)
+    assert.match(country.ar, /\p{Script=Arabic}/u, `${country.iso} has no Arabic name`)
+    assert.ok(country.en.trim().length > 1)
+  }
+  const expected = { SA: '966', EG: '20', IN: '91', US: '1', LB: '961', SY: '963', AE: '971', JO: '962', PK: '92', GB: '44' }
+  for (const [iso, dial] of Object.entries(expected)) assert.equal(getCountry(iso).dial, dial, iso)
+  for (const iso of PINNED_COUNTRIES) assert.equal(getCountry(iso).iso, iso)
+  assert.equal(getCountry('zz').iso, 'SA', 'unknown codes fall back to Saudi Arabia')
+  assert.equal(flagOf('SA'), '🇸🇦')
+  assert.equal(flagOf('eg'), '🇪🇬')
+})
+
+test('search finds a country by Arabic name, English name, alias, or dial code', () => {
+  const empty = searchCountries('', 'ar')
+  assert.deepEqual(empty.pinned.map(country => country.iso), [...PINNED_COUNTRIES])
+  assert.equal(empty.all.length, COUNTRIES.length)
+
+  const first = (query, lang) => searchCountries(query, lang).all[0]?.iso
+  assert.equal(first('مصر', 'ar'), 'EG')
+  assert.equal(first('الهند', 'ar'), 'IN')
+  assert.equal(first('هند', 'ar'), 'IN')
+  assert.equal(first('لبنان', 'ar'), 'LB')
+  assert.equal(first('سوريا', 'ar'), 'SY')
+  assert.equal(first('سورية', 'ar'), 'SY')
+  assert.equal(first('امريكا', 'ar'), 'US')
+  assert.equal(first('الامارات', 'ar'), 'AE')
+  assert.equal(first('عمان', 'ar'), 'OM')
+  assert.equal(first('America', 'en'), 'US', 'exact alias beats the "American Samoa" prefix match')
+  assert.equal(first('Korea', 'en'), 'KR')
+  assert.equal(first('Egypt', 'en'), 'EG')
+  assert.equal(first('india', 'en'), 'IN')
+  assert.equal(first('UK', 'en'), 'GB')
+  assert.equal(first('+20', 'en'), 'EG')
+  assert.equal(first('+1', 'en'), 'US', 'shared +1 lists the United States first')
+  assert.equal(first('1', 'ar'), 'US')
+  assert.equal(first('+44', 'en'), 'GB')
+  assert.equal(first('+7', 'en'), 'RU')
+  assert.equal(first('966', 'ar'), 'SA')
+  assert.equal(first('٩٦٦', 'ar'), 'SA')
+  assert.ok(searchCountries('1', 'en').all.some(country => country.iso === 'US'))
+  assert.ok(searchCountries('9', 'en').all.every(country => country.dial.startsWith('9')))
+  assert.equal(searchCountries('zzzz', 'en').all.length, 0)
+  assert.equal(searchCountries('مصر', 'ar').pinned.length, 0, 'pinned group hides while searching')
+})
+
+test('typing an international prefix switches the country automatically', () => {
+  assert.equal(detectInternational('05', 'SA'), null)
+  assert.deepEqual(detectInternational('+', 'SA'), { pending: true })
+  assert.deepEqual(detectInternational('+9', 'SA'), { pending: true })
+  assert.deepEqual(detectInternational('+96', 'SA'), { pending: true })
+  assert.deepEqual(detectInternational('00', 'SA'), { pending: true })
+
+  const egypt = detectInternational('+2010', 'SA')
+  assert.equal(egypt.country.iso, 'EG')
+  assert.equal(egypt.national, '10')
+  assert.equal(detectInternational('00919876543210', 'SA').country.iso, 'IN')
+  assert.equal(detectInternational('+966', 'EG').country.iso, 'SA')
+  assert.equal(detectInternational('+1', 'SA').country.iso, 'US', 'shared +1 prefers the United States')
+  assert.equal(detectInternational('+1', 'CA').country.iso, 'CA', 'but keeps the selected country when it shares the code')
+  assert.equal(detectInternational('+44', 'SA').country.iso, 'GB')
+  assert.equal(detectInternational('+7', 'SA').country.iso, 'RU')
+})
+
+test('Saudi numbers are validated strictly and stored in the existing 05 format', () => {
+  const ok = validateMobile('SA', '0512345678')
+  assert.equal(ok.ok, true)
+  assert.equal(ok.stored, '0512345678')
+  assert.equal(ok.e164, '+966512345678')
+  assert.equal(validateMobile('SA', '٠٥١٢٣٤٥٦٧٨').stored, '0512345678')
+  assert.equal(validateMobile('SA', '512345678').stored, '0512345678')
+  assert.equal(validateMobile('SA', '+966 51 234 5678').stored, '0512345678')
+  assert.equal(validateMobile('SA', '00966512345678').stored, '0512345678')
+  assert.deepEqual(validateMobile('SA', '0412345678'), { ok: false, reason: 'mobile' })
+  assert.equal(validateMobile('SA', '05123').ok, false)
+  assert.equal(validateMobile('SA', '05123456789').ok, false)
+  assert.equal(validateMobile('SA', '').ok, false)
+  assert.equal(validateMobile(undefined, '0512345678').stored, '0512345678')
+})
+
+test('numbers from any other country are accepted and stored with their country code', () => {
+  assert.equal(validateMobile('EG', '01012345678').stored, '+201012345678')
+  assert.equal(validateMobile('IN', '9876543210').stored, '+919876543210')
+  assert.equal(validateMobile('US', '(212) 555-0199').stored, '+12125550199')
+  assert.equal(validateMobile('LB', '03 123 456').stored, '+9613123456')
+  assert.equal(validateMobile('SY', '0944123456').stored, '+963944123456')
+  assert.equal(validateMobile('EG', '+201012345678').stored, '+201012345678')
+  assert.equal(validateMobile('SA', '+201012345678').stored, '+201012345678', 'an international number wins over the selected country')
+  assert.equal(validateMobile('EG', '١٠١٢٣٤٥٦٧٨').stored, '+201012345678')
+  assert.deepEqual(validateMobile('EG', '123'), { ok: false, reason: 'mobileIntl' })
+  assert.equal(validateMobile('EG', '123456789012345').ok, false, 'longer than E.164 allows')
+  assert.equal(validateMobile('EG', '+96').ok, false)
+  assert.equal(validateMobile('EG', '').ok, false)
+  assert.equal(validateMobile('EG', 'abc').ok, false)
+})

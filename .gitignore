@@ -9,3 +9,4 @@ __MACOSX
 *.log
 *.pem
 supabase/.temp
+.private/

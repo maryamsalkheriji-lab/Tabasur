@@ -35,6 +35,16 @@
 }
 .navLinks a { transition: color .2s; }
 .navLinks a:hover { color: var(--green-600); }
+.remoteLink { display:inline-flex;align-items:center;gap:6px;color:var(--green-700);font-weight:700; }
+.remoteLink span { font-size:9px;padding:2px 6px;border-radius:5px;background:var(--green-100);color:var(--green-700); }
+.remoteLink[aria-current='page'] { color:var(--teal-600); }
+@media (min-width:1280px) and (max-width:1450px) {
+  .navLinks { gap:12px;font-size:12px; }
+  .nav { padding-inline:24px;gap:12px; }
+  .identity { gap:10px; }
+  .brandWord .en { font-size:7px; }
+  .remoteLink span { display:none; }
+}
 
 /* Admin link */
 .adminLink {

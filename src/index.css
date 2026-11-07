@@ -143,6 +143,9 @@ h1 { font-weight: 900; letter-spacing: -0.03em; }
 .btn-ghost:hover { background: var(--ink-900); color: #fff; border-color: var(--ink-900); }
 .btn .arrow { display: inline-block; transition: transform .3s ease; transform: scaleX(-1); }
 .btn:hover .arrow { transform: translateX(-4px) scaleX(-1); }
+/* English (LTR) mirror: the arrow points forward without flipping */
+[dir='ltr'] .btn .arrow { transform: none; }
+[dir='ltr'] .btn:hover .arrow { transform: translateX(4px); }
 
 /* ============== Proportion Strip — ٦٠ / ٣٠ / ١٠ ============== */
 .proportion-strip { position: relative; z-index: 3; height: 5px; display: flex; }
@@ -204,6 +207,7 @@ h1 { font-weight: 900; letter-spacing: -0.03em; }
   background-position: left 18px center;
   padding-inline-start: 46px;
 }
+[dir='ltr'] .field .select { background-position: right 18px center; padding-inline-start: 16px; padding-inline-end: 46px; }
 .field .hint { margin-top: 6px; font-size: 12px; color: var(--ink-500); }
 .field .error-msg { margin-top: 6px; font-size: 12px; color: #C9534B; display: none; font-weight: 500; }
 .field.is-invalid .input, .field.is-invalid .select, .field.is-invalid textarea {
@@ -229,6 +233,47 @@ h1 { font-weight: 900; letter-spacing: -0.03em; }
 }
 .tel-group input { flex: 1; border: 0; background: transparent; padding: 13px 16px; color: var(--ink-900); font: inherit; outline: none; font-weight: 500; }
 .field.is-invalid .tel-group { border-color: #C9534B; }
+[dir='rtl'] .tel-group input { text-align: right; }
+
+/* Country picker inside the tel input */
+.tel-wrap { position: relative; }
+.tel-country {
+  cursor: pointer; border: 0; border-inline-end: 1px solid var(--ink-200);
+  font: inherit; color: var(--ink-800); white-space: nowrap; flex: none;
+  transition: background .2s;
+}
+.tel-country:hover { background: var(--green-50); }
+.tel-country:focus-visible { outline: 2px solid var(--green-500); outline-offset: -2px; }
+.tel-country:disabled { cursor: default; opacity: .7; }
+.tel-flag { font-size: 18px; line-height: 1; }
+.tel-dial { font-family: ui-monospace, monospace; font-weight: 600; }
+.tel-caret { color: var(--teal-600); flex: none; transition: transform .2s; }
+.tel-group.is-open .tel-caret { transform: rotate(180deg); }
+
+.tel-menu {
+  position: fixed; z-index: 1000;
+  display: flex; flex-direction: column;
+  background: #fff; border: 1.5px solid var(--ink-200); border-radius: 14px;
+  box-shadow: 0 18px 44px rgba(2,49,58,0.16); overflow: hidden;
+  animation: telMenuIn .16s ease-out;
+}
+@keyframes telMenuIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.tel-search {
+  width: 100%; border: 0; border-bottom: 1px solid var(--ink-200); border-radius: 0;
+  background: var(--paper-tint); padding: 14px 16px;
+  font: inherit; font-size: 14px; color: var(--ink-900); outline: none;
+  -webkit-appearance: none; appearance: none;
+}
+.tel-search:focus { background: #fff; }
+.tel-search::placeholder { color: var(--ink-400); }
+.tel-list { list-style: none; margin: 0; padding: 6px; overflow-y: auto; overscroll-behavior: contain; }
+.tel-group-label { padding: 10px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--ink-500); text-transform: uppercase; }
+.tel-option { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 9px; cursor: pointer; font-size: 14px; color: var(--ink-800); }
+.tel-option.is-active { background: var(--green-50); }
+.tel-option[aria-selected='true'] { font-weight: 600; color: var(--green-700); }
+.tel-option .tel-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tel-option .tel-dial { color: var(--ink-500); font-weight: 500; font-size: 13px; }
+.tel-empty { padding: 18px 12px; text-align: center; color: var(--ink-500); font-size: 13px; }
 
 .form-error-banner {
   margin-top: 12px; padding: 12px 16px; border-radius: 10px;

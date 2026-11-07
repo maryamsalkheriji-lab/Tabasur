@@ -1,16 +1,14 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase'
+import { DEFAULT_COUNTRY, validateMobile } from '../lib/phone'
+import { useLanguage } from '../lib/language'
 import BgParticles from '../components/BgParticles'
+import LanguageToggle from '../components/LanguageToggle'
+import PhoneInput from '../components/PhoneInput'
 import RegistrationEmailStatus from '../components/RegistrationEmailStatus'
 import { useRegisterAnimations, gsap } from '../lib/animations'
 import styles from './Register.module.css'
-
-function arabicToAscii(s) {
-  return String(s)
-    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d).toString())
-    .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d).toString())
-}
 
 async function submitSponsor(payload) {
   if (!isSupabaseActive) {
@@ -48,11 +46,17 @@ function Field({ id, label, required, hint, error, invalid, children }) {
 
 export default function SponsorRegister() {
   useRegisterAnimations()
+  const { t, lang } = useLanguage()
+  const s = t.sponsor
+  const f = s.fields
+  // Validation stores message keys so the text follows the chosen language.
+  const te = key => (key ? s.errors[key] || key : '')
 
   const [form, setForm] = useState({
     organizationName: '',
     contactName: '',
     email: '',
+    country: DEFAULT_COUNTRY,
     mobile: '',
   })
   const [errors, setErrors] = useState({})
@@ -63,34 +67,37 @@ export default function SponsorRegister() {
 
   function handleChange(e) {
     const { name, value } = e.target
-    const nextValue = name === 'mobile'
-      ? arabicToAscii(value).replace(/\D/g, '').slice(0, 10)
-      : value
-
-    setForm(current => ({ ...current, [name]: nextValue }))
+    setForm(current => ({ ...current, [name]: value }))
     setErrors(current => ({ ...current, [name]: '' }))
+    setFormError('')
+  }
+
+  // حقل الجوال الدولي يرسل الدولة والرقم معًا
+  function handlePhone({ country, number }) {
+    setForm(current => ({ ...current, country, mobile: number }))
+    setErrors(current => ({ ...current, mobile: '' }))
     setFormError('')
   }
 
   function validate() {
     const nextErrors = {}
-    const mobile = arabicToAscii(form.mobile).replace(/\D/g, '')
+    const phone = validateMobile(form.country, form.mobile)
 
     if (!form.organizationName.trim() || form.organizationName.trim().length < 2) {
-      nextErrors.organizationName = 'الرجاء كتابة اسم الجهة'
+      nextErrors.organizationName = 'organizationRequired'
     } else if (form.organizationName.trim().length > 200) {
-      nextErrors.organizationName = 'اسم الجهة طويل جدًا — الحد الأقصى 200 حرف'
+      nextErrors.organizationName = 'organizationLong'
     }
     if (!form.contactName.trim() || form.contactName.trim().length < 2) {
-      nextErrors.contactName = 'الرجاء كتابة اسم الشخص المسؤول'
+      nextErrors.contactName = 'contactRequired'
     } else if (form.contactName.trim().length > 100) {
-      nextErrors.contactName = 'الاسم طويل جدًا — الحد الأقصى 100 حرف'
+      nextErrors.contactName = 'contactLong'
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) || form.email.trim().length > 254) {
-      nextErrors.email = 'الرجاء كتابة بريد إلكتروني صحيح'
+      nextErrors.email = 'email'
     }
-    if (!/^05\d{8}$/.test(mobile)) {
-      nextErrors.mobile = 'رقم غير صحيح — يجب أن يبدأ بـ 05 ويتكوّن من 10 أرقام'
+    if (!phone.ok) {
+      nextErrors.mobile = phone.reason
     }
 
     return nextErrors
@@ -109,12 +116,11 @@ export default function SponsorRegister() {
     setLoading(true)
     setFormError('')
 
-    const mobile = arabicToAscii(form.mobile).replace(/\D/g, '')
     const result = await submitSponsor({
       organization_name: form.organizationName.trim(),
       contact_name: form.contactName.trim(),
       contact_email: form.email.trim(),
-      contact_mobile: mobile,
+      contact_mobile: validateMobile(form.country, form.mobile).stored,
       created_at: new Date().toISOString(),
     })
 
@@ -135,12 +141,12 @@ export default function SponsorRegister() {
     submitting.current = false
     setLoading(false)
     if (result.duplicate) {
-      setErrors({ email: 'هذا البريد مسجّل من قبل.' })
-      setFormError('هذا البريد مسجّل من قبل — سنكتفي بطلبكم السابق.')
+      setErrors({ email: 'duplicateEmail' })
+      setFormError('duplicate')
     } else if (result.unavailable) {
-      setFormError('التسجيل غير متاح مؤقتًا. لم يُحفظ طلبك، يرجى المحاولة لاحقًا.')
+      setFormError('unavailable')
     } else {
-      setFormError('تعذّر إرسال الطلب. تحقّق من اتصالك ثم حاول مرة أخرى.')
+      setFormError('failed')
     }
   }
 
@@ -151,14 +157,17 @@ export default function SponsorRegister() {
         <Link className={styles.brand} to="/tabsur">
           <span className={styles.brandMark}><img src="/assets/tabsur-mark.png" alt="" /></span>
           <span className={styles.brandWord}>
-            <span className={styles.ar}>معسكر تَبصَّر</span>
-            <span className={styles.en}>SPONSOR REGISTRATION</span>
+            <span className={styles.ar}>{s.brandBig}</span>
+            <span className={styles.en}>{s.brandSmall}</span>
           </span>
         </Link>
-        <Link className={styles.navBack} to="/tabsur#sponsors">
-          <span>تسجيل الرعاة</span>
-          <span className={styles.arrow}>→</span>
-        </Link>
+        <div className={styles.navActions}>
+          <LanguageToggle />
+          <Link className={styles.navBack} to="/tabsur#sponsors">
+            <span>{s.back}</span>
+            <span className={styles.arrow}>{lang === 'en' ? '←' : '→'}</span>
+          </Link>
+        </div>
       </nav>
 
       <div className="proportion-strip" aria-hidden="true" style={{ height: '6px' }}>
@@ -167,9 +176,9 @@ export default function SponsorRegister() {
 
       <main className={`${styles.shell} ${styles.sponsorShell}`}>
         <aside className={`${styles.intro} fade-up`}>
-          <div className={styles.introEyebrow}>SPONSORS · TABSUR</div>
-          <h1>تسجيل <span className={styles.accent}>الرعاة</span></h1>
-          <p>هذا النموذج مخصص للجهات الراغبة في رعاية معسكر تَبصَّر أو التواصل حول فرص الشراكة والدعم.</p>
+          <div className={styles.introEyebrow}>{s.eyebrow}</div>
+          <h1>{s.titlePrefix}<span className={styles.accent}>{s.titleAccent}</span></h1>
+          <p>{s.intro}</p>
 
           <div className={styles.meta}>
             <div className={styles.metaRow}>
@@ -178,7 +187,7 @@ export default function SponsorRegister() {
                   <path d="M4 18h16M6 18V9l6-4 6 4v9" />
                 </svg>
               </span>
-              <span><strong>بيانات مختصرة</strong> · اسم الجهة والشخص المسؤول فقط</span>
+              <span><strong>{s.meta.brief}</strong>{s.meta.briefRest}</span>
             </div>
             <div className={styles.metaRow}>
               <span className={styles.metaIcon}>
@@ -186,12 +195,12 @@ export default function SponsorRegister() {
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.08 4.18 2 2 0 0 1 4.06 2h3a2 2 0 0 1 2 1.72c.12.9.32 1.78.6 2.63a2 2 0 0 1-.45 2.11L8 9.67a16 16 0 0 0 6.33 6.33l1.21-1.21a2 2 0 0 1 2.11-.45c.85.28 1.73.48 2.63.6A2 2 0 0 1 22 16.92z" />
                 </svg>
               </span>
-              <span><strong>سنتواصل معكم</strong> لمناقشة باقات الرعاية المناسبة</span>
+              <span><strong>{s.meta.contact}</strong>{s.meta.contactRest}</span>
             </div>
           </div>
           {!isSupabaseActive && (
             <div className={styles.supabaseHint} role="status">
-              التسجيل غير متاح مؤقتًا. يرجى المحاولة لاحقًا.
+              {s.unavailable}
             </div>
           )}
         </aside>
@@ -200,39 +209,36 @@ export default function SponsorRegister() {
           {!success ? (
             <div className="card-form-view">
               <div className={styles.cardHead}>
-                <h2>نموذج الرعاة</h2>
-                <span className={styles.step}>SPONSOR · 01 / 01</span>
+                <h2>{s.formTitle}</h2>
+                <span className={styles.step}>{s.step}</span>
               </div>
-              <p className={styles.cardSub}>الحقول التي تحمل <span style={{ color: 'var(--coral-500)' }}>•</span> مطلوبة.</p>
+              <p className={styles.cardSub}>{s.requiredPrefix}<span style={{ color: 'var(--coral-500)' }}>•</span>{s.requiredSuffix}</p>
 
               <form onSubmit={handleSubmit} noValidate>
                 <div className="field-row">
-                  <Field id="organizationName" label="اسم الجهة" required invalid={!!errors.organizationName} error={errors.organizationName}>
-                    <input className="input" id="organizationName" name="organizationName" type="text" value={form.organizationName} onChange={handleChange} placeholder="اسم الشركة أو الجهة" />
+                  <Field id="organizationName" label={f.organizationName.label} required invalid={!!errors.organizationName} error={te(errors.organizationName)}>
+                    <input className="input" id="organizationName" name="organizationName" type="text" value={form.organizationName} onChange={handleChange} placeholder={f.organizationName.placeholder} />
                   </Field>
-                  <Field id="contactName" label="اسم الشخص المسؤول" required invalid={!!errors.contactName} error={errors.contactName}>
-                    <input className="input" id="contactName" name="contactName" type="text" value={form.contactName} onChange={handleChange} placeholder="الاسم الكامل" autoComplete="name" />
+                  <Field id="contactName" label={f.contactName.label} required invalid={!!errors.contactName} error={te(errors.contactName)}>
+                    <input className="input" id="contactName" name="contactName" type="text" value={form.contactName} onChange={handleChange} placeholder={f.contactName.placeholder} autoComplete="name" />
                   </Field>
                 </div>
 
                 <div className="field-row">
-                  <Field id="email" label="الإيميل" required invalid={!!errors.email} error={errors.email}>
+                  <Field id="email" label={f.email.label} required invalid={!!errors.email} error={te(errors.email)}>
                     <input className="input" id="email" name="email" type="email" value={form.email} onChange={handleChange} placeholder="name@example.com" autoComplete="email" />
                   </Field>
-                  <Field id="mobile" label="رقم الشخص المسؤول" required hint="يبدأ بـ 05 ويتكوّن من 10 أرقام" invalid={!!errors.mobile} error={errors.mobile}>
-                    <div className="tel-group">
-                      <span className="tel-prefix">+966</span>
-                      <input id="mobile" name="mobile" type="tel" inputMode="numeric" maxLength={10} placeholder="05XXXXXXXX" value={form.mobile} onChange={handleChange} autoComplete="tel-national" />
-                    </div>
+                  <Field id="mobile" label={f.mobile.label} required hint={form.country === 'SA' ? f.mobile.hint : f.mobile.hintIntl} invalid={!!errors.mobile} error={te(errors.mobile)}>
+                    <PhoneInput id="mobile" name="mobile" lang={lang} labels={t.phone} country={form.country} number={form.mobile} onChange={handlePhone} />
                   </Field>
                 </div>
 
-                {formError && <div className="form-error-banner">{formError}</div>}
+                {formError && <div className="form-error-banner">{s.formErrors[formError] || formError}</div>}
 
                 <div className={styles.actions}>
                   <button className={`btn btn-primary ${loading ? styles.isLoading : ''}`} type="submit" disabled={loading || !isSupabaseActive}>
                     {loading && <span className={styles.spinner} />}
-                    {loading ? 'جارٍ الإرسال...' : 'إرسال طلب الرعاية'}
+                    {loading ? s.sending : s.submit}
                   </button>
                 </div>
               </form>
@@ -244,11 +250,11 @@ export default function SponsorRegister() {
                   <path d="M20 6L9 17l-5-5" />
                 </svg>
               </div>
-              <h2 className={styles.successTitle}>وصل طلب الرعاية</h2>
-              <p className={styles.successMsg}>شكرًا لكم. سنراجع بيانات الجهة ونتواصل مع الشخص المسؤول قريبًا لمناقشة فرص الرعاية.</p>
+              <h2 className={styles.successTitle}>{s.success.title}</h2>
+              <p className={styles.successMsg}>{s.success.msg}</p>
               <RegistrationEmailStatus email={form.email.trim()} fullName={form.contactName.trim()} kind="sponsor" />
               <div className={styles.successActions}>
-                <Link className="btn btn-primary" to="/tabsur">العودة للرئيسية</Link>
+                <Link className="btn btn-primary" to="/tabsur">{s.success.home}</Link>
               </div>
             </div>
           )}
@@ -256,7 +262,7 @@ export default function SponsorRegister() {
       </main>
 
       <footer className={styles.footer}>
-        TABSUR CAMP · SPONSOR REGISTRATION
+        {s.footer}
       </footer>
     </div>
   )

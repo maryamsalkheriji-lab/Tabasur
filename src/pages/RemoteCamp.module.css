@@ -1,0 +1,82 @@
+.page { padding-top:90px;background:var(--bg); }
+.wrap { max-width:1360px;padding-inline:clamp(20px,4vw,48px);margin-inline:auto; }
+.page svg { width:21px;height:21px;flex-shrink:0; }
+.page section[id] { scroll-margin-top:110px; }
+.statusBar { background:var(--green-50);border-bottom:1px solid var(--rule);color:var(--ink-700);font-size:14px; }
+.statusBar > div { min-height:48px;display:flex;align-items:center;gap:10px; }
+.statusBar svg { width:18px;height:18px; }
+.onlineBadge i { width:6px;height:6px;border-radius:50%;background:var(--green-600); }
+.header { display:flex;justify-content:space-between;align-items:center;gap:24px;padding-block:32px 36px; }
+.breadcrumb { display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink-600);margin-bottom:14px; }
+.breadcrumb span { color:var(--ink-300); }
+.header h1 { font-size:clamp(34px,3.6vw,50px);line-height:1.5;letter-spacing:-.025em; }
+.header h1 span { color:var(--green-700); }
+.header p { font-size:18px;color:var(--ink-600);line-height:1.85;margin-top:12px; }
+.onlineBadge { display:inline-flex;align-items:center;gap:8px;flex-shrink:0;padding:10px 16px;border:1px solid var(--rule);border-radius:99px;font-size:14px;color:var(--ink-600); }
+.library { display:flex;align-items:center;gap:22px;padding:32px;border-radius:18px;background:#02313A;color:#c2dcd5;position:relative;overflow:hidden; }
+.library::after { content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 10% 100%,#0abd701f,transparent 60%); }
+.library > * { position:relative;z-index:1; }
+.step { width:50px;height:50px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;font-size:24px;font-weight:700;background:var(--green-100);color:var(--green-700); }
+.library .step { background:#0abd7026;color:#7FDEB2;border:1px solid #0abd7040; }
+.eyebrow { font-size:14px;color:#7FDEB2;display:block;margin-bottom:5px; }
+.library h2 { color:#fff;font-size:32px;line-height:1.6; }
+.library p { font-size:17px;line-height:1.85;margin-top:6px; }
+.libraryAction { margin-inline-start:auto;flex-shrink:0;text-align:center; }
+.libraryAction small { display:block;font-size:13px;color:#c2dcd5;margin-top:8px; }
+.primary { display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:15px 26px;min-height:56px;border-radius:999px;background:#0ABD70;color:#02313A;font-size:17px;font-weight:700;transition:background .2s,transform .2s; }
+.primary:hover:not(:disabled) { background:#45CE90;transform:translateY(-1px); }
+.primary:disabled { background:#d3e1e3;color:#35636D;cursor:not-allowed; }
+.primary svg { width:22px;height:22px; }
+.submission { padding-block:36px 28px; }
+.sectionHead { display:flex;align-items:center;gap:18px;margin-bottom:26px; }
+.sectionHead h2 { font-size:32px;line-height:1.6; }
+.sectionHead p { color:var(--ink-600);font-size:17px;line-height:1.85;margin-top:6px; }
+.trackGrid { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px; }
+.track { display:flex;flex-direction:column;border:1px solid var(--rule);border-radius:14px;overflow:hidden;background:var(--paper);transition:border-color .2s,transform .2s; }
+.track:hover { border-color:var(--green-600);transform:translateY(-2px); }
+.trackImage { height:155px;position:relative;overflow:hidden;background:var(--paper-tint); }
+.trackImage img { width:100%;height:100%;object-fit:cover;object-position:50% 43%; }
+.trackImage::after { content:'';position:absolute;inset:0;background:linear-gradient(0deg,#02313a55,transparent); }
+.trackImage > span { position:absolute;inset:10px 10px auto auto;z-index:1;font:14px system-ui;background:#fffffff0;color:#02313A;border-radius:4px;padding:4px 6px; }
+.trackBody { display:flex;flex-direction:column;flex:1;padding:22px 20px 20px; }
+.track h3 { font-size:21px;line-height:1.6; }
+.track p { font-size:16px;color:var(--ink-600);line-height:1.8;margin-block:8px 22px; }
+.attachButton { display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:56px;background:var(--green-100);border:1px solid var(--green-200);border-radius:8px;color:var(--green-700);font-size:17px;font-weight:700;margin-top:auto;transition:background .2s; }
+.attachButton:disabled { background:var(--bg-alt);border-color:var(--rule);color:var(--ink-600);cursor:not-allowed; }
+.attachButton svg { width:22px;height:22px; }
+.closedNotice { display:flex;align-items:flex-start;gap:14px;padding:20px 24px;margin-bottom:24px;background:var(--green-50);border:1px solid var(--green-200);border-radius:12px;color:var(--ink-700);line-height:1.85; }
+.closedNotice > svg { margin-top:5px;color:var(--green-700); }
+.closedNotice strong { font-size:18px;color:var(--ink-900); }
+.closedNotice p { font-size:16px;margin-top:4px; }
+@media (max-width:1100px) {
+  .onlineBadge { display:none; }
+  .library { flex-wrap:wrap; }
+  .libraryAction { margin-inline-start:72px; }
+  .trackGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .trackImage { height:150px; }
+}
+@media (max-width:600px) {
+  .header { padding-block:24px; }
+  .header h1 { font-size:34px; }
+  .header h1 span { display:block; }
+  .header p { font-size:16px; }
+  .library { padding:22px;gap:14px;align-items:flex-start; }
+  .libraryCopy { flex:1; }
+  .library h2 { font-size:27px; }
+  .library p { font-size:16px; }
+  .libraryAction { width:100%;margin:8px 0 0; }
+  .libraryAction .primary { width:100%; }
+  .library .step,.step { width:42px;height:42px;font-size:21px; }
+  .sectionHead { gap:12px;align-items:flex-start; }
+  .sectionHead h2 { font-size:27px; }
+  .sectionHead p { font-size:16px; }
+  .trackGrid { gap:14px; }
+  .trackImage { height:110px; }
+  .trackBody { padding:16px 12px; }
+  .track h3 { font-size:18px;min-height:58px; }
+  .track p { font-size:14px;min-height:51px;margin-bottom:16px; }
+  .attachButton { font-size:15px;gap:7px;min-height:52px; }
+}
+@media (max-width:480px) { .page { padding-top:65px; } .statusBar { font-size:13px; } .closedNotice { padding:16px; } }
+@media (max-width:359px) { .wrap { padding-inline:16px; } .trackGrid { grid-template-columns:1fr; } .track h3,.track p { min-height:0; } .trackImage { height:130px; } .header h1 { font-size:30px; } }
+@media (prefers-reduced-motion:reduce) { .page * { transition:none !important;scroll-behavior:auto !important; } }

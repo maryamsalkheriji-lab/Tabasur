@@ -6,6 +6,10 @@
   background: var(--paper-tint);
   border-top: 0;
 }
+.compact { background:var(--paper-tint);border-top:1px solid var(--rule);padding:18px 0; }
+.compact > div { display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--ink-600); }
+.compact a { font-weight:700;color:var(--teal-600);min-height:32px;display:inline-flex;align-items:center; }
+@media (max-width:600px) { .compact > div { justify-content:center;gap:8px 20px; } .compact span { order:3;width:100%;text-align:center;font-size:12px; } }
 
 .grid {
   display: grid;

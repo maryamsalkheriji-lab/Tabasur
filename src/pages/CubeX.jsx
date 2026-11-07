@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { registrationPeriod } from '../lib/camp'
+import { registrationStatus } from '../lib/camp'
 import './CubeX.css'
 
 const A = '/assets/cubex/'
@@ -30,7 +30,7 @@ const DICT = {
       { tag: '04', title: 'بناء الشركات', desc: 'من الفكرة إلى شركة ناشئة قابلة للنمو.' }
     ]},
     programs: { eyebrow: 'برامجنا ومبادراتنا', title: 'برامج تصنع الأثر',
-      tabsur: { badge: `التسجيل: ${registrationPeriod.ar}`, title: 'معسكر تَبصَّر', sub: 'TABSUR · تسويق المدن', desc: '4 أيام لرواية تحوّل المدينة المنورة بصريًا.', cta: 'زيارة الموقع ←' },
+      tabsur: { badge: registrationStatus.ar, title: 'معسكر تَبصَّر', sub: 'TABSUR · تسويق المدن', desc: '4 أيام لرواية تحوّل المدينة المنورة بصريًا.', cta: 'زيارة الموقع ←' },
       madinah: { href: MADINAH_TECH_URL, cta: 'زيارة الموقع ←', badge: 'التسجيل مفتوح', title: 'مدينة تِك', desc: 'مبادرة تقنية تجمع المواهب وروّاد الأعمال لتطوير الأفكار وتحويلها إلى حلول مبتكرة.', meta: 'تعرّف على البرنامج' },
       medai: { href: 'https://medai.sa/ar', cta: 'زيارة الموقع ←', ended: true, badge: 'انتهى الملتقى', title: 'معسكر وهاكاثون ملتقى الذكاء الاصطناعي', desc: 'تحدٍّ تقني لحلول ذكية لمشكلات حقيقية.', meta: 'فِرَق من 2–4' }
     },
@@ -56,7 +56,7 @@ const DICT = {
       { tag: '04', title: 'Venture Building', desc: 'From idea to a scalable startup.' }
     ]},
     programs: { eyebrow: 'Programs & Initiatives', title: 'Programs that make an impact',
-      tabsur: { badge: `Registration: ${registrationPeriod.en}`, title: 'Tabsur Camp', sub: 'TABSUR · CITY MARKETING', desc: "4 days retelling Madinah's transformation, visually.", cta: 'Visit website →' },
+      tabsur: { badge: registrationStatus.en, title: 'Tabsur Camp', sub: 'TABSUR · CITY MARKETING', desc: "4 days retelling Madinah's transformation, visually.", cta: 'Visit website →' },
       madinah: { href: MADINAH_TECH_URL, cta: 'Visit website →', badge: 'Registration open', title: 'Madinah Tech', desc: 'A technology initiative bringing talent and entrepreneurs together to develop ideas into innovative solutions.', meta: 'Explore the program' },
       medai: { href: 'https://medai.sa/ar', cta: 'Visit website →', ended: true, badge: 'Event ended', title: 'AI Forum Bootcamp & Hackathon', desc: 'A technical challenge for real-world AI solutions.', meta: 'Teams of 2–4' }
     },

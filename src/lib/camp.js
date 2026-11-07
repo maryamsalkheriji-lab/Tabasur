@@ -1,6 +1,6 @@
-export const registrationPeriod = {
-  ar: '٢٤ أكتوبر – ٣ نوفمبر ٢٠٢٦',
-  en: '24 Oct – 3 Nov 2026',
+export const registrationStatus = {
+  ar: 'التسجيل الحضوري مغلق · التسجيل متاح للأونلاين فقط',
+  en: 'In-person registration is closed · Online registration only',
 }
 
 // الرعاة المؤكدون: { name, logo, ratio } — ratio = عرض الشعار ÷ ارتفاعه بعد قصّ الحواف،

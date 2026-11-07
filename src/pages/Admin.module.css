@@ -261,14 +261,22 @@
 .detailBtn:hover { background:var(--green-600); color:#fff; border-color:transparent; }
 
 /* Pagination */
-.pagination { display:flex; gap:6px; padding:14px 20px; justify-content:center; border-top:1px solid var(--rule); }
+.pagination { display:flex; flex-direction:column; align-items:center; gap:14px; padding:16px 20px; border-top:1px solid var(--rule); }
+.paginationControls { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; max-width:100%; }
+.pageActions, .pageNumbers { display:flex; align-items:center; justify-content:center; gap:6px; }
+.pageNumbers { flex-wrap:wrap; min-width:0; max-width:100%; }
 .pagination button {
-  width:34px; height:34px; border-radius:8px; font-size:13px; font-weight:600;
+  flex:none; min-width:40px; min-height:40px; padding:6px 10px; border-radius:8px; font-size:13px; font-weight:600; white-space:nowrap;
   background:var(--paper); border:1.5px solid var(--rule); color:var(--ink-700);
   transition:background .2s, color .2s, border-color .2s;
 }
 .pagination button:hover:not(:disabled) { border-color:var(--green-500); color:var(--green-600); }
 .pagination button:disabled { opacity:.4; cursor:not-allowed; }
+.pagination button:focus-visible, .pageJump select:focus-visible { outline:2px solid var(--green-600); outline-offset:2px; }
+.pageGap { width:12px; flex:none; text-align:center; color:var(--ink-500); }
+.paginationMeta { display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:10px 24px; max-width:100%; font-size:13px; color:var(--ink-600); }
+.pageJump { display:inline-flex; align-items:center; gap:8px; }
+.pageJump select { min-width:72px; min-height:40px; padding:6px 10px; border:1px solid var(--rule); border-radius:8px; background:var(--paper); color:var(--ink-700); font:inherit; font-size:16px; }
 .pageActive { background:var(--green-600) !important; color:#fff !important; border-color:var(--green-600) !important; }
 
 /* States */
@@ -425,8 +433,7 @@
   .cardTable .detailBtn { width:100%; padding:10px; font-size:13px; }
   .rowSelected { border-color:var(--green-500) !important; }
 
-  .pagination { flex-wrap:wrap; padding:12px; }
-  .pagination button { width:auto; min-width:38px; height:38px; padding:0 10px; }
+  .pagination { padding:12px; }
 
   /* لوحة التفاصيل تظهر من أسفل الشاشة بدل ما تنزل تحت الجدول */
   .detailPanel {
