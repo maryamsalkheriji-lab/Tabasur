@@ -12,6 +12,7 @@ export const sponsors = [
   { name: 'المدينة — Madinah', logo: '/assets/sponsors/madinah.png', ratio: 0.58 },
   { name: 'زوايا مبتكرة — Zwaya Mubtakara', logo: '/assets/sponsors/zwaya.png', ratio: 2.79 },
   { name: 'my', logo: '/assets/sponsors/my.png', ratio: 0.94 },
+  { name: 'Granollos', logo: '/assets/sponsors/granollos.png', ratio: 1.09 },
   { name: 'العنان للسفر — Alanan Travel', logo: '/assets/sponsors/alanan.png', ratio: 3.01 },
   { name: 'أثر المدينة — Athar Almadinah', logo: '/assets/sponsors/athar.png', ratio: 0.96 },
   { name: 'م إ ش للتصميم المعماري — MISH Architecture', logo: '/assets/sponsors/mish.png', ratio: 3.77 },

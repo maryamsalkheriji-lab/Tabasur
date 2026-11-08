@@ -415,20 +415,36 @@ function Sponsors() {
         </div>
       </div>
 
+      {/* شبكة ثابتة صغيرة بكل الشعارات: الرعاة واضحون دائمًا، والشريط المتحرك تحتها للجمال فقط */}
+      <div className="container">
+        <ul className={styles.sponsorsGrid} aria-label={sp.eyebrow}>
+          {sponsors.map(sponsor => (
+            <li className={styles.sponsorTile} key={sponsor.name}>
+              <img
+                src={sponsor.logo}
+                alt={sponsor.name}
+                style={{ width: logoWidth(sponsor.ratio) }}
+                draggable="false"
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
+
       <div
         className={styles.sponsorsMarquee}
         style={{ '--sponsor-count': loopSponsors.length, '--sponsor-duration': `${loopSponsors.length * 3.5}s` }}
+        aria-hidden="true"
       >
         {loopSponsors.map((sponsor, i) => (
           <article
             className={styles.sponsorCard}
             key={`${sponsor.name}-${i}`}
             style={{ '--sponsor-index': i }}
-            aria-hidden={i >= sponsors.length}
           >
             <img
               src={sponsor.logo}
-              alt={i < sponsors.length ? sponsor.name : ''}
+              alt=""
               style={{ width: logoWidth(sponsor.ratio) }}
               draggable="false"
             />

@@ -304,6 +304,35 @@
 /* ============ SPONSORS — شريط يدور تلقائيًا ============ */
 .sponsors { background: var(--paper); }
 
+/* الشبكة الثابتة: بلاطات أصغر من كروت الشريط، بنفس نسبة الصندوق (1.8) حتى تعمل logoWidth نفسها */
+.sponsorsGrid {
+  --tile-w:clamp(104px,9.6vw,140px);
+  list-style:none;margin:0 0 clamp(26px,3vw,40px);padding:0;
+  display:flex;flex-wrap:wrap;justify-content:center;
+  gap:clamp(10px,1.2vw,16px);
+}
+.sponsorTile {
+  box-sizing:border-box;
+  width:var(--tile-w);
+  height:calc(var(--tile-w) / 1.8);
+  padding:clamp(10px,1vw,14px) clamp(12px,1.2vw,18px);
+  border-radius:clamp(12px,1.2vw,16px);
+  background:var(--deep-surface, #02313A);
+  border:1px solid rgba(155,211,192,.22);
+  box-shadow:var(--shadow-soft);
+  display:grid;place-items:center;
+  transition:transform .35s ease, border-color .35s ease, box-shadow .35s ease;
+}
+.sponsorTile img {
+  display:block;height:auto;max-width:100%;max-height:100%;
+  object-fit:contain;user-select:none;
+}
+.sponsorTile:hover { transform:translateY(-3px);border-color:var(--green-400);box-shadow:var(--shadow-card); }
+@media (max-width:760px) {
+  /* ثلاث بلاطات في الصف: عرض الشاشة ناقص هوامش .container والفجوتين (وحدات مطلقة حتى يصح الارتفاع) */
+  .sponsorsGrid { --tile-w:calc((100vw - 2 * clamp(20px,4vw,48px) - 2 * 10px) / 3);gap:10px; }
+}
+
 .sponsorsMarquee {
   --card-w:clamp(190px,17vw,250px);
   --card-gap:clamp(14px,1.6vw,22px);
@@ -467,4 +496,5 @@
 :global([data-theme='dark']) .pillarsNav button:hover { color:#02313A; }
 :global([data-theme='dark']) .partnerTag { color:#02313A; }
 :global([data-theme='dark']) .partnerTagAlt { color:#02313A; }
-:global([data-theme='dark']) .sponsorCard { background:#032A31; border-color:rgba(155,211,192,.26); }
+:global([data-theme='dark']) .sponsorCard,
+:global([data-theme='dark']) .sponsorTile { background:#032A31; border-color:rgba(155,211,192,.26); }
