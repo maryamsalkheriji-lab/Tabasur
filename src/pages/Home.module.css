@@ -333,8 +333,9 @@
   margin-top:calc(var(--card-w) / -3.6);
   padding:clamp(18px,1.8vw,26px) clamp(22px,2.2vw,32px);
   border-radius:clamp(16px,1.6vw,22px);
-  background:#fff;
-  border:1px solid var(--rule);
+  /* شعارات الرعاة بيضاء على خلفية شفافة، فالكرت داكن في الوضعين حتى تظهر */
+  background:var(--deep-surface, #02313A);
+  border:1px solid rgba(155,211,192,.22);
   box-shadow:var(--shadow-soft);
   display:grid;place-items:center;
   animation:sponsorRoll var(--sponsor-duration,50s) linear infinite;
@@ -466,4 +467,4 @@
 :global([data-theme='dark']) .pillarsNav button:hover { color:#02313A; }
 :global([data-theme='dark']) .partnerTag { color:#02313A; }
 :global([data-theme='dark']) .partnerTagAlt { color:#02313A; }
-:global([data-theme='dark']) .sponsorCard { background:#F3F8F6; }
+:global([data-theme='dark']) .sponsorCard { background:#032A31; border-color:rgba(155,211,192,.26); }
