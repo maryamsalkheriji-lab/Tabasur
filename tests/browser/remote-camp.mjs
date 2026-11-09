@@ -1,4 +1,5 @@
-// Local acceptance check for the published, locked remote participation page.
+// Local acceptance check for the remote participation page with submissions open:
+// four tracks link to their own Drive folders, the site still mounts no uploader, and the API stays locked.
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright-core')
@@ -23,20 +24,32 @@ try {
       })
       await page.addInitScript(lang => {
         localStorage.setItem('tabsur-lang', lang)
-        // Old preview settings must not override the published shared library or open uploads.
+        // Old preview settings must not override the published shared library or the per-track folders.
         localStorage.setItem('tabsur-remote-preview-v2', JSON.stringify({ libraryUrl: 'https://drive.google.com/drive/folders/1FakeOverride_123', uploadsEnabled: true }))
       }, lang)
       await page.goto(`${base}/tabsur/remote?uploads=enabled`)
       await page.locator('#remote-title').waitFor()
       await page.evaluate(() => document.fonts.ready)
       assert.equal(await page.locator('#remote-submit article').count(), 4)
-      assert.equal(await page.locator('#remote-submit button:disabled').count(), 4)
+      assert.equal(await page.locator('#remote-submit button').count(), 0, 'no locked buttons remain')
       assert.equal(await page.locator('input[type="file"], dialog, main form').count(), 0)
-      assert.match(await page.locator('#upload-closed-note').innerText(), lang === 'ar' ? /مغلق حاليًا/ : /currently closed/)
+      assert.match(await page.locator('#upload-how-to').innerText(), lang === 'ar' ? /ثلاث خطوات/ : /three steps/)
+      assert.match(await page.locator('#upload-how-to').innerText(), lang === 'ar' ? /الاسم الكامل - رقم الجوال/ : /Full name - Mobile number/)
+      assert.match(await page.locator('body').innerText(), lang === 'ar' ? /مفتوح الآن/ : /open now/)
       assert.equal(await page.locator('#remote-library a').getAttribute('href'), 'https://drive.google.com/drive/folders/1R0C4MsoTgcqEP9JdHGxZp-Ld2UKRpzGr')
-      for (const button of await page.locator('#remote-submit button').all()) {
-        // Removing disabled in devtools still cannot uncover a dormant picker or request.
-        await button.evaluate(node => { node.disabled = false; node.click(); node.disabled = true })
+      const folders = {
+        destination: 'https://drive.google.com/drive/folders/1aPkjTMVHSsh8AC_fGeUh-MhtCwtmSjtb',
+        life: 'https://drive.google.com/drive/folders/1j9RZE4kbLaGFQ5IoaD-GGBEHlLxH6qiq',
+        investment: 'https://drive.google.com/drive/folders/1yzAy_szsE6wJ-HK1OyUYXmZSo5tDSvkn',
+        identity: 'https://drive.google.com/drive/folders/1rpk0W6370XgSGMM_7ioYVsueQHWUgfk4',
+      }
+      const links = await page.locator('#remote-submit article a[target="_blank"]').all()
+      assert.equal(links.length, 4, 'one upload link per track')
+      for (const [id, href] of Object.entries(folders)) {
+        const link = page.locator(`#remote-submit article[aria-labelledby="track-${id}"] a[target="_blank"]`)
+        assert.equal(await link.getAttribute('href'), href, `${id} links to its own folder`)
+        assert.match(await link.getAttribute('rel'), /noopener/)
+        assert.match(await link.getAttribute('aria-label'), lang === 'ar' ? /ارفع فيديوهاتك هنا/ : /Upload your videos here/)
       }
       await page.locator('#remote-submit').evaluate(node => {
         const data = new DataTransfer()
@@ -46,13 +59,13 @@ try {
       assert.equal(pickers, 0)
       assert.equal(await page.locator('input[type="file"], dialog').count(), 0)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${lang} overflow at ${width}px`)
-      if (shots && [390,1440].includes(width)) await page.screenshot({ path: `${shots}/remote-closed-${lang}-${width}.png`, fullPage: true })
+      if (shots && [390,1440].includes(width)) await page.screenshot({ path: `${shots}/remote-open-${lang}-${width}.png`, fullPage: true })
       const result = await page.request.post(`${base}/api/remote-upload?track=life`, { data: { name: 'not-an-upload', enabled: true } })
       assert.equal(result.status(), 423)
       assert.equal((await result.json()).code, 'UPLOADS_CLOSED')
       assert.deepEqual(errors, [])
       assert.deepEqual(writes, [])
-      console.log(`PASS ${lang} ${width}px: library, four locked tracks, no picker/drop/upload, server rejects submission`)
+      console.log(`PASS ${lang} ${width}px: library, four tracks linking to their own Drive folders, no picker/drop/upload, server still rejects direct submission`)
       await page.close()
     }
   }

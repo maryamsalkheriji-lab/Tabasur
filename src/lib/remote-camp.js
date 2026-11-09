@@ -3,6 +3,19 @@ export const REMOTE_STORAGE_KEY = 'tabsur-remote-preview-v2'
 export const VIDEO_ACCEPT = 'video/*,.mp4,.mov,.webm,.m4v'
 // Shared raw-footage folder shown to every visitor on the public remote page.
 export const DEFAULT_LIBRARY_URL = 'https://drive.google.com/drive/folders/1R0C4MsoTgcqEP9JdHGxZp-Ld2UKRpzGr'
+// Submission folders per track (organizer, 2026-11-09). Each folder is a Google Drive folder shared
+// "anyone with the link → contributor"; participants upload there directly, the site never receives files.
+export const SUBMISSIONS_OPEN = true
+export const SUBMISSION_FOLDERS = Object.freeze({
+  destination: 'https://drive.google.com/drive/folders/1aPkjTMVHSsh8AC_fGeUh-MhtCwtmSjtb', // الوجهة وتجربة الزائر
+  life: 'https://drive.google.com/drive/folders/1j9RZE4kbLaGFQ5IoaD-GGBEHlLxH6qiq', // جودة الحياة
+  investment: 'https://drive.google.com/drive/folders/1yzAy_szsE6wJ-HK1OyUYXmZSo5tDSvkn', // الاستثمار والفرص
+  identity: 'https://drive.google.com/drive/folders/1rpk0W6370XgSGMM_7ioYVsueQHWUgfk4', // الهوية والسردية
+})
+// Returns the normalized folder URL for a track, or null when the track has no valid folder.
+export function submissionFolderUrl(trackId) {
+  return Object.hasOwn(SUBMISSION_FOLDERS, trackId) ? driveFolderUrl(SUBMISSION_FOLDERS[trackId]) : null
+}
 export const remoteTracks = [
   { id: 'destination', title: 'الوجهة وتجربة الزائر', description: 'احكِ تجربة اكتشاف المدينة.', image: '/assets/track-01.png', number: '01' },
   { id: 'life', title: 'جودة الحياة', description: 'أبرز تفاصيل الحياة وتحوّلها.', image: '/assets/track-02.png', number: '02' },

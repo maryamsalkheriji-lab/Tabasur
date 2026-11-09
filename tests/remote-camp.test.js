@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { driveFolderUrl, isCurrentPreviewConsent, makePreviewConsent, PUBLICATION_POLICY, readLibraryUrl, REMOTE_STORAGE_KEY, saveLibraryUrl, selectVideos } from '../src/lib/remote-camp.js'
+import { DEFAULT_LIBRARY_URL, driveFolderUrl, isCurrentPreviewConsent, makePreviewConsent, PUBLICATION_POLICY, readLibraryUrl, remoteTracks, REMOTE_STORAGE_KEY, saveLibraryUrl, selectVideos, SUBMISSION_FOLDERS, SUBMISSIONS_OPEN, submissionFolderUrl } from '../src/lib/remote-camp.js'
 const folder = 'https://drive.google.com/drive/folders/1ExampleFolderId_123'
 const video = { name: 'city.mp4', type: 'video/mp4', size: 2048, lastModified: 1 }
 
@@ -70,4 +70,25 @@ test('English consent records the English policy text under the same version', (
   assert.equal(isCurrentPreviewConsent(consent, 'life'), true)
   assert.equal(isCurrentPreviewConsent({ ...consent, language: 'ar' }, 'life'), false)
   assert.equal(makePreviewConsent(true, 'life', '2026-11-01T10:00:00.000Z', 'fr'), null)
+})
+
+test('Submissions are open and every track has its own valid Drive folder, matching the organizer’s folders by name', () => {
+  assert.equal(SUBMISSIONS_OPEN, true)
+  // Folder ids verified against Drive metadata on 2026-11-09: each folder’s title equals the track title.
+  const expected = {
+    destination: '1aPkjTMVHSsh8AC_fGeUh-MhtCwtmSjtb', // الوجهة وتجربة الزائر
+    life: '1j9RZE4kbLaGFQ5IoaD-GGBEHlLxH6qiq', // جودة الحياة
+    investment: '1yzAy_szsE6wJ-HK1OyUYXmZSo5tDSvkn', // الاستثمار والفرص
+    identity: '1rpk0W6370XgSGMM_7ioYVsueQHWUgfk4', // الهوية والسردية
+  }
+  assert.deepEqual(Object.keys(SUBMISSION_FOLDERS).sort(), remoteTracks.map(track => track.id).sort())
+  for (const track of remoteTracks) {
+    const url = submissionFolderUrl(track.id)
+    assert.equal(url, `https://drive.google.com/drive/folders/${expected[track.id]}`, track.id)
+    assert.equal(driveFolderUrl(url), url, 'folder URL survives normalization unchanged')
+  }
+  assert.equal(new Set(Object.values(SUBMISSION_FOLDERS)).size, remoteTracks.length, 'no two tracks share a folder')
+  assert.equal(Object.values(SUBMISSION_FOLDERS).includes(DEFAULT_LIBRARY_URL), false, 'the raw-footage library is not a submission folder')
+  assert.equal(submissionFolderUrl('unknown'), null)
+  assert.equal(submissionFolderUrl('constructor'), null)
 })

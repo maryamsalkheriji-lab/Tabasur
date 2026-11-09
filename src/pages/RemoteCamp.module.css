@@ -44,6 +44,21 @@
 .attachButton { display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:56px;background:var(--green-100);border:1px solid var(--green-200);border-radius:8px;color:var(--green-700);font-size:17px;font-weight:700;margin-top:auto;transition:background .2s; }
 .attachButton:disabled { background:var(--bg-alt);border-color:var(--rule);color:var(--ink-600);cursor:not-allowed; }
 .attachButton svg { width:22px;height:22px; }
+/* Open state: green status bar, upload links per track, and the three-step guide */
+.statusOpen { background:#0ABD70;border-bottom-color:#0ABD70;color:#02313A;font-weight:700; }
+.statusOpen svg { color:#02313A; }
+.uploadButton { display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:56px;padding:8px 12px;background:#0ABD70;border:1px solid #0ABD70;border-radius:8px;color:#02313A;font-size:17px;font-weight:700;line-height:1.35;text-align:center;margin-top:auto;transition:background .2s,transform .2s; }
+.uploadButton:hover { background:#45CE90;transform:translateY(-1px); }
+.uploadButton svg { width:22px;height:22px; }
+.uploadButton svg:last-child { width:17px;height:17px;opacity:.75; }
+.labelShort { display:none; }
+.howTo { padding:22px 26px;margin-bottom:24px;background:var(--green-50);border:1px solid var(--green-200);border-radius:12px;color:var(--ink-700);line-height:1.85; }
+.howToHead { display:flex;align-items:center;gap:12px;margin-bottom:10px; }
+.howToHead svg { color:var(--green-700); }
+.howToHead strong { font-size:19px;color:var(--ink-900); }
+.howTo ol { margin:0;padding-inline-start:22px;display:grid;gap:8px;font-size:16px; }
+.howTo ol li::marker { color:var(--green-700);font-weight:700; }
+.howTo p { font-size:15px;margin-top:12px;color:var(--ink-600); }
 .closedNotice { display:flex;align-items:flex-start;gap:14px;padding:20px 24px;margin-bottom:24px;background:var(--green-50);border:1px solid var(--green-200);border-radius:12px;color:var(--ink-700);line-height:1.85; }
 .closedNotice > svg { margin-top:5px;color:var(--green-700); }
 .closedNotice strong { font-size:18px;color:var(--ink-900); }
@@ -75,7 +90,12 @@
   .trackBody { padding:16px 12px; }
   .track h3 { font-size:18px;min-height:58px; }
   .track p { font-size:14px;min-height:51px;margin-bottom:16px; }
-  .attachButton { font-size:15px;gap:7px;min-height:52px; }
+  .attachButton, .uploadButton { font-size:15px;gap:7px;min-height:52px; }
+  .uploadButton svg:last-child { display:none; }
+  .uploadButton .labelLong { display:none; }
+  .uploadButton .labelShort { display:inline; }
+  .howTo { padding:16px; }
+  .howTo ol { font-size:15px;padding-inline-start:18px; }
 }
 @media (max-width:480px) { .page { padding-top:65px; } .statusBar { font-size:13px; } .closedNotice { padding:16px; } }
 @media (max-width:359px) { .wrap { padding-inline:16px; } .trackGrid { grid-template-columns:1fr; } .track h3,.track p { min-height:0; } .trackImage { height:130px; } .header h1 { font-size:30px; } }
