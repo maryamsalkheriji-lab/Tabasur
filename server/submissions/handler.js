@@ -205,7 +205,8 @@ function objectPath(team, ext, nowMs) {
 
 function uploadInfo(pending, team, storage) {
   return {
-    uploadId: pending.uploadId, endpoint: pending.endpoint || storage.uploadEndpoint, bucket: pending.bucket || storage.bucket, objectPath: pending.objectPath, token: pending.token,
+    // عنوان الرفع إعداد حالي للسيرفر لا حالة للجلسة: لو تغيّر لا تتعطل جلسة معلّقة بعنوان قديم.
+    uploadId: pending.uploadId, endpoint: storage.uploadEndpoint, bucket: pending.bucket || storage.bucket, objectPath: pending.objectPath, token: pending.token,
     chunkSize: CHUNK_SIZE, fileName: pending.fileName, displayName: pending.displayName, size: pending.size, mimeType: pending.mimeType,
     replaces: Boolean(pending.replaces), teamCode: team.code, expiresAt: pending.expiresAt,
   }
