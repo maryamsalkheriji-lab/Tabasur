@@ -71,7 +71,7 @@ export const translations = {
           { time: 'اليوم 01 — الفهم', day: 'اليوم 01', title: 'تسويق المدن والسرد الحضري', items: ['خصوصية المدينة المنورة', 'فهم التحوّل الحضري والإنساني', 'تكوين الفرق واختيار المسارات'] },
           { time: 'اليوم 02 — الاكتشاف', day: 'اليوم 02', title: 'الأفكار والزوايا الجديدة', items: ['استخدام AI لتوليد الأفكار', 'تحليل الجمهور والرسائل', 'تطوير زوايا محتوى قابلة للنشر'] },
           { time: 'اليوم 03 — الإنتاج', day: 'اليوم 03', title: 'من السيناريو إلى النموذج', items: ['كتابة السيناريو وبناء القصة', 'تصوير وتصميم ومونتاج', 'تحسين المخرجات بالذكاء الاصطناعي'] },
-          { time: 'اليوم 04 — الإطلاق', day: 'اليوم 04', title: 'عرض الأعمال والتكريم', items: ['إطلاق جماعي للمحتوى', 'عرض أفضل الأعمال أمام لجنة', 'تكريم الفائزين وتوثيق المخرجات'] },
+          { time: 'اليوم 04 — الختام الحضوري', day: 'اليوم 04', title: 'الختام الحضوري ومرحلة الإنجاز', items: ['آخر يوم حضوري، ومراجعة تقدّم كل فريق مع المدرّبين', 'تواصل الفرق العمل عن بُعد حتى الموعد النهائي للتسليم: 21 نوفمبر', 'يُعلن موعد حفل عرض الأعمال والتكريم لاحقًا'] },
         ],
       },
       outputs: {
@@ -284,7 +284,7 @@ export const translations = {
           { time: 'DAY 01 — Understanding', day: 'DAY 01', title: 'City Marketing & Urban Storytelling', items: ['What makes Madinah unique', 'Understanding urban and human transformation', 'Forming teams and choosing tracks'] },
           { time: 'DAY 02 — Discovery', day: 'DAY 02', title: 'Ideas & New Angles', items: ['Using AI to generate ideas', 'Audience and message analysis', 'Developing publish-ready content angles'] },
           { time: 'DAY 03 — Production', day: 'DAY 03', title: 'From Script to Prototype', items: ['Scriptwriting and story building', 'Filming, design, and editing', 'Enhancing outputs with AI'] },
-          { time: 'DAY 04 — Launch', day: 'DAY 04', title: 'Showcase & Awards', items: ['Collective content launch', 'Presenting the best work to a jury', 'Honoring winners and documenting outputs'] },
+          { time: 'DAY 04 — In-Person Wrap-Up', day: 'DAY 04', title: 'In-Person Wrap-Up & Completion Phase', items: ['Final in-person day, with a progress review for every team', 'Teams keep working remotely until the submission deadline: 21 November', 'The showcase and awards ceremony date will be announced later'] },
         ],
       },
       outputs: {
