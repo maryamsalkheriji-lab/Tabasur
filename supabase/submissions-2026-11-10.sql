@@ -147,7 +147,7 @@ declare
   m      jsonb;
   i      int := 0;
 begin
-  if jsonb_typeof(p_members) <> 'array' or jsonb_array_length(p_members) < 1 or jsonb_array_length(p_members) > 5 then
+  if jsonb_typeof(p_members) <> 'array' or jsonb_array_length(p_members) < 1 or jsonb_array_length(p_members) > 50 then
     raise exception using errcode = 'P0001', message = 'INVALID_MEMBERS';
   end if;
   if exists (select 1 from public.tb_teams where name_key = p_name_key) then

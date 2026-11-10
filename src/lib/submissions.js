@@ -1,6 +1,6 @@
 // عميل صفحة التسليم: نداءات /api/submissions ورفع الفيديو مباشرة إلى Supabase Storage بالبروتوكول القابل للاستئناف (TUS).
 export const SUBMISSIONS_API = '/api/submissions'
-export const MAX_MEMBERS = 5
+export const MAX_MEMBERS = 50 // سقف تقني فقط، لا يُعرض للمشاركين
 export const TEAM_CODE_PATTERN = /^TB-\d{3,6}$/
 export const VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v', 'webm', 'mkv', 'avi']
 export const TUS_CHUNK_SIZE = 6 * 1024 * 1024

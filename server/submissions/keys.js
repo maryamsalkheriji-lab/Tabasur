@@ -15,7 +15,7 @@ export const TRACK_FOLDER_NAMES = Object.freeze({
   identity: '04 الهوية والسردية',
 })
 export const ROOT_FOLDER_NAME = 'تسليمات معسكر تَبصَّر'
-export const MAX_MEMBERS = 5
+export const MAX_MEMBERS = 50 // سقف تقني فقط؛ لا يُعرض للمشاركين ولا يُذكر في النصوص (قرار المنظّمة: لا عدد محدد للفريق)
 export const TEAM_CODE_PATTERN = /^TB-\d{3,6}$/
 
 // الصيغة المحفوظة في قاعدة البيانات (05xxxxxxxx أو +code...) إلى مفتاح أرقام دولي بلا +.

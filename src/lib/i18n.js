@@ -112,7 +112,7 @@ export const translations = {
       uploadOpen: 'باب تسليم الفيديوهات مفتوح الآن', uploadButton: 'التسليم في هذا المسار', uploadButtonShort: 'تسليم',
       howToTitle: 'طريقة التسليم في ثلاث خطوات',
       howToSteps: [
-        'تكوين الفريق من شخص إلى خمسة أشخاص، مع التأكد من أن كل عضو مسجّل في الموقع برقم جواله.',
+        'تكوين الفريق، مع التأكد من أن كل عضو مسجّل في الموقع برقم جواله.',
         'فتح صفحة تسليم الفيديو، وتسجيل الفريق باسمه ومساره وأرقام جوالات أعضائه، ثم اختيار ملف الفيديو.',
         'انتظار اكتمال الرفع حتى يظهر الإيصال وكود الفريق، والاحتفاظ بالكود لاستبدال الفيديو عند الحاجة.',
       ],
@@ -325,7 +325,7 @@ export const translations = {
       uploadOpen: 'Video submissions are open now', uploadButton: 'Submit in this track', uploadButtonShort: 'Submit',
       howToTitle: 'How to submit in three steps',
       howToSteps: [
-        'Form your team of one to five people and make sure every member is registered on the website with their mobile number.',
+        'Form your team and make sure every member is registered on the website with their mobile number.',
         'Open the Submit Video page, register the team with its name, track and members’ mobile numbers, then choose the video file.',
         'Wait for the upload to finish until the receipt and team code appear, and keep the code to replace the video if needed.',
       ],
