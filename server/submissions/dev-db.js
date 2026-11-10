@@ -33,10 +33,6 @@ export async function createDevDatabase({ registrations = SAMPLE_REGISTRATIONS, 
   }
   for (const email of inperson) await db.query('insert into public.tb_inperson (email, batch) values ($1, $2)', [email, 'dev'])
   const repo = pgliteRepo(db)
-  // SUBMISSIONS_DEV_DRIVE=connected يربط المحاكي (tests/helpers/fake-drive.mjs) حتى تعمل صفحة الرفع كاملة محليًا.
-  if (process.env.SUBMISSIONS_DEV_DRIVE === 'connected') {
-    await repo.writeSecret('drive_oauth', { client_id: 'dev.apps.googleusercontent.com', client_secret: 'dev-secret-value', refresh_token: 'fake-refresh-token', email: 'organizer@example.com', connected_at: new Date().toISOString() })
-  }
   repo.db = db
   return repo
 }

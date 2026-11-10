@@ -1,22 +1,22 @@
 // End-to-end check of the team submission page against a local Vite server that runs the real API handler on an
-// in-process Postgres (PGlite) and a fake Google Drive. Covers: new team + upload + receipt, lookup by code and by
+// in-process Postgres (PGlite) and a fake Supabase Storage (TUS resumable uploads). Covers: new team + upload + receipt, lookup by code and by
 // mobile, replacing the video, the one-person-one-team rule, validation messages, and phone-width layout.
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { startFakeDrive } from '../helpers/fake-drive.mjs'
+import { startFakeStorage } from '../helpers/fake-storage.mjs'
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright-core')
 
 const port = Number(process.env.SUBMIT_TEST_PORT || 5177)
 const base = `http://127.0.0.1:${port}`
 const shots = process.env.REMOTE_SCREENSHOTS
 if (shots) await mkdir(shots, { recursive: true })
-const fake = await startFakeDrive()
+const fake = await startFakeStorage()
 const vite = spawn('npx', ['vite', '--port', String(port), '--strictPort', '--host', '127.0.0.1'], {
   cwd: new URL('../../', import.meta.url).pathname,
-  env: { ...process.env, ...fake.env(), SUBMISSIONS_DEV_DB: 'pglite', SUBMISSIONS_DEV_DRIVE: 'connected', VERCEL_ENV: '' },
+  env: { ...process.env, ...fake.env(), SUBMISSIONS_DEV_DB: 'pglite', VERCEL_ENV: '' },
   stdio: ['ignore', 'pipe', 'pipe'],
 })
 let viteLog = ''
@@ -29,7 +29,7 @@ while (Date.now() < deadline) {
 }
 const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE } : {}) })
 const videoPath = join(tmpdir(), `tabsur-test-${Date.now()}.mp4`)
-await writeFile(videoPath, Buffer.alloc(3 * 1024 * 1024 + 517, 9)) // ~3 MB
+await writeFile(videoPath, Buffer.alloc(7 * 1024 * 1024 + 517, 9)) // ~7 MB → قطعتان (6 MB + الباقي)
 
 async function newPage(lang, width) {
   const page = await browser.newPage({ viewport: { width, height: 1100 }, reducedMotion: 'reduce' })
@@ -91,13 +91,14 @@ try {
     assert.match(await page.locator('#share-whatsapp').getAttribute('href'), /^https:\/\/wa\.me\/\?text=/)
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'no horizontal overflow on receipt')
     if (shots) await page.screenshot({ path: `${shots}/submit-receipt-ar-390.png`, fullPage: true })
-    const stored = [...fake.state.files.values()].filter(file => file.mimeType !== 'application/vnd.google-apps.folder')
+    const stored = fake.videos()
     assert.equal(stored.length, 1)
-    assert.equal(stored[0].name, 'TB-001 - عدسة المدينة - أسواق المدينة.mp4')
-    assert.equal(stored[0].size, 3 * 1024 * 1024 + 517)
+    assert.match(stored[0].key, /^submissions\/life\/TB-001\/TB-001-[a-z0-9]+\.mp4$/)
+    assert.equal(stored[0].size, 7 * 1024 * 1024 + 517)
+    assert.match(receipt, /TB-001 - عدسة المدينة - أسواق المدينة\.mp4/)
     assert.deepEqual(errors, [], errors.join('\n'))
     await page.close()
-    console.log('PASS new team: registered TB-001, uploaded 3 MB in chunks through the browser, receipt shown')
+    console.log('PASS new team: registered TB-001, uploaded 7 MB in two TUS chunks through the browser, receipt shown')
   }
   // ─── 2) الشخص في فريق واحد فقط + عرض الفريق + استبدال الفيديو (إنجليزي، سطح مكتب) ───
   {
@@ -132,10 +133,10 @@ try {
     await page.locator('#submit-receipt').waitFor({ timeout: 60000 })
     assert.match(await page.locator('#submit-receipt').innerText(), /Better cut/)
     assert.match(await page.locator('#submit-receipt').innerText(), /replaced successfully/)
-    const files = [...fake.state.files.values()].filter(file => file.mimeType !== 'application/vnd.google-apps.folder')
-    assert.equal(files.length, 2)
-    assert.equal(files.filter(file => !file.trashed).length, 1, 'the previous video went to the trash')
-    assert.equal(files.find(file => !file.trashed).name, 'TB-001 - عدسة المدينة - Better cut.mp4')
+    const files = fake.videos()
+    assert.equal(files.length, 1, 'the previous video was removed from the bucket')
+    assert.match(files[0].key, /^submissions\/life\/TB-001\//)
+    assert.match(await page.locator('#submit-receipt').innerText(), /TB-001 - عدسة المدينة - Better cut\.mp4/)
     // عرض الفريق برقم الجوال فقط
     await page.goto(`${base}/tabsur/submit`)
     await page.locator('#mode-existing').click()
@@ -159,7 +160,7 @@ try {
     assert.match(await page.locator('[role="alert"]').innerText(), /not a member/)
     assert.deepEqual(errors, [], errors.join('\n'))
     await page.close()
-    console.log('PASS governance: taken member refused, lookup by code and by mobile, replacement trashed the old file, non-member blocked')
+    console.log('PASS governance: taken member refused, lookup by code and by mobile, replacement removed the old file, non-member blocked')
   }
   // ─── 3) تخطيط الشاشات الصغيرة بلا تمرير أفقي ───
   for (const [lang, width] of [['ar', 320], ['en', 390], ['ar', 768], ['en', 1440]]) {

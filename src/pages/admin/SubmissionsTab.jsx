@@ -11,26 +11,21 @@ const GB = 1024 * 1024 * 1024
 const ERROR_TEXT = {
   UNAUTHORIZED: 'انتهت الجلسة. سجّلي الدخول من جديد.', FORBIDDEN: 'هذا الحساب ليس في جدول admin_users.',
   DB_NOT_CONFIGURED: 'SUPABASE_SERVICE_ROLE_KEY غير مضبوط على السيرفر.', DB_UNAVAILABLE: 'تعذّر الوصول إلى قاعدة البيانات. تأكدي من تشغيل ملف supabase/submissions-2026-11-10.sql.',
-  INVALID_CLIENT_ID: 'معرّف العميل غير صحيح: ينتهي بـ .apps.googleusercontent.com', INVALID_CLIENT_SECRET: 'السر غير صحيح.',
-  INVALID_DEADLINE: 'الموعد النهائي غير صحيح.', INVALID_MAX_BYTES: 'الحد الأقصى غير صحيح.', LAST_MEMBER: 'لا يمكن حذف آخر عضو؛ احذفي الفريق كاملًا.',
-  NETWORK: 'تعذّر الاتصال بالخادم.', DRIVE_NOT_CONNECTED: 'درايف غير مربوط.',
-}
-const DRIVE_ERRORS = {
-  STATE_MISMATCH: 'انتهت صلاحية طلب الربط أو لم يتطابق. أعيدي الضغط على «اربط درايف».', STATE_EXPIRED: 'انتهت صلاحية طلب الربط (15 دقيقة). أعيدي المحاولة.',
-  OAUTH_EXCHANGE_FAILED: 'رفض Google الرمز. تأكدي من معرّف العميل والسر وأن رابط العودة مضاف في Google Cloud بالضبط.', OAUTH_NO_REFRESH_TOKEN: 'لم يرسل Google رمز تجديد. أعيدي الربط واختاري الحساب الصحيح.',
-  access_denied: 'أُلغيت الموافقة من صفحة Google.', redirect_uri_mismatch: 'رابط العودة غير مطابق لما في Google Cloud.',
+  STORAGE_NOT_CONFIGURED: 'التخزين غير مضبوط على السيرفر.', STORAGE_SIGN_URL_FAILED: 'تعذّر إنشاء رابط المشاهدة؛ تأكدي أن حاوية submissions موجودة.',
+  VIDEO_NOT_FOUND: 'لا يوجد فيديو لهذا الفريق.', INVALID_DEADLINE: 'الموعد النهائي غير صحيح.', INVALID_MAX_BYTES: 'الحد الأقصى غير صحيح.',
+  LAST_MEMBER: 'لا يمكن حذف آخر عضو؛ احذفي الفريق كاملًا.', NETWORK: 'تعذّر الاتصال بالخادم.',
 }
 const fmt = iso => (iso ? new Date(iso).toLocaleString('ar-SA', { dateStyle: 'medium', timeStyle: 'short' }) : '—')
 const toLocalInput = iso => { if (!iso) return ''; const d = new Date(iso); const pad = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}` }
 
 function exportTeamsCSV(teams) {
-  const headers = ['#', 'الكود', 'الفريق', 'المسار', 'النوع', 'الأعضاء', 'أرقام الجوال', 'عنوان الفيديو', 'اسم الملف', 'الحجم', 'وقت الرفع', 'رابط درايف', 'تاريخ التسجيل']
+  const headers = ['#', 'الكود', 'الفريق', 'المسار', 'النوع', 'الأعضاء', 'أرقام الجوال', 'عنوان الفيديو', 'اسم الملف', 'الحجم', 'وقت الرفع', 'مسار الملف في التخزين', 'تاريخ التسجيل']
   const lines = [headers.join(','), ...teams.map((team, index) => [
     index + 1, csvCell(team.code), csvCell(team.name), csvCell(TRACK_TITLES[team.track] || team.trackLabel), csvCell(TYPE_LABELS[team.type] || team.type),
     csvCell(team.members.map(member => `${member.name}${member.leader ? ' (قائد)' : ''}${member.inPerson ? ' [حضوري]' : ''}`).join(' | ')),
     csvCell(team.members.map(member => member.mobile).join(' | ')),
     csvCell(team.video?.title || ''), csvCell(team.video?.name || ''), csvCell(team.video ? formatBytes(team.video.size, 'ar') : ''),
-    csvCell(team.video ? fmt(team.video.uploadedAt) : ''), csvCell(team.video?.link || ''), csvCell(fmt(team.createdAt)),
+    csvCell(team.video ? fmt(team.video.uploadedAt) : ''), csvCell(team.video?.path || ''), csvCell(fmt(team.createdAt)),
   ].join(','))]
   const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
   const url = URL.createObjectURL(blob)
@@ -49,19 +44,8 @@ export default function SubmissionsTab({ token, onLoaded }) {
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterTrack, setFilterTrack] = useState('')
-  const [clientId, setClientId] = useState('')
-  const [clientSecret, setClientSecret] = useState('')
   const [settingsForm, setSettingsForm] = useState({ open: true, deadline: '', maxGb: '2' })
   const [busy, setBusy] = useState('')
-  const [driveBanner] = useState(() => {
-    try {
-      const params = new URLSearchParams(window.location.search)
-      const status = params.get('drive')
-      if (!status) return null
-      window.history.replaceState(null, '', '/admin?tab=submissions')
-      return status === 'connected' ? { ok: true, text: 'تم ربط Google Drive بنجاح. أُنشئ مجلد «تسليمات معسكر تَبصَّر» في درايفك وفيه مجلد لكل مسار.' } : { ok: false, text: DRIVE_ERRORS[params.get('reason')] || `تعذّر الربط (${params.get('reason') || 'خطأ غير معروف'}).` }
-    } catch { return null }
-  })
 
   const describe = err => ERROR_TEXT[err?.code] || `${err?.code || 'خطأ'}${err?.extra?.mobile ? ` (${err.extra.mobile})` : ''}`
 
@@ -89,25 +73,20 @@ export default function SubmissionsTab({ token, onLoaded }) {
     } catch (err) { setError(describe(err)); return null } finally { setBusy('') }
   }
 
-  async function connectDrive(event) {
-    event.preventDefault()
-    const result = await act('connect', 'admin_drive_begin', { clientId: clientId.trim(), clientSecret: clientSecret.trim() })
-    if (result?.url) window.location.href = result.url
-  }
-
-  async function disconnectDrive() {
-    if (!window.confirm('فصل ربط درايف؟ لن يستطيع أي فريق الرفع حتى يُعاد الربط. الملفات الموجودة تبقى في درايفك.')) return
-    if (await act('disconnect', 'admin_drive_disconnect', {}, 'تم فصل الربط.')) load()
-  }
-
   async function saveSettings(event) {
     event.preventDefault()
     const payload = { open: settingsForm.open, deadline: settingsForm.deadline ? new Date(settingsForm.deadline).toISOString() : null, maxBytes: Math.round(Number(settingsForm.maxGb) * GB) }
     if (await act('settings', 'admin_settings', payload, 'تم حفظ الإعدادات.')) load()
   }
 
+  async function openVideo(team, download = false) {
+    const result = await act(`video-${team.id}`, 'admin_video_url', { teamId: team.id })
+    const url = toSafeHttpUrl(download ? result?.downloadUrl : result?.url)
+    if (url) window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
   async function deleteTeam(team) {
-    if (!window.confirm(`حذف فريق «${team.name}» (${team.code}) وكل أعضائه؟ سيُنقل فيديوه إلى سلة المهملات في درايف.`)) return
+    if (!window.confirm(`حذف فريق «${team.name}» (${team.code}) وكل أعضائه؟ سيُحذف فيديوه من التخزين نهائيًا.`)) return
     if (await act(`team-${team.id}`, 'admin_delete_team', { teamId: team.id }, `حُذف فريق ${team.code}.`)) load()
   }
 
@@ -123,14 +102,11 @@ export default function SubmissionsTab({ token, onLoaded }) {
       (!q || [team.code, team.name, team.video?.title, ...team.members.flatMap(member => [member.name, member.mobile])].some(value => String(value || '').toLowerCase().includes(q))))
   }, [teams, search, filterType, filterTrack])
 
-  const drive = data?.drive
-  const quota = drive?.quota ? { used: Number(drive.quota.usage || 0), limit: Number(drive.quota.limit || 0) } : null
-  const quotaPercent = quota && quota.limit ? Math.min(100, Math.round((quota.used / quota.limit) * 100)) : 0
-  const rootLink = toSafeHttpUrl(drive?.folders?.root?.link || '')
+  const storage = data?.storage
+  const usedPercent = storage?.includedBytes ? Math.min(100, Math.round((storage.usedBytes / storage.includedBytes) * 100)) : 0
 
   return (
     <>
-      {driveBanner && <div className={driveBanner.ok ? styles.okBanner : styles.errorBanner}>{driveBanner.text}</div>}
       {notice && <div className={styles.okBanner} role="status">{notice}</div>}
       {error && <div className={styles.errorBanner}><strong>خطأ:</strong> {error}</div>}
 
@@ -153,38 +129,21 @@ export default function SubmissionsTab({ token, onLoaded }) {
           </div>
 
           <div className={styles.subGrid}>
-            <section className={styles.subCard} id="drive-card">
+            <section className={styles.subCard} id="storage-card">
               <div className={styles.subCardHead}>
-                <h3>Google Drive {drive?.connected ? <span className={`${styles.pill} ${drive.ok === false ? styles.pillMix : styles.pillIn}`}>{drive.ok === false ? 'مربوط لكن فيه خطأ' : 'مربوط'}</span> : <span className={`${styles.pill} ${styles.pillMix}`}>غير مربوط</span>}</h3>
-                {drive?.connected && <button type="button" className={styles.dangerBtn} onClick={disconnectDrive} disabled={busy === 'disconnect'}>فصل الربط</button>}
+                <h3>التخزين (Supabase Storage) {storage?.configured ? <span className={`${styles.pill} ${styles.pillIn}`}>جاهز</span> : <span className={`${styles.pill} ${styles.pillMix}`}>غير مضبوط</span>}</h3>
               </div>
-              {drive?.connected ? (
+              {storage?.configured ? (
                 <>
-                  <p className={styles.subNote}>الحساب: <strong dir="ltr">{drive.email || drive.account?.emailAddress || '—'}</strong> · منذ {fmt(drive.connectedAt)}</p>
-                  {drive.ok === false && <p className={styles.subNote} style={{ color: 'var(--coral-500)' }}>لم يستجب درايف ({drive.error}). لو كان السبب إلغاء الصلاحية من Google، افصلي الربط ثم أعيديه.</p>}
-                  {quota && quota.limit > 0 && (
-                    <>
-                      <div className={`${styles.quotaBar} ${quotaPercent > 85 ? styles.quotaWarn : ''}`}><span style={{ width: `${quotaPercent}%` }} /></div>
-                      <p className={styles.subNote}>المساحة: {formatBytes(quota.used, 'ar')} من {formatBytes(quota.limit, 'ar')} ({quotaPercent}%). {quotaPercent > 85 && 'المساحة تقارب النهاية: وسّعي Google One قبل أن تتوقف الرفعات.'}</p>
-                    </>
-                  )}
-                  {rootLink && <p className={styles.subNote}>مجلد التسليمات في درايفك: <a href={rootLink} target="_blank" rel="noopener noreferrer">تسليمات معسكر تَبصَّر ↗</a> — لا يراه أحد غيرك.</p>}
+                  <div className={`${styles.quotaBar} ${usedPercent > 85 ? styles.quotaWarn : ''}`}><span style={{ width: `${usedPercent}%` }} /></div>
+                  <p className={styles.subNote}>
+                    الفيديوهات المعتمدة تشغل <strong>{formatBytes(storage.usedBytes, 'ar')}</strong> من {formatBytes(storage.includedBytes, 'ar')} المضمّنة في خطة Pro ({usedPercent}%).
+                    {usedPercent > 85 && ' تجاوز المضمّن يُحسب بنحو 0.08 ريال لكل غيغابايت شهريًا، فلا يتوقف الرفع.'}
+                  </p>
+                  <p className={styles.subNote}>الحاوية <code>{storage.bucket}</code> خاصة بالكامل: لا يراها المشاركون، والمشاهدة من هنا بروابط مؤقتة صالحة ساعة واحدة. تأكدي أن «Global file size limit» في إعدادات Storage لا يقل عن الحد الأقصى المختار أدناه.</p>
                 </>
               ) : (
-                <form onSubmit={connectDrive}>
-                  <p className={styles.subNote}>الرفع لا يعمل قبل ربط حساب Google الذي ستُحفظ فيه الفيديوهات. الخطوات في Google Cloud Console:</p>
-                  <ol className={styles.driveSteps}>
-                    <li>أنشئي مشروعًا، وفعّلي <strong>Google Drive API</strong> من API Library.</li>
-                    <li>من <strong>Google Auth Platform</strong>: Get started → اسم التطبيق وبريد الدعم → Audience: <strong>External</strong> → أنشئي، ثم من تبويب Audience اضغطي <strong>Publish app</strong>.</li>
-                    <li>من <strong>Clients</strong>: Create client → Web application → في Authorized redirect URIs أضيفي بالضبط: <code>{drive?.redirectUri}</code></li>
-                    <li>انسخي Client ID و Client secret هنا ثم اضغطي «اربط درايف» ووافقي بحساب <strong>{drive?.pendingClientId ? 'Google' : 'Google المالك للمجلدات'}</strong>.</li>
-                  </ol>
-                  <div className={styles.formRow}>
-                    <label>Client ID<input className={styles.authInput} dir="ltr" value={clientId} onChange={e => setClientId(e.target.value)} placeholder="xxxx.apps.googleusercontent.com" autoComplete="off" required /></label>
-                    <label>Client secret<input className={styles.authInput} dir="ltr" type="password" value={clientSecret} onChange={e => setClientSecret(e.target.value)} placeholder="GOCSPX-…" autoComplete="off" required /></label>
-                  </div>
-                  <button type="submit" className={styles.authButton} disabled={busy === 'connect'} id="connect-drive">{busy === 'connect' ? 'لحظة…' : 'اربط درايف'}</button>
-                </form>
+                <p className={styles.subNote}>شغّلي ملف <code>supabase/submissions-2026-11-10.sql</code> لإنشاء الحاوية، وتأكدي من ضبط <code>SUPABASE_SERVICE_ROLE_KEY</code> على السيرفر.</p>
               )}
             </section>
 
@@ -227,33 +186,34 @@ export default function SubmissionsTab({ token, onLoaded }) {
                 <table className={`${styles.table} ${styles.cardTable}`}>
                   <thead><tr><th>#</th><th>الكود</th><th>الفريق</th><th>المسار</th><th>النوع</th><th>الأعضاء</th><th>الفيديو</th><th>وقت الرفع</th><th></th></tr></thead>
                   <tbody>
-                    {filtered.map((team, index) => {
-                      const link = toSafeHttpUrl(team.video?.link || '')
-                      return (
-                        <tr key={team.id}>
-                          <td className={styles.num}>{index + 1}</td>
-                          <td data-label="الكود"><span className={styles.codeTag}>{team.code}</span></td>
-                          <td className={styles.cellName}><div className={styles.nameCell}><div className={styles.avatar} style={{ background: 'var(--green-600)' }}>{(team.name || '؟')[0]}</div><span className={styles.nameText}>{team.name}</span></div></td>
-                          <td data-label="المسار">{TRACK_TITLES[team.track] || team.trackLabel}</td>
-                          <td data-label="النوع"><span className={`${styles.pill} ${TYPE_CLASS[team.type] || ''}`}>{TYPE_LABELS[team.type] || team.type}</span></td>
-                          <td data-label="الأعضاء">
-                            <div className={styles.memberChips}>{team.members.map(member => (
-                              <span key={member.id} className={`${styles.chip} ${member.inPerson ? styles.chipIn : ''}`} title={`${member.mobile}${member.inPerson ? ' · حضوري' : ' · أونلاين'}`}>
-                                <i />{member.leader ? <b>{member.name}</b> : member.name}
-                                {team.members.length > 1 && <button type="button" className={styles.iconBtn} aria-label={`إزالة ${member.name}`} onClick={() => removeMember(team, member)} disabled={busy === `member-${member.id}`}>×</button>}
-                              </span>
-                            ))}</div>
-                          </td>
-                          <td data-label="الفيديو">
-                            {team.video
-                              ? <div><strong>{team.video.title}</strong><div className={styles.mono} style={{ fontSize: 12 }}>{formatBytes(team.video.size, 'ar')}{link && <> · <a href={link} target="_blank" rel="noopener noreferrer">فتح في درايف ↗</a></>}</div></div>
-                              : team.pending ? <span className={styles.subNote}>رفع لم يكتمل ({team.pending.fileName})</span> : <span className={styles.subNote}>لا يوجد</span>}
-                          </td>
-                          <td className={styles.dateCell} data-label="وقت الرفع">{team.video ? fmt(team.video.uploadedAt) : '—'}</td>
-                          <td><button type="button" className={styles.dangerBtn} onClick={() => deleteTeam(team)} disabled={busy === `team-${team.id}`}>حذف الفريق</button></td>
-                        </tr>
-                      )
-                    })}
+                    {filtered.map((team, index) => (
+                      <tr key={team.id}>
+                        <td className={styles.num}>{index + 1}</td>
+                        <td data-label="الكود"><span className={styles.codeTag}>{team.code}</span></td>
+                        <td className={styles.cellName}><div className={styles.nameCell}><div className={styles.avatar} style={{ background: 'var(--green-600)' }}>{(team.name || '؟')[0]}</div><span className={styles.nameText}>{team.name}</span></div></td>
+                        <td data-label="المسار">{TRACK_TITLES[team.track] || team.trackLabel}</td>
+                        <td data-label="النوع"><span className={`${styles.pill} ${TYPE_CLASS[team.type] || ''}`}>{TYPE_LABELS[team.type] || team.type}</span></td>
+                        <td data-label="الأعضاء">
+                          <div className={styles.memberChips}>{team.members.map(member => (
+                            <span key={member.id} className={`${styles.chip} ${member.inPerson ? styles.chipIn : ''}`} title={`${member.mobile}${member.inPerson ? ' · حضوري' : ' · أونلاين'}`}>
+                              <i />{member.leader ? <b>{member.name}</b> : member.name}
+                              {team.members.length > 1 && <button type="button" className={styles.iconBtn} aria-label={`إزالة ${member.name}`} onClick={() => removeMember(team, member)} disabled={busy === `member-${member.id}`}>×</button>}
+                            </span>
+                          ))}</div>
+                        </td>
+                        <td data-label="الفيديو">
+                          {team.video
+                            ? <div><strong>{team.video.title}</strong>
+                              <div className={styles.mono} style={{ fontSize: 12 }}>{formatBytes(team.video.size, 'ar')}
+                                {' · '}<button type="button" className={styles.detailBtn} onClick={() => openVideo(team)} disabled={busy === `video-${team.id}`}>مشاهدة</button>
+                                {' '}<button type="button" className={styles.detailBtn} onClick={() => openVideo(team, true)} disabled={busy === `video-${team.id}`}>تنزيل</button>
+                              </div></div>
+                            : team.pending ? <span className={styles.subNote}>رفع لم يكتمل ({team.pending.fileName})</span> : <span className={styles.subNote}>لا يوجد</span>}
+                        </td>
+                        <td className={styles.dateCell} data-label="وقت الرفع">{team.video ? fmt(team.video.uploadedAt) : '—'}</td>
+                        <td><button type="button" className={styles.dangerBtn} onClick={() => deleteTeam(team)} disabled={busy === `team-${team.id}`}>حذف الفريق</button></td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>

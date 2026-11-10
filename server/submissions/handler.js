@@ -1,22 +1,23 @@
-// /api/submissions: تسجيل الفرق ورفع فيديو واحد لكل فريق إلى Google Drive المنظّمة.
-// المتصفح لا يرى درايف أبدًا: السيرفر يفتح جلسة رفع ويعطيه رابطها، ثم يتحقق من الملف بعد الاكتمال.
-import { randomBytes, timingSafeEqual } from 'node:crypto'
+// /api/submissions: تسجيل الفرق ورفع فيديو واحد لكل فريق إلى حاوية Supabase Storage الخاصة بالمنظّمة.
+// المتصفح لا يرى الحاوية ولا ملفات غيره: السيرفر يصدر توكن رفع مؤقتًا لمسار واحد، ثم يتحقق من الملف بعد الاكتمال.
+import { randomBytes } from 'node:crypto'
 import { serviceClient, DbError } from './db.js'
 import { supabaseRepo, RegisterTeamError } from './repo.js'
-import { createDriveClient, buildAuthUrl, exchangeCode, emailFromIdToken, DriveError } from './drive.js'
+import { createStorage, storageConfig, StorageError, TUS_CHUNK_SIZE, SIGNED_UPLOAD_TTL_MS } from './storage.js'
 import {
-  TRACKS, TRACK_LABELS, TRACK_FOLDER_NAMES, ROOT_FOLDER_NAME, MAX_MEMBERS, TEAM_CODE_PATTERN,
+  TRACKS, TRACK_LABELS, MAX_MEMBERS, TEAM_CODE_PATTERN,
   parseMobile, nameKey, teamNameKey, cleanText, videoExtension, isVideoFile, driveFileName,
 } from './keys.js'
 import { PUBLICATION_POLICY } from '../../src/lib/remote-camp.js'
 
-export const CHUNK_SIZE = 8 * 1024 * 1024 // مضاعف 256 كيلوبايت كما يطلب Google
+export const CHUNK_SIZE = TUS_CHUNK_SIZE
 export const DEFAULT_MAX_BYTES = 2 * 1024 * 1024 * 1024
-const SESSION_REUSE_MS = 6 * 24 * 60 * 60 * 1000 // جلسة Google تصلح أسبوعًا؛ نعيد استخدامها حتى ستة أيام
-const OAUTH_STATE_TTL_MS = 15 * 60 * 1000
+export const INCLUDED_STORAGE_BYTES = 100 * 1024 * 1024 * 1024 // المضمّن في خطة Pro قبل الرسوم الإضافية
+const SESSION_REUSE_MS = SIGNED_UPLOAD_TTL_MS - 15 * 60 * 1000 // نعيد استخدام التوكن ما دام صالحًا بهامش
 const MAX_BODY_BYTES = 16384
 const RATE_LIMIT_PER_MINUTE = 90
 const LANGS = ['ar', 'en']
+const VIEW_URL_SECONDS = 60 * 60
 
 export class HttpError extends Error {
   constructor(status, code, extra = {}) { super(code); this.status = status; this.code = code; this.extra = extra }
@@ -44,14 +45,6 @@ function originAllowed(req) {
     } catch { /* قيمة غير صالحة نتجاهلها */ }
   }
   return allowed.has(origin)
-}
-
-function siteUrl(req) {
-  if (process.env.VERCEL_ENV === 'production') return (process.env.PUBLIC_SITE_URL || 'https://cubex.com.sa').replace(/\/$/, '')
-  const origin = req.headers?.origin
-  if (origin) { try { return new URL(origin).origin } catch { /* نكمل */ } }
-  const host = req.headers?.host || 'localhost:5173'
-  return `${/^(localhost|127\.0\.0\.1)/.test(host) ? 'http' : 'https'}://${host}`
 }
 
 function parseBody(req) {
@@ -89,24 +82,6 @@ async function loadSettings(repo) {
 function assertOpen(settings, nowMs) {
   if (!settings.open) throw new HttpError(423, 'SUBMISSIONS_CLOSED')
   if (settings.deadline && Date.parse(settings.deadline) < nowMs) throw new HttpError(423, 'DEADLINE_PASSED', { deadline: settings.deadline })
-}
-
-/* ─── درايف ─── */
-async function driveFor(repo, fetchImpl) {
-  const auth = await repo.readSecret('drive_oauth')
-  if (!auth?.refresh_token) throw new HttpError(503, 'DRIVE_NOT_CONNECTED')
-  return { drive: createDriveClient(auth, fetchImpl), auth }
-}
-
-async function ensureFolders(repo, drive, auth, nowMs) {
-  const current = await repo.readSetting('drive_folders')
-  if (current?.account === (auth.email || '') && current?.root?.id && TRACKS.every(track => current.tracks?.[track])) return current
-  const root = await drive.createFolder(ROOT_FOLDER_NAME)
-  const tracks = {}
-  for (const track of TRACKS) tracks[track] = (await drive.createFolder(TRACK_FOLDER_NAMES[track], root.id)).id
-  const folders = { account: auth.email || '', root: { id: root.id, link: root.webViewLink || null }, tracks, created_at: iso(nowMs) }
-  await repo.writeSetting('drive_folders', folders)
-  return folders
 }
 
 /* ─── الأعضاء ─── */
@@ -214,7 +189,7 @@ function validateVideo(video, maxBytes) {
   if (size > maxBytes) throw new HttpError(413, 'VIDEO_TOO_LARGE', { maxBytes })
   if (title.length < 2) throw new HttpError(400, 'INVALID_TITLE')
   const ext = videoExtension(fileName, mimeType)
-  return { fileName, size, title, mimeType: /^video\//.test(mimeType) ? mimeType : MIME_BY_EXT[ext] || 'video/mp4' }
+  return { fileName, size, title, ext, mimeType: /^video\//.test(mimeType) ? mimeType : MIME_BY_EXT[ext] || 'video/mp4' }
 }
 
 function validateConsent(consent) {
@@ -223,11 +198,24 @@ function validateConsent(consent) {
   return { version: PUBLICATION_POLICY.version, lang: LANGS.includes(consent.lang) ? consent.lang : 'ar' }
 }
 
-function uploadInfo(pending, team) {
+// مسار الكائن داخل الحاوية بأحرف ASCII فقط؛ الاسم العربي المقروء يُحفظ في قاعدة البيانات ويُستخدم عند التنزيل.
+function objectPath(team, ext, nowMs) {
+  return `${team.track}/${team.code}/${team.code}-${nowMs.toString(36)}.${ext}`
+}
+
+function uploadInfo(pending, team, storage) {
   return {
-    uploadId: pending.uploadId, sessionUri: pending.sessionUri, chunkSize: CHUNK_SIZE,
-    fileName: pending.fileName, driveName: pending.driveName, size: pending.size, replaces: Boolean(pending.replaces), teamCode: team.code,
+    uploadId: pending.uploadId, endpoint: pending.endpoint || storage.uploadEndpoint, bucket: pending.bucket || storage.bucket, objectPath: pending.objectPath, token: pending.token,
+    chunkSize: CHUNK_SIZE, fileName: pending.fileName, displayName: pending.displayName, size: pending.size, mimeType: pending.mimeType,
+    replaces: Boolean(pending.replaces), teamCode: team.code, expiresAt: pending.expiresAt,
   }
+}
+
+async function verifyUploaded(storage, pending) {
+  const info = await storage.info(pending.objectPath)
+  if (!info) return { complete: false, found: false }
+  if (info.size !== null && info.size !== pending.size) return { complete: false, found: true, size: info.size }
+  return { complete: true, found: true, info }
 }
 
 /* ─── الأدمن ─── */
@@ -251,22 +239,21 @@ async function requireAdmin(ctx) {
 
 function adminTeamView(team) {
   const inPerson = team.members.filter(member => member.in_person).length
-  const type = team.members.length === 0 ? 'online' : inPerson === 0 ? 'online' : inPerson === team.members.length ? 'inperson' : 'mixed'
+  const type = team.members.length === 0 || inPerson === 0 ? 'online' : inPerson === team.members.length ? 'inperson' : 'mixed'
   return {
     id: team.id, code: team.code, name: team.name, track: team.track, trackLabel: TRACK_LABELS[team.track], type, createdAt: team.created_at,
     members: team.members.map(member => ({ id: member.id, name: member.full_name, mobile: member.mobile, leader: Boolean(member.is_leader), inPerson: Boolean(member.in_person) })),
     video: team.video_file_id
-      ? { fileId: team.video_file_id, name: team.video_name, title: team.video_title, size: Number(team.video_size), uploadedAt: team.video_uploaded_at, link: team.video_web_link, md5: team.video_md5, consentVersion: team.consent_version, consentAt: team.consent_at }
+      ? { path: team.video_file_id, name: team.video_name, title: team.video_title, size: Number(team.video_size), mimeType: team.video_mime, uploadedAt: team.video_uploaded_at, consentVersion: team.consent_version, consentAt: team.consent_at }
       : null,
     pending: team.pending_upload ? { fileName: team.pending_upload.fileName, size: team.pending_upload.size, startedAt: team.pending_upload.startedAt } : null,
   }
 }
 
 const ACTIONS = {
-  async config({ repo }) {
+  async config({ repo, storage }) {
     const settings = await loadSettings(repo)
-    const auth = await repo.readSecret('drive_oauth')
-    return { open: settings.open, deadline: settings.deadline, maxBytes: settings.maxBytes, driveReady: Boolean(auth?.refresh_token), chunkSize: CHUNK_SIZE, policyVersion: PUBLICATION_POLICY.version, maxMembers: MAX_MEMBERS }
+    return { open: settings.open, deadline: settings.deadline, maxBytes: settings.maxBytes, uploadReady: Boolean(storage), chunkSize: CHUNK_SIZE, policyVersion: PUBLICATION_POLICY.version, maxMembers: MAX_MEMBERS }
   },
 
   async lookup({ repo, body }) {
@@ -286,13 +273,12 @@ const ACTIONS = {
   },
 
   async start(ctx) {
-    const { repo, body, nowMs, fetchImpl } = ctx
+    const { repo, body, nowMs, storage } = ctx
     const settings = await loadSettings(repo)
     assertOpen(settings, nowMs)
     const video = validateVideo(body.video, settings.maxBytes)
     const consent = validateConsent(body.consent)
-    const { drive, auth } = await driveFor(repo, fetchImpl) // قبل إنشاء أي فريق حتى لا نسجّل فرقًا ودرايف معطّل
-    const folders = await ensureFolders(repo, drive, auth, nowMs)
+    if (!storage) throw new HttpError(503, 'STORAGE_NOT_CONFIGURED')
 
     const teamInput = body.team && typeof body.team === 'object' ? body.team : {}
     let team, created = false
@@ -324,69 +310,56 @@ const ACTIONS = {
     }
 
     const pending = team.pending_upload
-    if (pending && pending.fileName === video.fileName && pending.size === video.size && Date.parse(pending.startedAt) > nowMs - SESSION_REUSE_MS) {
-      return { team: await teamCard(repo, team), created, upload: uploadInfo(pending, team) }
+    if (pending && pending.fileName === video.fileName && pending.size === video.size && pending.token && Date.parse(pending.startedAt) > nowMs - SESSION_REUSE_MS) {
+      return { team: await teamCard(repo, team), created, upload: uploadInfo(pending, team, storage) }
     }
-    const ext = videoExtension(video.fileName, video.mimeType)
-    const driveName = driveFileName(team.code, team.name, video.title, ext)
-    let sessionUri
+    const path = objectPath(team, video.ext, nowMs)
+    let token
     try {
-      sessionUri = await drive.createResumableSession({ name: driveName, mimeType: video.mimeType, size: video.size, parentId: folders.tracks[team.track], appProperties: { teamCode: team.code, track: team.track } })
+      token = await storage.signUpload(path)
     } catch (error) {
-      if (created) throw new HttpError(502, 'DRIVE_SESSION_FAILED', { teamCode: team.code, created: true })
+      if (created) throw new HttpError(502, 'STORAGE_SIGN_FAILED', { teamCode: team.code, created: true })
       throw error
     }
     const upload = {
-      uploadId: randomBytes(16).toString('hex'), sessionUri, fileName: video.fileName, driveName, size: video.size, mimeType: video.mimeType, title: video.title,
-      startedAt: iso(nowMs), consent: { version: consent.version, lang: consent.lang, acceptedAt: iso(nowMs) }, replaces: team.video_file_id || null,
+      uploadId: randomBytes(16).toString('hex'), objectPath: path, token, bucket: storage.bucket, endpoint: storage.uploadEndpoint,
+      fileName: video.fileName, displayName: driveFileName(team.code, team.name, video.title, video.ext), size: video.size, mimeType: video.mimeType, title: video.title,
+      startedAt: iso(nowMs), expiresAt: iso(nowMs + SIGNED_UPLOAD_TTL_MS), consent: { version: consent.version, lang: consent.lang, acceptedAt: iso(nowMs) }, replaces: team.video_file_id || null,
     }
     team = await repo.updateTeam(team.id, { pending_upload: upload })
-    await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'upload_started', file_name: driveName, file_size: video.size, detail: { uploadId: upload.uploadId, replaces: upload.replaces } })
-    return { team: await teamCard(repo, team), created, upload: uploadInfo(upload, team) }
+    await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'upload_started', file_id: path, file_name: upload.displayName, file_size: video.size, detail: { uploadId: upload.uploadId, replaces: upload.replaces } })
+    return { team: await teamCard(repo, team), created, upload: uploadInfo(upload, team, storage) }
   },
 
-  async status({ repo, body, fetchImpl }) {
+  async status({ repo, body, storage }) {
     const team = await findTeam(repo, { code: body.code })
     const pending = requirePending(team, body.uploadId)
-    const { drive } = await driveFor(repo, fetchImpl)
-    const state = await drive.queryUpload(pending.sessionUri, pending.size)
-    if (state.expired) {
-      await repo.updateTeam(team.id, { pending_upload: null })
-      throw new HttpError(410, 'UPLOAD_EXPIRED')
-    }
-    return state.complete ? { complete: true, committed: pending.size, fileId: state.file?.id || null } : { complete: false, committed: state.committed }
+    if (!storage) throw new HttpError(503, 'STORAGE_NOT_CONFIGURED')
+    const state = await verifyUploaded(storage, pending)
+    return { complete: state.complete, found: state.found, size: state.complete ? pending.size : state.size ?? 0, expired: Date.parse(pending.expiresAt || 0) < Date.now() }
   },
 
-  async complete({ repo, body, fetchImpl, nowMs }) {
+  async complete({ repo, body, storage, nowMs }) {
     const team = await findTeam(repo, { code: body.code })
     const pending = requirePending(team, body.uploadId)
-    const { drive } = await driveFor(repo, fetchImpl)
-    const fileId = cleanText(body.fileId, 128)
-    let file = fileId ? await drive.getFile(fileId) : null
-    if (!file) {
-      const state = await drive.queryUpload(pending.sessionUri, pending.size)
-      if (!state.complete) throw new HttpError(409, 'UPLOAD_INCOMPLETE', { committed: state.committed ?? 0, expired: Boolean(state.expired) })
-      file = state.file?.id ? await drive.getFile(state.file.id) : null
-    }
-    if (!file || file.trashed) throw new HttpError(409, 'UPLOAD_INCOMPLETE', { committed: 0 })
-    if (Number(file.size) !== pending.size) throw new HttpError(409, 'UPLOAD_SIZE_MISMATCH', { expected: pending.size, actual: Number(file.size) })
-    const folders = await repo.readSetting('drive_folders')
-    if (folders?.tracks?.[team.track] && !(file.parents || []).includes(folders.tracks[team.track])) throw new HttpError(409, 'UPLOAD_WRONG_FOLDER')
+    if (!storage) throw new HttpError(503, 'STORAGE_NOT_CONFIGURED')
+    const state = await verifyUploaded(storage, pending)
+    if (!state.complete) throw new HttpError(409, state.found ? 'UPLOAD_SIZE_MISMATCH' : 'UPLOAD_INCOMPLETE', { expected: pending.size, actual: state.size ?? 0 })
 
-    const previous = team.video_file_id && team.video_file_id !== file.id ? team.video_file_id : null
+    const previous = team.video_file_id && team.video_file_id !== pending.objectPath ? team.video_file_id : null
     const updated = await repo.updateTeam(team.id, {
-      video_file_id: file.id, video_name: file.name, video_title: pending.title, video_size: pending.size, video_mime: pending.mimeType,
-      video_md5: file.md5Checksum || null, video_web_link: file.webViewLink || null, video_uploaded_at: iso(nowMs),
+      video_file_id: pending.objectPath, video_name: pending.displayName, video_title: pending.title, video_size: pending.size, video_mime: pending.mimeType,
+      video_md5: null, video_web_link: null, video_uploaded_at: iso(nowMs),
       consent_version: pending.consent?.version || PUBLICATION_POLICY.version, consent_lang: pending.consent?.lang || 'ar', consent_at: pending.consent?.acceptedAt || iso(nowMs),
       pending_upload: null,
     })
-    await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'upload_completed', file_id: file.id, file_name: file.name, file_size: pending.size, detail: { uploadId: pending.uploadId, md5: file.md5Checksum || null, replaced: previous } })
+    await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'upload_completed', file_id: pending.objectPath, file_name: pending.displayName, file_size: pending.size, detail: { uploadId: pending.uploadId, replaced: previous } })
     if (previous) {
       try {
-        await drive.trashFile(previous)
-        await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'previous_trashed', file_id: previous })
+        await storage.remove([previous])
+        await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'previous_removed', file_id: previous })
       } catch (error) {
-        await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'previous_trash_failed', file_id: previous, detail: { code: error.code || 'ERROR' } })
+        await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'previous_remove_failed', file_id: previous, detail: { code: error.code || 'ERROR' } })
       }
     }
     return { team: await teamCard(repo, updated) }
@@ -396,49 +369,34 @@ const ACTIONS = {
     const team = await findTeam(repo, { code: body.code })
     if (team.pending_upload && team.pending_upload.uploadId === cleanText(body.uploadId, 64)) {
       await repo.updateTeam(team.id, { pending_upload: null })
-      await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'upload_cancelled', file_name: team.pending_upload.driveName, detail: { uploadId: team.pending_upload.uploadId } })
+      await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'upload_cancelled', file_id: team.pending_upload.objectPath, file_name: team.pending_upload.displayName, detail: { uploadId: team.pending_upload.uploadId } })
     }
     return {}
   },
 
-  async remove_video({ repo, body, fetchImpl, nowMs }) {
+  async remove_video({ repo, body, storage, nowMs }) {
     const settings = await loadSettings(repo)
     assertOpen(settings, nowMs)
     const team = await findTeam(repo, { code: body.code })
     const member = await assertMember(repo, team, body.mobile, body.country)
     if (!member.is_leader) throw new HttpError(403, 'LEADER_ONLY')
     if (!team.video_file_id) return { team: await teamCard(repo, team) }
-    const { drive } = await driveFor(repo, fetchImpl)
-    let trashed = false
-    try { trashed = await drive.trashFile(team.video_file_id) } catch { trashed = false }
+    if (!storage) throw new HttpError(503, 'STORAGE_NOT_CONFIGURED')
+    let removed = false
+    try { removed = await storage.remove([team.video_file_id]) } catch { removed = false }
     const updated = await repo.updateTeam(team.id, { video_file_id: null, video_name: null, video_title: null, video_size: null, video_mime: null, video_md5: null, video_web_link: null, video_uploaded_at: null })
-    await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'video_removed', file_id: team.video_file_id, file_name: team.video_name, detail: { trashed } })
+    await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'video_removed', file_id: team.video_file_id, file_name: team.video_name, detail: { removed } })
     return { team: await teamCard(repo, updated) }
   },
 
   /* ─── إجراءات الأدمن (جلسة Supabase لمستخدم في admin_users) ─── */
-  async admin_overview({ repo, fetchImpl, siteUrl: site, nowMs }) {
+  async admin_overview({ repo, storage }) {
     const settings = await loadSettings(repo)
-    const auth = await repo.readSecret('drive_oauth')
-    const pending = await repo.readSecret('drive_oauth_pending')
-    const drive = { connected: false, redirectUri: `${site}/api/drive-oauth`, pendingClientId: pending?.client_id || null }
-    if (auth?.refresh_token) {
-      Object.assign(drive, { connected: true, email: auth.email || '', connectedAt: auth.connected_at || null, clientId: auth.client_id })
-      try {
-        const client = createDriveClient(auth, fetchImpl)
-        drive.folders = await ensureFolders(repo, client, auth, nowMs)
-        const about = await client.about()
-        drive.quota = about.storageQuota || null
-        drive.account = about.user || null
-        drive.ok = true
-      } catch (error) {
-        drive.ok = false
-        drive.error = error.code || 'DRIVE_ERROR'
-      }
-    }
     const teams = (await repo.listTeamsWithMembers()).map(adminTeamView)
+    const usedBytes = teams.reduce((sum, team) => sum + (team.video ? team.video.size : 0), 0)
     return {
-      settings, drive, teams,
+      settings, teams,
+      storage: { configured: Boolean(storage), bucket: storage?.bucket || null, usedBytes, includedBytes: INCLUDED_STORAGE_BYTES },
       stats: {
         teams: teams.length, withVideo: teams.filter(team => team.video).length, members: teams.reduce((sum, team) => sum + team.members.length, 0),
         inperson: await repo.countInperson(), registrations: await repo.countRegistrations(),
@@ -464,29 +422,22 @@ const ACTIONS = {
     return { settings: await loadSettings(repo) }
   },
 
-  async admin_drive_begin({ repo, body, siteUrl: site, nowMs }) {
-    const clientId = cleanText(body.clientId, 200)
-    const clientSecret = String(body.clientSecret || '').trim()
-    if (!/^[\w-]+\.apps\.googleusercontent\.com$/.test(clientId)) throw new HttpError(400, 'INVALID_CLIENT_ID')
-    if (clientSecret.length < 10 || clientSecret.length > 200 || /\s/.test(clientSecret)) throw new HttpError(400, 'INVALID_CLIENT_SECRET')
-    const state = randomBytes(24).toString('hex')
-    const redirectUri = `${site}/api/drive-oauth`
-    await repo.writeSecret('drive_oauth_pending', { client_id: clientId, client_secret: clientSecret, state, redirect_uri: redirectUri, created_at: iso(nowMs) })
-    return { url: buildAuthUrl({ clientId, redirectUri, state }), redirectUri }
-  },
-
-  async admin_drive_disconnect({ repo }) {
-    await repo.deleteSecret('drive_oauth')
-    await repo.deleteSecret('drive_oauth_pending')
-    await repo.writeSetting('drive_folders', {})
-    return {}
-  },
-
-  async admin_delete_team({ repo, body, fetchImpl }) {
+  // رابط مشاهدة أو تنزيل مؤقت (ساعة) للمنظّمة فقط
+  async admin_video_url({ repo, body, storage }) {
     const team = await repo.getTeamById(cleanText(body.teamId, 64))
     if (!team) throw new HttpError(404, 'TEAM_NOT_FOUND')
-    if (team.video_file_id) {
-      try { const { drive } = await driveFor(repo, fetchImpl); await drive.trashFile(team.video_file_id) } catch { /* نسجّل ونكمل */ }
+    if (!team.video_file_id) throw new HttpError(404, 'VIDEO_NOT_FOUND')
+    if (!storage) throw new HttpError(503, 'STORAGE_NOT_CONFIGURED')
+    const url = await storage.signedViewUrl(team.video_file_id, VIEW_URL_SECONDS)
+    const downloadUrl = await storage.signedViewUrl(team.video_file_id, VIEW_URL_SECONDS, team.video_name || 'video.mp4')
+    return { url, downloadUrl, expiresIn: VIEW_URL_SECONDS }
+  },
+
+  async admin_delete_team({ repo, body, storage }) {
+    const team = await repo.getTeamById(cleanText(body.teamId, 64))
+    if (!team) throw new HttpError(404, 'TEAM_NOT_FOUND')
+    if (team.video_file_id && storage) {
+      try { await storage.remove([team.video_file_id]) } catch { /* نسجّل ونكمل */ }
     }
     await repo.logUpload({ team_id: null, team_code: team.code, action: 'team_deleted_by_admin', file_id: team.video_file_id, file_name: team.video_name, detail: { name: team.name, track: team.track } })
     await repo.deleteTeam(team.id)
@@ -507,7 +458,14 @@ const ACTIONS = {
 
 export function createHandler(deps = {}) {
   const getRepo = deps.repo ? () => deps.repo : () => { const sb = serviceClient(); return sb ? supabaseRepo(sb) : null }
-  const fetchImpl = deps.fetch || globalThis.fetch
+  let storageInstance = deps.storage === undefined ? null : deps.storage
+  const getStorage = () => {
+    if (deps.storage !== undefined) return deps.storage
+    if (storageInstance) return storageInstance
+    const config = storageConfig()
+    storageInstance = config ? createStorage(config) : null
+    return storageInstance
+  }
   const now = deps.now || Date.now
   const verifyAdmin = deps.verifyAdmin || defaultVerifyAdmin
 
@@ -528,56 +486,17 @@ export function createHandler(deps = {}) {
     const run = Object.hasOwn(ACTIONS, action) ? ACTIONS[action] : null
     if (!run) return json(res, 400, { ok: false, code: 'UNKNOWN_ACTION' })
     try {
-      const ctx = { repo, fetchImpl, nowMs, req, body, siteUrl: siteUrl(req), verifyAdmin }
+      const ctx = { repo, storage: getStorage(), nowMs, req, body, verifyAdmin }
       if (action.startsWith('admin_')) ctx.admin = await requireAdmin(ctx)
       const result = await run(ctx)
       return json(res, 200, { ok: true, ...result })
     } catch (error) {
       if (error instanceof HttpError) return json(res, error.status, { ok: false, code: error.code, ...error.extra })
       if (error instanceof RegisterTeamError) return json(res, 409, { ok: false, code: error.code, mobileKey: error.mobileKey })
-      if (error instanceof DriveError) return json(res, error.status || 502, { ok: false, code: error.code })
+      if (error instanceof StorageError) return json(res, error.status || 502, { ok: false, code: error.code })
       if (error instanceof DbError) return json(res, 503, { ok: false, code: 'DB_UNAVAILABLE' })
       console.error('[submissions]', error)
       return json(res, 500, { ok: false, code: 'SERVER_ERROR' })
-    }
-  }
-}
-
-// GET /api/drive-oauth?code=…&state=… : يستقبل عودة Google بعد موافقة المنظّمة ويحفظ refresh token.
-export function createOAuthCallback(deps = {}) {
-  const getRepo = deps.repo ? () => deps.repo : () => { const sb = serviceClient(); return sb ? supabaseRepo(sb) : null }
-  const fetchImpl = deps.fetch || globalThis.fetch
-  const now = deps.now || Date.now
-  return async function callback(req, res) {
-    const redirect = (status, reason = '') => {
-      res.statusCode = 302
-      res.setHeader('Cache-Control', 'no-store')
-      res.setHeader('Location', `/admin?tab=submissions&drive=${status}${reason ? `&reason=${encodeURIComponent(reason)}` : ''}`)
-      res.end()
-    }
-    if (req.method !== 'GET') { res.statusCode = 405; res.setHeader('Allow', 'GET'); return res.end() }
-    const repo = getRepo()
-    if (!repo) return redirect('error', 'DB_NOT_CONFIGURED')
-    try {
-      const url = new URL(req.url || '/', 'http://local')
-      const providerError = url.searchParams.get('error')
-      if (providerError) return redirect('error', cleanText(providerError, 60))
-      const code = url.searchParams.get('code') || ''
-      const state = url.searchParams.get('state') || ''
-      const pending = await repo.readSecret('drive_oauth_pending')
-      const expected = Buffer.from(String(pending?.state || ''))
-      const received = Buffer.from(state)
-      if (!pending || !code || !state || expected.length !== received.length || !timingSafeEqual(expected, received)) return redirect('error', 'STATE_MISMATCH')
-      if (Date.parse(pending.created_at) < now() - OAUTH_STATE_TTL_MS) return redirect('error', 'STATE_EXPIRED')
-      const tokens = await exchangeCode({ clientId: pending.client_id, clientSecret: pending.client_secret, code, redirectUri: pending.redirect_uri }, fetchImpl)
-      const email = emailFromIdToken(tokens.id_token)
-      const previous = await repo.readSecret('drive_oauth')
-      await repo.writeSecret('drive_oauth', { client_id: pending.client_id, client_secret: pending.client_secret, refresh_token: tokens.refresh_token, scope: tokens.scope || '', email, connected_at: iso(now()) })
-      await repo.deleteSecret('drive_oauth_pending')
-      if (previous?.refresh_token && (previous.email || '') !== email) await repo.writeSetting('drive_folders', {})
-      return redirect('connected')
-    } catch (error) {
-      return redirect('error', error.code || 'OAUTH_FAILED')
     }
   }
 }

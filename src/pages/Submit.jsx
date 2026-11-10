@@ -4,7 +4,7 @@ import { useLanguage } from '../lib/language'
 import { remoteTracks, PUBLICATION_POLICY, PUBLICATION_POLICY_EN, formatBytes } from '../lib/remote-camp'
 import { DEFAULT_COUNTRY, validateMobile } from '../lib/phone'
 import PhoneInput from '../components/PhoneInput'
-import { callSubmissions, uploadToSession, normalizeTeamCode, isVideoFile, receiptText, whatsappShareUrl, MAX_MEMBERS, SubmissionError } from '../lib/submissions'
+import { callSubmissions, uploadResumable, normalizeTeamCode, isVideoFile, receiptText, whatsappShareUrl, MAX_MEMBERS, SubmissionError } from '../lib/submissions'
 import { submissionErrorMessage } from '../lib/i18n-submit'
 import styles from './Submit.module.css'
 
@@ -81,14 +81,14 @@ export default function Submit() {
     return () => { active = false }
   }, [])
 
-  const ready = Boolean(config && config.open && config.driveReady && !(config.deadline && Date.parse(config.deadline) < Date.now()))
+  const ready = Boolean(config && config.open && config.uploadReady && !(config.deadline && Date.parse(config.deadline) < Date.now()))
   const maxBytes = config?.maxBytes || 2 * 1024 * 1024 * 1024
   const maxLabel = formatBytes(maxBytes, lang)
   const statusText = config === null ? copy.status.loading
     : config === false ? copy.status.notReady
     : !config.open ? copy.status.closed
     : config.deadline && Date.parse(config.deadline) < Date.now() ? copy.errors.DEADLINE_PASSED
-    : !config.driveReady ? copy.status.notReady
+    : !config.uploadReady ? copy.status.notReady
     : copy.status.open
   const showError = (code, extra = {}) => setError(submissionErrorMessage(copy, code, extra))
 
@@ -148,14 +148,18 @@ export default function Submit() {
     abortRef.current = controller
     try {
       const started = await callSubmissions('start', startPayload, { signal: controller.signal })
-      uploadRef.current = { team: started.team, upload: started.upload, startPayload, created: started.created }
+      // نحتفظ برابط جلسة TUS السابقة إن كان الرفع نفسه (نفس uploadId) حتى نكمل من حيث وقف
+      const previous = uploadRef.current?.upload?.uploadId === started.upload.uploadId ? uploadRef.current.uploadUrl : null
+      uploadRef.current = { team: started.team, upload: started.upload, startPayload, created: started.created, uploadUrl: previous }
       setTeam(started.team)
       setView('uploading')
       setProgress({ done: resumeFrom || 0, total: file.size, phase: 'uploading' })
       speedRef.current = { at: Date.now(), done: resumeFrom || 0, speed: 0 }
-      const getCommitted = () => callSubmissions('status', { code: started.team.code, uploadId: started.upload.uploadId }).then(data => { setProgress(p => ({ ...p, phase: 'uploading' })); return data })
-      const result = await uploadToSession({
-        file, sessionUri: started.upload.sessionUri, chunkSize: started.upload.chunkSize, startAt: resumeFrom || 0, signal: controller.signal, getCommitted,
+      await uploadResumable({
+        file, endpoint: started.upload.endpoint, token: started.upload.token, anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY, bucket: started.upload.bucket,
+        objectPath: started.upload.objectPath, chunkSize: started.upload.chunkSize, uploadUrl: previous, signal: controller.signal,
+        onUploadUrl: url => { if (uploadRef.current) uploadRef.current.uploadUrl = url },
+        onRetry: () => setProgress(p => ({ ...p, phase: 'retrying' })),
         onProgress: (done, total) => {
           const now = Date.now(), prev = speedRef.current
           if (now - prev.at > 800) { speedRef.current = { at: now, done, speed: (done - prev.done) / ((now - prev.at) / 1000) } }
@@ -163,7 +167,7 @@ export default function Submit() {
         },
       })
       setProgress(p => ({ ...p, phase: 'verifying' }))
-      const done = await callSubmissions('complete', { code: started.team.code, uploadId: started.upload.uploadId, fileId: result.fileId })
+      const done = await callSubmissions('complete', { code: started.team.code, uploadId: started.upload.uploadId })
       setTeam(done.team)
       setOutcome(started.created ? 'created' : 'replaced')
       setView('done')
@@ -174,7 +178,7 @@ export default function Submit() {
         if (current) callSubmissions('cancel', { code: current.team.code, uploadId: current.upload.uploadId }).catch(() => {})
         setNotice(copy.progress.cancelled)
         setView(startPayload.team.mode === 'existing' ? 'existing' : 'new')
-      } else if (err instanceof SubmissionError && err.code === 'DRIVE_SESSION_FAILED' && err.extra?.created) {
+      } else if (err instanceof SubmissionError && err.code === 'STORAGE_SIGN_FAILED' && err.extra?.created) {
         setCodeInput(err.extra.teamCode); setView('existing'); setTeam(null)
         setError(copy.errors.TEAM_CREATED_NO_UPLOAD(err.extra.teamCode))
       } else if (view === 'uploading' || uploadRef.current) {
@@ -197,11 +201,12 @@ export default function Submit() {
       const state = await callSubmissions('status', { code: current.team.code, uploadId: current.upload.uploadId })
       if (state.complete) {
         setProgress(p => ({ ...p, phase: 'verifying' }))
-        const done = await callSubmissions('complete', { code: current.team.code, uploadId: current.upload.uploadId, fileId: state.fileId })
+        const done = await callSubmissions('complete', { code: current.team.code, uploadId: current.upload.uploadId })
         setTeam(done.team); setOutcome(current.created ? 'created' : 'replaced'); setView('done'); resetVideoForm(); setBusy(false)
         return
       }
-      await runUpload(current.startPayload, { resumeFrom: state.committed || 0 })
+      if (state.expired && uploadRef.current) uploadRef.current.uploadUrl = null
+      await runUpload(current.startPayload, { resumeFrom: progress.done || 0 })
     } catch (err) {
       setBusy(false)
       if (err.code === 'UPLOAD_EXPIRED' || err.code === 'UPLOAD_NOT_FOUND') { uploadRef.current = null; setUploadFailure(null); setView(current.startPayload.team.mode === 'existing' ? 'existing' : 'new') }
@@ -466,7 +471,7 @@ export default function Submit() {
       </div>}
 
       {view === 'uploading' && <section className={styles.progressCard} id="upload-progress" aria-live="polite">
-        <div className={styles.sectionHead}><span className={styles.step}><Icon name="upload" /></span><h2>{progress.phase === 'verifying' ? copy.progress.verifying : copy.progress.title}</h2></div>
+        <div className={styles.sectionHead}><span className={styles.step}><Icon name="upload" /></span><h2>{progress.phase === 'verifying' ? copy.progress.verifying : progress.phase === 'retrying' ? copy.progress.retrying : copy.progress.title}</h2></div>
         {file && <p className={styles.fileLine} dir="auto"><Icon name="film" /> {file.name}</p>}
         <div className={styles.bar} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}><span style={{ width: `${percent}%` }} /></div>
         <div className={styles.progressMeta}>

@@ -1,8 +1,9 @@
-// عميل صفحة التسليم: نداءات /api/submissions ورفع الفيديو إلى جلسة Google القابلة للاستئناف.
+// عميل صفحة التسليم: نداءات /api/submissions ورفع الفيديو مباشرة إلى Supabase Storage بالبروتوكول القابل للاستئناف (TUS).
 export const SUBMISSIONS_API = '/api/submissions'
 export const MAX_MEMBERS = 5
 export const TEAM_CODE_PATTERN = /^TB-\d{3,6}$/
 export const VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v', 'webm', 'mkv', 'avi']
+export const TUS_CHUNK_SIZE = 6 * 1024 * 1024
 
 export class SubmissionError extends Error {
   constructor(code, extra = {}, status = 0) { super(code); this.code = code; this.extra = extra; this.status = status }
@@ -53,65 +54,93 @@ export function whatsappShareUrl(text) {
   return `https://wa.me/?text=${encodeURIComponent(text)}`
 }
 
-/* ─── الرفع القابل للاستئناف إلى رابط الجلسة ───
- * قطع من 8 ميغابايت (مضاعف 256 كيلوبايت). عند انقطاع الشبكة نسأل السيرفر عن البايتات التي وصلت ثم نكمل.
- * يعيد { fileId, file } عند الاكتمال. */
-export function uploadToSession({ file, sessionUri, chunkSize, startAt = 0, onProgress, getCommitted, signal, maxRetries = 6 }) {
-  const size = file.size
-  const putChunk = (start, end) => new Promise((resolve, reject) => {
+const utf8Base64 = value => btoa(String.fromCharCode(...new TextEncoder().encode(String(value))))
+const abortError = () => Object.assign(new Error('aborted'), { name: 'AbortError' })
+
+function request({ method, url, headers, body, signal, timeout, onUploadProgress }) {
+  return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('PUT', sessionUri, true)
-    xhr.setRequestHeader('Content-Range', `bytes ${start}-${end - 1}/${size}`)
-    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream')
-    xhr.timeout = 10 * 60 * 1000
-    xhr.upload.onprogress = event => { if (event.lengthComputable && onProgress) onProgress(Math.min(size, start + event.loaded), size) }
-    xhr.onload = () => {
-      if (xhr.status === 308) {
-        const range = /bytes=0-(\d+)/.exec(xhr.getResponseHeader('Range') || '')
-        return resolve({ done: false, committed: range ? Number(range[1]) + 1 : end })
-      }
-      if (xhr.status === 200 || xhr.status === 201) {
-        let body = null
-        try { body = JSON.parse(xhr.responseText) } catch { body = null }
-        return resolve({ done: true, file: body })
-      }
-      if (xhr.status === 404 || xhr.status === 410) return reject(new SubmissionError('UPLOAD_EXPIRED'))
-      reject(new SubmissionError(xhr.status >= 500 || xhr.status === 429 ? 'UPLOAD_RETRY' : 'UPLOAD_FAILED', { status: xhr.status }, xhr.status))
-    }
+    xhr.open(method, url, true)
+    for (const [key, value] of Object.entries(headers)) xhr.setRequestHeader(key, value)
+    xhr.timeout = timeout
+    if (onUploadProgress) xhr.upload.onprogress = event => { if (event.lengthComputable) onUploadProgress(event.loaded) }
+    xhr.onload = () => resolve({ status: xhr.status, header: name => xhr.getResponseHeader(name), text: xhr.responseText })
     xhr.onerror = () => reject(new SubmissionError('UPLOAD_RETRY'))
     xhr.ontimeout = () => reject(new SubmissionError('UPLOAD_RETRY'))
-    xhr.onabort = () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
+    xhr.onabort = () => reject(abortError())
     if (signal) {
-      if (signal.aborted) return reject(Object.assign(new Error('aborted'), { name: 'AbortError' }))
+      if (signal.aborted) return reject(abortError())
       signal.addEventListener('abort', () => xhr.abort(), { once: true })
     }
-    xhr.send(file.slice(start, end))
+    xhr.send(body === undefined ? null : body)
   })
+}
+
+/* ─── الرفع القابل للاستئناف (TUS 1.0.0) إلى Supabase Storage ───
+ * السيرفر يعطي توكنًا موقّعًا لمسار واحد (x-signature). القطع 6 ميغابايت بالضبط كما يشترط Supabase.
+ * عند انقطاع الشبكة نسأل الخادم عن الإزاحة (HEAD) ونكمل من حيث وقف. يعيد { uploadUrl } عند الاكتمال. */
+export function uploadResumable({ file, endpoint, token, anonKey, bucket, objectPath, chunkSize = TUS_CHUNK_SIZE, uploadUrl = null, onProgress, onUploadUrl, onRetry, signal, maxRetries = 6 }) {
+  const size = file.size
+  const common = { 'Tus-Resumable': '1.0.0', 'x-signature': token, 'x-upsert': 'true', ...(anonKey ? { authorization: `Bearer ${anonKey}`, apikey: anonKey } : {}) }
+
+  const create = async () => {
+    const response = await request({
+      method: 'POST', url: endpoint, signal, timeout: 60000,
+      headers: {
+        ...common, 'Upload-Length': String(size),
+        'Upload-Metadata': `bucketName ${utf8Base64(bucket)},objectName ${utf8Base64(objectPath)},contentType ${utf8Base64(file.type || 'application/octet-stream')},cacheControl ${utf8Base64('3600')}`,
+      },
+    })
+    if (response.status === 403 || response.status === 401) throw new SubmissionError('UPLOAD_EXPIRED', { status: response.status })
+    if (response.status < 200 || response.status >= 300) throw new SubmissionError(response.status >= 500 || response.status === 429 ? 'UPLOAD_RETRY' : 'UPLOAD_FAILED', { status: response.status })
+    const location = response.header('Location')
+    if (!location) throw new SubmissionError('UPLOAD_FAILED', { status: response.status })
+    return new URL(location, endpoint).href
+  }
+
+  const offsetOf = async url => {
+    const response = await request({ method: 'HEAD', url, signal, timeout: 30000, headers: common })
+    if (response.status === 404 || response.status === 410 || response.status === 403) throw new SubmissionError('UPLOAD_EXPIRED', { status: response.status })
+    if (response.status < 200 || response.status >= 300) throw new SubmissionError('UPLOAD_RETRY', { status: response.status })
+    return Number(response.header('Upload-Offset') || 0)
+  }
+
+  const patch = async (url, offset) => {
+    const end = Math.min(size, offset + chunkSize)
+    const response = await request({
+      method: 'PATCH', url, signal, timeout: 10 * 60 * 1000,
+      headers: { ...common, 'Upload-Offset': String(offset), 'Content-Type': 'application/offset+octet-stream' },
+      body: file.slice(offset, end),
+      onUploadProgress: loaded => onProgress?.(Math.min(size, offset + loaded), size),
+    })
+    if (response.status === 204 || response.status === 200) return Number(response.header('Upload-Offset') ?? end)
+    if (response.status === 409) return offsetOf(url) // الإزاحة مختلفة: نعيد المزامنة
+    if (response.status === 404 || response.status === 410 || response.status === 403) throw new SubmissionError('UPLOAD_EXPIRED', { status: response.status })
+    throw new SubmissionError(response.status >= 500 || response.status === 429 ? 'UPLOAD_RETRY' : 'UPLOAD_FAILED', { status: response.status })
+  }
 
   return (async () => {
-    let offset = startAt
+    let url = uploadUrl
+    let offset = 0
     let retries = 0
+    if (url) {
+      try { offset = await offsetOf(url) } catch (error) { if (error.code === 'UPLOAD_EXPIRED') url = null; else throw error }
+    }
+    if (!url) { url = await create(); onUploadUrl?.(url); offset = 0 }
+    onProgress?.(offset, size)
     while (offset < size) {
-      const end = Math.min(size, offset + chunkSize)
       try {
-        const result = await putChunk(offset, end)
-        if (result.done) { onProgress?.(size, size); return { fileId: result.file?.id || null, file: result.file } }
-        offset = result.committed
+        offset = await patch(url, offset)
         retries = 0
       } catch (error) {
         if (error?.name === 'AbortError' || error.code === 'UPLOAD_EXPIRED' || error.code === 'UPLOAD_FAILED') throw error
         if (++retries > maxRetries) throw new SubmissionError('UPLOAD_RETRY_EXHAUSTED')
+        onRetry?.(retries)
         await new Promise(resolve => setTimeout(resolve, Math.min(30000, 1500 * 2 ** (retries - 1))))
-        if (getCommitted) {
-          const state = await getCommitted()
-          if (state?.complete) { onProgress?.(size, size); return { fileId: state.fileId || null, file: null } }
-          if (Number.isFinite(state?.committed)) offset = state.committed
-        }
+        offset = await offsetOf(url)
       }
     }
-    // وصلت كل البايتات لكن لم نستلم استجابة الاكتمال: السيرفر يتحقق من حالة الجلسة.
-    const state = getCommitted ? await getCommitted() : null
-    if (state?.complete) return { fileId: state.fileId || null, file: null }
-    throw new SubmissionError('UPLOAD_INCOMPLETE')
+    onProgress?.(size, size)
+    return { uploadUrl: url }
   })()
 }

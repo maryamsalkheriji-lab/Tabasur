@@ -4,8 +4,8 @@
 --
 -- النتيجة:
 --   • tb_teams / tb_team_members: الفرق وأعضاؤها. الشخص (برقم جواله أو اسمه) في فريق واحد فقط.
---   • tb_settings: إعدادات التسليم (مفتوح/مغلق، الموعد النهائي، مجلدات درايف).
---   • tb_secrets: بيانات ربط Google Drive (يقرأها السيرفر فقط بمفتاح service_role).
+--   • tb_settings: إعدادات التسليم (مفتوح/مغلق، الموعد النهائي، الحد الأقصى للحجم).
+--   • tb_secrets: أسرار السيرفر إن لزمت مستقبلًا (يقرأها السيرفر فقط بمفتاح service_role).
 --   • tb_inperson: قائمة المقبولين حضوريًا (لتصنيف الفريق: حضوري / أونلاين / مختلط).
 --   • tb_upload_log: سجل كل عملية رفع أو حذف.
 --   • لا توجد أي سياسة قراءة أو كتابة للزوار أو للمستخدمين المسجّلين: كل شيء عبر /api/submissions.
@@ -192,6 +192,21 @@ select tm.id, tm.team_id, t.code as team_code, tm.mobile, tm.mobile_key, tm.full
 from public.tb_team_members tm
 join public.tb_teams t on t.id = tm.team_id;
 revoke all on table public.tb_admin_members from anon, authenticated;
+
+-- ---------------------------------------------------------------------
+-- 6) حاوية التخزين الخاصة للفيديوهات (Supabase Storage). خاصة بالكامل: لا سياسات للزوار،
+--    الرفع بتوكن مؤقت يصدره السيرفر، والعرض بروابط موقّعة من لوحة الإدارة فقط.
+--    (تُتخطى في بيئة الاختبار المحلية التي لا تحتوي مخطط storage)
+-- ---------------------------------------------------------------------
+do $$
+begin
+  if exists (select 1 from information_schema.schemata where schema_name = 'storage') then
+    insert into storage.buckets (id, name, public, file_size_limit)
+    values ('submissions', 'submissions', false, 2147483648)
+    on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit;
+  end if;
+end
+$$;
 
 -- تحديث مخطط PostgREST فورًا حتى ترى واجهة Supabase الجداول الجديدة
 notify pgrst, 'reload schema';
