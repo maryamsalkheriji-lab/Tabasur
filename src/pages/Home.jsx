@@ -38,6 +38,7 @@ function Hero() {
             </Link>
             <a className={`btn ${styles.heroGhost}`} href="#about">{h.about}</a>
             <Link className={`btn ${styles.heroGhost}`} to="/tabsur/remote">{h.remote} <span className="arrow">{h.remoteArrow}</span></Link>
+            <Link className={`btn ${styles.heroGhost}`} to="/tabsur/submit">{h.submit} <span className="arrow">{h.remoteArrow}</span></Link>
           </div>
           <div className={`${styles.heroFacts} reveal`}>
             <span>{registrationStatus[lang]}</span>
@@ -483,9 +484,14 @@ function CTA() {
         <p className="reveal" style={{fontSize:'clamp(14px,1.4vw,17px)',color:'var(--ink-500)',maxWidth:'56ch',lineHeight:1.9}}>
           {c.text}
         </p>
-        <Link to="/register" className="btn btn-primary reveal" style={{fontSize:'16px',padding:'19px 38px'}}>
-          {c.button} <span className="arrow">→</span>
-        </Link>
+        <div className="reveal" style={{display:'flex',flexWrap:'wrap',gap:'12px',justifyContent:'center'}}>
+          <Link to="/register" className="btn btn-primary" style={{fontSize:'16px',padding:'19px 38px'}}>
+            {c.button} <span className="arrow">→</span>
+          </Link>
+          <Link to="/tabsur/submit" className="btn btn-ghost" style={{fontSize:'16px',padding:'19px 38px'}}>
+            {c.submitButton} <span className="arrow">→</span>
+          </Link>
+        </div>
         <p className="reveal">{registrationStatus[lang]}</p>
         <span className="reveal" style={{fontSize:'12px',color:'var(--ink-400)',letterSpacing:'0.1em',marginTop:'4px'}}>
           {c.note}

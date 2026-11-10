@@ -13,6 +13,7 @@ import { LanguageProvider } from './lib/language'
 const JudgeApp = lazy(() => import('./judging/JudgeApp'))
 const RSVP = lazy(() => import('./pages/RSVP'))
 const RemoteCamp = lazy(() => import('./pages/RemoteCamp'))
+const Submit = lazy(() => import('./pages/Submit'))
 
 // رابط إعادة تعيين كلمة المرور من Supabase قد يهبط على الصفحة الرئيسية
 // (حسب Site URL في إعدادات Auth)، فنحوّله إلى لوحة الأدمن مع التوكن.
@@ -55,6 +56,7 @@ export default function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="remote" element={<Suspense fallback={<div style={{ minHeight: '100svh' }} />}><RemoteCamp /></Suspense>} />
+                <Route path="submit" element={<Suspense fallback={<div style={{ minHeight: '100svh' }} />}><Submit /></Suspense>} />
                 {/* كثيرون يكتبون /tabsur/admin — لوحة الإدارة على /admin */}
                 <Route path="admin/*" element={<Navigate to="/admin" replace />} />
                 <Route path="*" element={<Navigate to="/tabsur" replace />} />

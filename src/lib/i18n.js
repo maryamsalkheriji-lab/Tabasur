@@ -1,4 +1,5 @@
 // Arabic is the canonical copy; English mirrors the same keys. tests/i18n.test.js keeps both in sync.
+import { SUBMIT_COPY } from './i18n-submit.js'
 export const LANG_STORAGE_KEY = 'tabsur-lang'
 export const LANGUAGES = Object.freeze(['ar', 'en'])
 
@@ -20,7 +21,7 @@ export const translations = {
       camp: 'المعسكر', tracks: 'المسارات', remote: 'عن بُعد', remoteBadge: 'أونلاين', who: 'الفئة المستهدفة', days: 'الأيام',
       partners: 'الجهات المسؤولة', sponsors: 'الرعاة', sponsorRegister: 'تسجيل الرعاة',
       themeAria: 'الوضع الداكن', themeToLight: 'تفعيل الوضع الفاتح', themeToDark: 'تفعيل الوضع الداكن',
-      attach: 'إرفاق عملي', register: 'سجّل أونلاين', menu: 'القائمة',
+      submit: 'تسليم الفيديو', submitBadge: 'مفتوح', attach: 'إرفاق عملي', register: 'سجّل أونلاين', menu: 'القائمة',
     },
     footer: {
       brandBig: 'معسكر تَبصَّر', brandSmall: 'TABSUR · INSIGHT', rights: '© 2026 تَبصَّر · جميع الحقوق محفوظة', contact: 'تواصل معنا',
@@ -33,7 +34,7 @@ export const translations = {
       hero: {
         title: 'تَبصَّر', sub: 'نحكي قصة التحوّل كما عاشها الناس.',
         desc: 'تجربة إنتاجية مكثفة تعيد اكتشاف المدينة المنورة، وتروي قصة تحوّلها بصريًا كما عاشها الناس، بدمج الذكاء الاصطناعي وصناعة المحتوى.',
-        register: 'سجّل للمشاركة أونلاين', about: 'اكتشف الفكرة', remote: 'شارك عن بُعد', remoteArrow: '←',
+        register: 'سجّل للمشاركة أونلاين', about: 'اكتشف الفكرة', remote: 'شارك عن بُعد', remoteArrow: '←', submit: 'سلّم فيديو فريقك',
         facts: ['المدينة المنورة · السعودية', '4 أيام مكثفة', '100 موهبة مستهدفة', 'مخرجات قابلة للنشر'],
         scroll: 'اسحب للأسفل',
       },
@@ -96,26 +97,26 @@ export const translations = {
       },
       cta: {
         eyebrow: 'المشاركة أونلاين', title: 'من بيتك… اروي حكاية المدينة',
-        text: 'شارك في تَبصَّر عن بُعد من منزلك. سنوفّر لك مكتبة صور ولقطات خام للمدينة المنورة، لتختار منها وتنسّقها وتصنع فيديوهات تروي حكاية المدينة، ثم ترفع أعمالك عبر صفحة «عن بُعد» في الموقع، دون الحاجة إلى الحضور الفعلي. باب التسليم مفتوح الآن.',
-        button: 'سجّل للمشاركة أونلاين', note: 'من المنزل · مكتبة مواد خام · صناعة فيديوهات عن المدينة',
+        text: 'شارك في تَبصَّر عن بُعد من منزلك. سنوفّر لك مكتبة صور ولقطات خام للمدينة المنورة، لتختار منها وتنسّقها وتصنع فيديوهات تروي حكاية المدينة، ثم ترفع فيديو فريقك عبر صفحة «تسليم الفيديو» في الموقع، دون الحاجة إلى الحضور الفعلي. باب التسليم مفتوح الآن.',
+        button: 'سجّل للمشاركة أونلاين', submitButton: 'تسليم فيديو الفريق', note: 'من المنزل · مكتبة مواد خام · صناعة فيديوهات عن المدينة',
       },
     },
     remote: {
       title: 'تَبصَّر عن بُعد | حمّل اللقطات وابدأ الإبداع',
       breadcrumbCamp: 'معسكر تَبصَّر', breadcrumbRemote: 'عن بُعد',
-      heroTitle: 'من لقطات المدينة…', heroAccent: 'إلى إبداعك.', heroText: 'شارك من منزلك دون حضور فعلي. حمّل الصور واللقطات الخام للمدينة المنورة، واختر منها ونسّقها لتصنع فيديوهات تروي حكايتها، ثم ارفع أعمالك في مجلد مسارك على Google Drive.', badge: 'تَبصَّر عن بُعد',
+      heroTitle: 'من لقطات المدينة…', heroAccent: 'إلى إبداعك.', heroText: 'شارك من منزلك دون حضور فعلي. حمّل الصور واللقطات الخام للمدينة المنورة، واختر منها ونسّقها لتصنع فيديوهات تروي حكايتها، ثم ارفعوا فيديو فريقكم من صفحة تسليم الفيديو في الموقع.', badge: 'تَبصَّر عن بُعد',
       step1: '١', step2: '٢',
       libraryEyebrow: 'المواد الخام للجميع', libraryTitle: 'حمّل لقطات المدينة', libraryText: 'مجلد Drive واحد لكل المسارات. اختر منه اللقطات التي تخدم فكرتك.',
       openFolder: 'فتح مجلد الفيديوهات', folderSoon: 'يظهر الرابط هنا فور تجهيز المواد.',
-      submitTitle: 'اختر مسارك وارفع فيديوهاتك', submitText: 'لكل مسار مجلد Google Drive خاص به. افتح مجلد مسارك وارفع فيديوهاتك فيه مباشرة.',
-      uploadOpen: 'باب تسليم الفيديوهات مفتوح الآن', uploadButton: 'ارفع فيديوهاتك هنا', uploadButtonShort: 'ارفع هنا',
-      howToTitle: 'طريقة الرفع في ثلاث خطوات',
+      submitTitle: 'سلّموا فيديو فريقكم', submitText: 'لكل فريق فيديو واحد يُرفع من الموقع مباشرة باسم الفريق ومساره، دون الدخول إلى أي مجلد.',
+      uploadOpen: 'باب تسليم الفيديوهات مفتوح الآن', uploadButton: 'التسليم في هذا المسار', uploadButtonShort: 'تسليم',
+      howToTitle: 'طريقة التسليم في ثلاث خطوات',
       howToSteps: [
-        'سجّل الدخول بحساب Google (Gmail) على جهازك؛ فالرفع في Google Drive يتطلب حساب Google.',
-        'سمِّ ملف الفيديو قبل رفعه بهذه الصيغة: الاسم الكامل - رقم الجوال - عنوان الفيديو، مثل: سارة محمد الحربي - 0501234567 - أسواق المدينة.',
-        'اضغط زر مسارك في الأسفل ليفتح مجلد المسار في Google Drive، ثم اسحب الفيديو إلى داخل المجلد أو اضغط «جديد» ثم «رفع ملف»، وانتظر حتى يكتمل الرفع قبل إغلاق الصفحة.',
+        'كوّنوا فريقكم من شخص إلى خمسة أشخاص، وتأكدوا أن كل عضو مسجّل في الموقع برقم جواله.',
+        'افتحوا صفحة تسليم الفيديو، وسجّلوا الفريق باسمه ومساره وأرقام جوالات أعضائه، ثم اختاروا ملف الفيديو.',
+        'انتظروا اكتمال الرفع حتى يظهر الإيصال وكود الفريق، واحتفظوا بالكود لاستبدال الفيديو عند الحاجة.',
       ],
-      howToNote: 'ارفع في مجلد مسارك فقط، بصيغة MP4 أو MOV. إذا كان لديك أكثر من فيديو فارفعها كلها في المجلد نفسه. ظهور ملفك داخل المجلد بعد اكتمال الرفع هو تأكيد استلامه.',
+      howToNote: 'فيديو واحد لكل فريق بصيغة MP4 أو MOV. ظهور الإيصال بكود الفريق هو تأكيد الاستلام، ولا يرى ملفكم أحد سوى المنظّمين.',
       uploadClosed: 'رفع الفيديوهات مغلق حاليًا', uploadClosedButton: 'الرفع مغلق',
       uploadClosedNote: 'يمكنك تحميل المواد والعمل على فيديوهاتك الآن. سنعلن عن فتح التسليم لاحقًا؛ لا يمكن رفع أو إرسال أي فيديو في الوقت الحالي.',
       tracks: {
@@ -125,6 +126,7 @@ export const translations = {
         identity: { title: 'الهوية والسردية', description: 'اروي روح المكان وقصص الناس.' },
       },
     },
+    submit: SUBMIT_COPY.ar,
     phone: {
       chooseCountry: 'اختر رمز الدولة',
       search: 'ابحث باسم الدولة أو رمزها، مثل مصر أو +20',
@@ -137,7 +139,7 @@ export const translations = {
       brandBig: 'معسكر تَبصَّر', brandSmall: 'TABSUR · INSIGHT', back: 'الصفحة الرئيسية',
       eyebrow: 'التسجيل أونلاين · دفعة 2026', titlePrefix: 'انضمّ إلى ', titleAccent: 'تَبصَّر',
       notice: { title: 'التسجيل الحضوري مغلق', text: 'التسجيل متاح الآن للمشاركة أونلاين فقط، من منزلك ودون الحاجة إلى الحضور الفعلي.' },
-      intro: 'سنوفّر لك مكتبة صور ولقطات خام للمدينة المنورة، تختار منها وتنسّقها وتوظّفها في تصميم وإنتاج فيديوهات تروي حكاية المدينة. تنفّذ أعمالك من منزلك، ثم ترفع الفيديوهات عبر صفحة «عن بُعد» في الموقع. أكمل النموذج للتسجيل في المشاركة عن بُعد.',
+      intro: 'سنوفّر لك مكتبة صور ولقطات خام للمدينة المنورة، تختار منها وتنسّقها وتوظّفها في تصميم وإنتاج فيديوهات تروي حكاية المدينة. تنفّذ أعمالك من منزلك، ثم ترفع فيديو فريقك عبر صفحة «تسليم الفيديو» في الموقع. أكمل النموذج للتسجيل في المشاركة عن بُعد.',
       meta: { location: 'من منزلك', locationRest: ' · مشاركة أونلاين بالكامل', library: 'مكتبة صور ولقطات خام', libraryRest: ' · للمدينة المنورة', submission: 'تسليم الفيديوهات', submissionRest: ' · باب التسليم مفتوح الآن عبر الموقع' },
       unavailable: 'التسجيل غير متاح مؤقتًا. يرجى المحاولة لاحقًا.',
       formTitle: 'نموذج التسجيل أونلاين', step: 'FORM · 01 / 01', requiredPrefix: 'الحقول التي تحمل ', requiredSuffix: ' مطلوبة. اقرأها بهدوء قبل الإرسال.',
@@ -232,7 +234,7 @@ export const translations = {
       camp: 'The Camp', tracks: 'Tracks', remote: 'Remote', remoteBadge: 'Online', who: 'Who It’s For', days: 'Schedule',
       partners: 'Organizers', sponsors: 'Sponsors', sponsorRegister: 'Sponsor Registration',
       themeAria: 'Dark mode', themeToLight: 'Switch to light mode', themeToDark: 'Switch to dark mode',
-      attach: 'Submit My Work', register: 'Register Online', menu: 'Menu',
+      submit: 'Submit Video', submitBadge: 'Open', attach: 'Submit My Work', register: 'Register Online', menu: 'Menu',
     },
     footer: {
       brandBig: 'Tabsur Camp', brandSmall: 'TABSUR · INSIGHT', rights: '© 2026 Tabsur · All rights reserved', contact: 'Contact us',
@@ -245,7 +247,7 @@ export const translations = {
       hero: {
         title: 'Tabsur', sub: 'We tell the story of transformation as people lived it.',
         desc: 'An intensive production experience that rediscovers Madinah and tells the story of its transformation visually, as people lived it, blending AI and content creation.',
-        register: 'Register to Participate Online', about: 'Discover the Idea', remote: 'Join Remotely', remoteArrow: '→',
+        register: 'Register to Participate Online', about: 'Discover the Idea', remote: 'Join Remotely', remoteArrow: '→', submit: 'Submit Your Team Video',
         facts: ['Madinah · Saudi Arabia', '4 intensive days', '100 target talents', 'Publish-ready outputs'],
         scroll: 'Scroll down',
       },
@@ -308,26 +310,26 @@ export const translations = {
       },
       cta: {
         eyebrow: 'Participate online', title: 'Tell Madinah’s story from home',
-        text: 'Join Tabsur remotely from home. We’ll provide a library of raw photos and footage of Madinah for you to select, arrange, and turn into videos that tell the city’s story. Submissions are open now: upload your work through the Remote page on the website, with no in-person attendance required.',
-        button: 'Register to Participate Online', note: 'From home · Raw media library · Create videos about Madinah',
+        text: 'Join Tabsur remotely from home. We’ll provide a library of raw photos and footage of Madinah for you to select, arrange, and turn into videos that tell the city’s story. Submissions are open now: upload your team’s video through the Submit Video page on the website, with no in-person attendance required.',
+        button: 'Register to Participate Online', submitButton: 'Submit Your Team Video', note: 'From home · Raw media library · Create videos about Madinah',
       },
     },
     remote: {
       title: 'Tabsur Remote | Download the footage and start creating',
       breadcrumbCamp: 'Tabsur Camp', breadcrumbRemote: 'Remote',
-      heroTitle: 'From city footage…', heroAccent: 'to your creation.', heroText: 'Take part from home with no in-person attendance. Download raw photos and footage of Madinah, then select and arrange them to create videos that tell its story, then upload your work to your track’s Google Drive folder.', badge: 'Tabsur Remote',
+      heroTitle: 'From city footage…', heroAccent: 'to your creation.', heroText: 'Take part from home with no in-person attendance. Download raw photos and footage of Madinah, then select and arrange them to create videos that tell its story, then upload your team’s video from the Submit Video page on the website.', badge: 'Tabsur Remote',
       step1: '1', step2: '2',
       libraryEyebrow: 'Raw footage for everyone', libraryTitle: 'Download city footage', libraryText: 'One Drive folder for all tracks. Pick the shots that serve your idea.',
       openFolder: 'Open video folder', folderSoon: 'The link will appear here once the material is ready.',
-      submitTitle: 'Choose your track and upload your videos', submitText: 'Each track has its own Google Drive folder. Open your track’s folder and upload your videos there directly.',
-      uploadOpen: 'Video submissions are open now', uploadButton: 'Upload your videos here', uploadButtonShort: 'Upload here',
-      howToTitle: 'How to upload in three steps',
+      submitTitle: 'Submit your team video', submitText: 'One video per team, uploaded directly from the website under the team’s name and track, without entering any folder.',
+      uploadOpen: 'Video submissions are open now', uploadButton: 'Submit in this track', uploadButtonShort: 'Submit',
+      howToTitle: 'How to submit in three steps',
       howToSteps: [
-        'Sign in to a Google account (Gmail) on your device; uploading to Google Drive requires a Google account.',
-        'Name your video file before uploading in this format: Full name - Mobile number - Video title, e.g. Sarah Mohammed Alharbi - 0501234567 - Madinah Markets.',
-        'Click your track’s button below to open its Google Drive folder, then drag the video into the folder or click “New” and “File upload”, and wait until the upload completes before closing the page.',
+        'Form your team of one to five people and make sure every member is registered on the website with their mobile number.',
+        'Open the Submit Video page, register the team with its name, track and members’ mobile numbers, then choose the video file.',
+        'Wait for the upload to finish until the receipt and team code appear, and keep the code to replace the video if needed.',
       ],
-      howToNote: 'Upload only to your own track’s folder, as MP4 or MOV. If you have more than one video, upload them all to the same folder. Your file appearing inside the folder after the upload completes confirms we received it.',
+      howToNote: 'One video per team, as MP4 or MOV. The receipt with your team code confirms we received it, and nobody but the organizers can see your file.',
       uploadClosed: 'Video uploads are currently closed', uploadClosedButton: 'Uploads closed',
       uploadClosedNote: 'You can download the material and work on your videos now. We’ll announce when submissions open; no videos can be uploaded or sent at this time.',
       tracks: {
@@ -337,6 +339,7 @@ export const translations = {
         identity: { title: 'Identity & Narrative', description: 'Tell the spirit of the place and the stories of its people.' },
       },
     },
+    submit: SUBMIT_COPY.en,
     phone: {
       chooseCountry: 'Choose country code',
       search: 'Search by country name or code, e.g. Egypt or +20',
@@ -349,7 +352,7 @@ export const translations = {
       brandBig: 'Tabsur Camp', brandSmall: 'TABSUR · INSIGHT', back: 'Home',
       eyebrow: 'ONLINE REGISTRATION · 2026 COHORT', titlePrefix: 'Join ', titleAccent: 'Tabsur',
       notice: { title: 'In-person registration is closed', text: 'Registration is now open for online participation only, from home, with no in-person attendance required.' },
-      intro: 'We’ll provide a library of raw photos and footage of Madinah. Select and arrange the material to design and produce videos that tell the city’s story. Create your work from home, then upload your videos through the Remote page on the website. Complete the form to register for remote participation.',
+      intro: 'We’ll provide a library of raw photos and footage of Madinah. Select and arrange the material to design and produce videos that tell the city’s story. Create your work from home, then upload your team’s video through the Submit Video page on the website. Complete the form to register for remote participation.',
       meta: { location: 'From home', locationRest: ' · Fully online participation', library: 'Raw photos and footage', libraryRest: ' · A library of Madinah material', submission: 'Submit your videos', submissionRest: ' · Open now through the website' },
       unavailable: 'Registration is temporarily unavailable. Please try again later.',
       formTitle: 'Online Registration Form', step: 'FORM · 01 / 01', requiredPrefix: 'Fields marked ', requiredSuffix: ' are required. Read them carefully before submitting.',

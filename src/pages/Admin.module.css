@@ -445,3 +445,36 @@
   .detailName { font-size:17px; }
   .detailValue { overflow-wrap:anywhere; }
 }
+
+/* ─── تبويب التسليمات ─── */
+.subGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; margin-bottom:22px; }
+.subCard { background:var(--paper); border:1px solid var(--rule); border-radius:16px; padding:20px 22px; display:flex; flex-direction:column; gap:12px; }
+.subCardHead { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.subCardHead h3 { font-size:17px; font-weight:800; margin:0; display:flex; align-items:center; gap:8px; }
+.subNote { font-size:13px; color:var(--ink-500); line-height:1.8; margin:0; }
+.subNote code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; background:var(--bg-alt); padding:2px 6px; border-radius:6px; direction:ltr; unicode-bidi:embed; word-break:break-all; }
+.driveSteps { margin:0; padding-inline-start:20px; font-size:13.5px; color:var(--ink-700); line-height:1.9; display:grid; gap:4px; }
+.formRow { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; align-items:end; }
+.formRow label { display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:700; color:var(--ink-700); }
+.formRow .authInput { margin:0; width:100%; }
+.toggle { display:flex; align-items:center; gap:10px; font-size:14px; font-weight:700; cursor:pointer; min-height:44px; }
+.toggle input { width:18px; height:18px; accent-color:var(--green-600); }
+.quotaBar { height:10px; border-radius:999px; background:var(--bg-alt); overflow:hidden; }
+.quotaBar span { display:block; height:100%; background:linear-gradient(90deg,var(--green-500),var(--green-600)); }
+.quotaWarn span { background:linear-gradient(90deg,var(--gold-500),var(--coral-500)); }
+.pill { display:inline-flex; align-items:center; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
+.pillIn { background:rgba(52,168,118,.16); color:var(--green-700); }
+.pillOn { background:rgba(99,102,241,.14); color:#4f46e5; }
+.pillMix { background:rgba(234,179,8,.18); color:#92400e; }
+.memberChips { display:flex; flex-wrap:wrap; gap:6px; }
+.chip { display:inline-flex; align-items:center; gap:6px; padding:4px 9px; border-radius:999px; background:var(--bg-alt); font-size:12.5px; line-height:1.4; }
+.chip i { width:7px; height:7px; border-radius:50%; background:var(--ink-300); }
+.chipIn i { background:var(--green-600); }
+.chip b { font-weight:700; }
+.iconBtn { width:22px; height:22px; border-radius:50%; border:1px solid var(--rule); background:var(--paper); color:var(--ink-500); display:inline-grid; place-items:center; cursor:pointer; font-size:12px; line-height:1; }
+.iconBtn:hover { color:var(--coral-500); border-color:var(--coral-500); }
+.codeTag { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:800; letter-spacing:.06em; direction:ltr; unicode-bidi:embed; }
+.dangerBtn { background:transparent; border:1.5px solid rgba(227,146,122,.6); color:var(--coral-500); border-radius:10px; padding:8px 12px; font:inherit; font-size:13px; font-weight:700; cursor:pointer; }
+.dangerBtn:hover { background:rgba(227,146,122,.12); }
+.okBanner { background:rgba(52,168,118,.12); border:1px solid rgba(52,168,118,.35); color:var(--green-700); padding:12px 16px; border-radius:12px; font-size:14px; font-weight:600; margin-bottom:18px; }
+@media (max-width:900px) { .subGrid { grid-template-columns:1fr; } }

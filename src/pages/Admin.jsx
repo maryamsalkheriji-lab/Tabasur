@@ -3,6 +3,7 @@ import { supabase, isSupabaseActive, formatSupabaseError } from '../lib/supabase
 import { useAdminSession, translateAuthError } from '../lib/adminAuth'
 import { toSafeHttpUrl, csvCell } from '../lib/security'
 import { paginationItems } from '../lib/pagination'
+import SubmissionsTab from './admin/SubmissionsTab'
 import styles from './Admin.module.css'
 
 /* ─── Helpers ─── */
@@ -165,7 +166,10 @@ export default function Admin() {
   const [newPassword2, setNewPassword2] = useState('')
   const [authError, setAuthError] = useState('')
   const [authInfo, setAuthInfo] = useState('')
-  const [activeTab, setActiveTab] = useState('participants')
+  const [activeTab, setActiveTab] = useState(() => {
+    try { return new URLSearchParams(window.location.search).get('tab') === 'submissions' ? 'submissions' : 'participants' } catch { return 'participants' }
+  })
+  const [submissionStats, setSubmissionStats] = useState(null)
   const [rows, setRows]         = useState([])
   const [loading, setLoading]   = useState(true)
   const [error, setError]       = useState('')
@@ -471,7 +475,7 @@ export default function Admin() {
           </div>
           <div>
             <div className={styles.headerTitle}>لوحة إدارة تَبصَّر</div>
-            <div className={styles.headerSub}>{activeTab === 'participants' ? 'PARTICIPANTS' : 'SPONSORS'} · ADMIN DASHBOARD</div>
+            <div className={styles.headerSub}>{{ participants: 'PARTICIPANTS', sponsors: 'SPONSORS', submissions: 'SUBMISSIONS' }[activeTab]} · ADMIN DASHBOARD</div>
           </div>
         </div>
         <div className={styles.headerActions}>
@@ -481,7 +485,7 @@ export default function Admin() {
             </svg>
             تحديث
           </button>
-          <button
+          {activeTab !== 'submissions' && <button
             className={styles.exportBtn}
             onClick={() => activeTab === 'participants' ? exportCSV(filtered) : exportSponsorsCSV(filteredSponsors)}
             disabled={!isSupabaseActive || (activeTab === 'participants' ? filtered.length===0 : filteredSponsors.length===0)}
@@ -490,7 +494,7 @@ export default function Admin() {
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
             تصدير Excel
-          </button>
+          </button>}
           <button className={styles.logoutBtn} onClick={logout}>خروج</button>
         </div>
       </header>
@@ -524,6 +528,19 @@ export default function Admin() {
             </span>
             <span>الرعاة</span>
             <strong>{sponsorRows.length}</strong>
+          </button>
+          <button
+            className={`${styles.sideItem} ${activeTab === 'submissions' ? styles.sideItemActive : ''}`}
+            onClick={() => setActiveTab('submissions')}
+            id="tab-submissions"
+          >
+            <span className={styles.sideIcon}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+                <path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
+              </svg>
+            </span>
+            <span>التسليمات</span>
+            <strong>{submissionStats ? submissionStats.teams : '—'}</strong>
           </button>
         </aside>
 
@@ -890,6 +907,9 @@ export default function Admin() {
               )}
             </div>
           </>
+        )}
+        {isSupabaseActive && activeTab === 'submissions' && (
+          <SubmissionsTab token={auth.session?.access_token || ''} onLoaded={setSubmissionStats} />
         )}
         </main>
       </div>

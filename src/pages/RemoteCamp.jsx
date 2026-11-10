@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { DEFAULT_LIBRARY_URL, SUBMISSIONS_OPEN, remoteTracks, submissionFolderUrl } from '../lib/remote-camp'
+import { DEFAULT_LIBRARY_URL, SUBMISSIONS_OPEN, remoteTracks, submitPathForTrack } from '../lib/remote-camp'
 import { useLanguage } from '../lib/language'
 import styles from './RemoteCamp.module.css'
 
@@ -10,13 +10,14 @@ function Icon({ name }) {
     folder: <path d="M3 7V5a1 1 0 0 1 1-1h5l2 3h9a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7Z" />,
     lock: <><rect x="5" y="10" width="14" height="11" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3" /></>,
     upload: <><path d="M12 16V4M7 9l5-5 5 5" /><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></>,
+    arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
   }
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
 
-// Submissions (2026-11-09): each track links to its own Google Drive folder, where participants upload directly.
-// The site itself still mounts no file input, drop handler, preview settings, or upload request,
-// and /api/remote-upload stays locked. Set SUBMISSIONS_OPEN to false to show the closed state again.
+// Submissions (2026-11-10): every track card leads to the team submission page (/tabsur/submit), where one video per
+// team is uploaded through the site into the organizer's private Drive. This page itself mounts no file input and
+// /api/remote-upload stays locked. Set SUBMISSIONS_OPEN to false to show the closed state again.
 export default function RemoteCamp() {
   const { t } = useLanguage()
   const copy = t.remote
@@ -50,12 +51,11 @@ export default function RemoteCamp() {
           : <div className={styles.closedNotice} id="upload-closed-note"><Icon name="lock" /><div><strong>{copy.uploadClosed}</strong><p>{copy.uploadClosedNote}</p></div></div>}
         <div className={styles.trackGrid}>{remoteTracks.map(track => {
           const text = copy.tracks[track.id]
-          const folder = SUBMISSIONS_OPEN ? submissionFolderUrl(track.id) : null
           return <article className={styles.track} key={track.id} aria-labelledby={`track-${track.id}`}>
             <div className={styles.trackImage}><img src={track.image} alt="" loading="eager" /><span>{track.number}</span></div>
             <div className={styles.trackBody}><h3 id={`track-${track.id}`}>{text.title}</h3><p>{text.description}</p>
-              {folder
-                ? <a className={styles.uploadButton} href={folder} target="_blank" rel="noopener noreferrer" aria-describedby="upload-how-to" aria-label={`${copy.uploadButton} — ${text.title}`}><Icon name="upload" /><span className={styles.labelLong}>{copy.uploadButton}</span><span className={styles.labelShort}>{copy.uploadButtonShort}</span><Icon name="external" /></a>
+              {SUBMISSIONS_OPEN
+                ? <Link className={styles.uploadButton} to={submitPathForTrack(track.id)} aria-describedby="upload-how-to" aria-label={`${copy.uploadButton} — ${text.title}`}><Icon name="upload" /><span className={styles.labelLong}>{copy.uploadButton}</span><span className={styles.labelShort}>{copy.uploadButtonShort}</span><Icon name="arrow" /></Link>
                 : <button type="button" className={styles.attachButton} disabled aria-describedby="upload-closed-note" aria-label={`${copy.uploadClosed} — ${text.title}`}><Icon name="lock" /> {copy.uploadClosedButton}</button>}
             </div>
           </article>

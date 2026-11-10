@@ -1,5 +1,5 @@
 // Local acceptance check for the remote participation page with submissions open:
-// four tracks link to their own Drive folders, the site still mounts no uploader, and the API stays locked.
+// every track leads to the team submission page, the page mounts no uploader, and the old upload API stays locked.
 import assert from 'node:assert/strict'
 import { mkdir } from 'node:fs/promises'
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright-core')
@@ -24,7 +24,6 @@ try {
       })
       await page.addInitScript(lang => {
         localStorage.setItem('tabsur-lang', lang)
-        // Old preview settings must not override the published shared library or the per-track folders.
         localStorage.setItem('tabsur-remote-preview-v2', JSON.stringify({ libraryUrl: 'https://drive.google.com/drive/folders/1FakeOverride_123', uploadsEnabled: true }))
       }, lang)
       await page.goto(`${base}/tabsur/remote?uploads=enabled`)
@@ -34,22 +33,18 @@ try {
       assert.equal(await page.locator('#remote-submit button').count(), 0, 'no locked buttons remain')
       assert.equal(await page.locator('input[type="file"], dialog, main form').count(), 0)
       assert.match(await page.locator('#upload-how-to').innerText(), lang === 'ar' ? /ثلاث خطوات/ : /three steps/)
-      assert.match(await page.locator('#upload-how-to').innerText(), lang === 'ar' ? /الاسم الكامل - رقم الجوال/ : /Full name - Mobile number/)
+      assert.match(await page.locator('#upload-how-to').innerText(), lang === 'ar' ? /صفحة تسليم الفيديو/ : /Submit Video page/)
+      assert.doesNotMatch(await page.locator('body').innerText(), /رقم الجوال - عنوان|Mobile number - Video/, 'old per-person file naming is gone')
       assert.match(await page.locator('body').innerText(), lang === 'ar' ? /مفتوح الآن/ : /open now/)
       assert.equal(await page.locator('#remote-library a').getAttribute('href'), 'https://drive.google.com/drive/folders/1R0C4MsoTgcqEP9JdHGxZp-Ld2UKRpzGr')
-      const folders = {
-        destination: 'https://drive.google.com/drive/folders/1aPkjTMVHSsh8AC_fGeUh-MhtCwtmSjtb',
-        life: 'https://drive.google.com/drive/folders/1j9RZE4kbLaGFQ5IoaD-GGBEHlLxH6qiq',
-        investment: 'https://drive.google.com/drive/folders/1yzAy_szsE6wJ-HK1OyUYXmZSo5tDSvkn',
-        identity: 'https://drive.google.com/drive/folders/1rpk0W6370XgSGMM_7ioYVsueQHWUgfk4',
-      }
-      const links = await page.locator('#remote-submit article a[target="_blank"]').all()
-      assert.equal(links.length, 4, 'one upload link per track')
-      for (const [id, href] of Object.entries(folders)) {
-        const link = page.locator(`#remote-submit article[aria-labelledby="track-${id}"] a[target="_blank"]`)
-        assert.equal(await link.getAttribute('href'), href, `${id} links to its own folder`)
-        assert.match(await link.getAttribute('rel'), /noopener/)
-        assert.match(await link.getAttribute('aria-label'), lang === 'ar' ? /ارفع فيديوهاتك هنا/ : /Upload your videos here/)
+      assert.equal(await page.locator('#remote-submit a[href*="drive.google.com"]').count(), 0, 'no public submission folders')
+      const links = await page.locator('#remote-submit article a').all()
+      assert.equal(links.length, 4, 'one submit link per track')
+      for (const id of ['destination', 'life', 'investment', 'identity']) {
+        const link = page.locator(`#remote-submit article[aria-labelledby="track-${id}"] a`)
+        assert.equal(await link.getAttribute('href'), `/tabsur/submit?track=${id}`, `${id} links to the submission page with its track preselected`)
+        assert.equal(await link.getAttribute('target'), null)
+        assert.match(await link.getAttribute('aria-label'), lang === 'ar' ? /التسليم في هذا المسار/ : /Submit in this track/)
       }
       await page.locator('#remote-submit').evaluate(node => {
         const data = new DataTransfer()
@@ -59,13 +54,17 @@ try {
       assert.equal(pickers, 0)
       assert.equal(await page.locator('input[type="file"], dialog').count(), 0)
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${lang} overflow at ${width}px`)
-      if (shots && [390,1440].includes(width)) await page.screenshot({ path: `${shots}/remote-open-${lang}-${width}.png`, fullPage: true })
+      if (shots && [390, 1440].includes(width)) await page.screenshot({ path: `${shots}/remote-open-${lang}-${width}.png`, fullPage: true })
+      // الضغط على مسار ينقل إلى صفحة التسليم مع المسار محددًا
+      await page.locator('#remote-submit article[aria-labelledby="track-life"] a').click()
+      await page.locator('#submit-title').waitFor()
+      assert.equal(new URL(page.url()).pathname + new URL(page.url()).search, '/tabsur/submit?track=life')
       const result = await page.request.post(`${base}/api/remote-upload?track=life`, { data: { name: 'not-an-upload', enabled: true } })
       assert.equal(result.status(), 423)
       assert.equal((await result.json()).code, 'UPLOADS_CLOSED')
       assert.deepEqual(errors, [])
       assert.deepEqual(writes, [])
-      console.log(`PASS ${lang} ${width}px: library, four tracks linking to their own Drive folders, no picker/drop/upload, server still rejects direct submission`)
+      console.log(`PASS ${lang} ${width}px: library, four tracks leading to /tabsur/submit, no picker/drop/upload, old API still locked`)
       await page.close()
     }
   }

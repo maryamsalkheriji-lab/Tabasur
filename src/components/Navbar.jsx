@@ -8,7 +8,9 @@ import styles from './Navbar.module.css'
 export default function Navbar({ theme, onToggleTheme }) {
   const { t } = useLanguage()
   const nav = t.nav
-  const isRemote = useLocation().pathname.replace(/\/$/, '') === '/tabsur/remote'
+  const currentPath = useLocation().pathname.replace(/\/$/, '')
+  const isRemote = currentPath === '/tabsur/remote'
+  const isSubmit = currentPath === '/tabsur/submit'
   const [menuOpen, setMenuOpen] = useState(false)
   const navRef = useRef(null)
   const toggleRef = useRef(null)
@@ -46,6 +48,7 @@ export default function Navbar({ theme, onToggleTheme }) {
         <a href="/tabsur#about"    onClick={() => setMenuOpen(false)}>{nav.camp}</a>
         <a href="/tabsur#pillars"  onClick={() => setMenuOpen(false)}>{nav.tracks}</a>
         <Link to="/tabsur/remote" className={styles.remoteLink} aria-current={isRemote ? 'page' : undefined} onClick={() => setMenuOpen(false)}>{nav.remote} <span>{nav.remoteBadge}</span></Link>
+        <Link to="/tabsur/submit" className={styles.remoteLink} aria-current={isSubmit ? 'page' : undefined} onClick={() => setMenuOpen(false)}>{nav.submit} <span>{nav.submitBadge}</span></Link>
         <a href="/tabsur#who"      onClick={() => setMenuOpen(false)}>{nav.who}</a>
         <a href="/tabsur#timeline" onClick={() => setMenuOpen(false)}>{nav.days}</a>
         <a href="/tabsur#partners" onClick={() => setMenuOpen(false)}>{nav.partners}</a>
