@@ -41,16 +41,18 @@ export async function startFakeStorage({ failChunks = 0 } = {}) {
     }
 
     // TUS: إنشاء جلسة رفع بتوكن موقّع
-    if (path === '/upload/resumable' && req.method === 'POST') {
+    // المسار غير الموقّع يتحقق من Authorization كـ JWT ويتجاهل x-signature، تمامًا كخادم Supabase الحقيقي.
+    if (path === '/upload/resumable' || /^\/upload\/resumable\/[a-f0-9]+$/.test(path)) return send(res, 400, { statusCode: '403', code: 'AccessDenied', error: 'Unauthorized', message: 'Invalid Compact JWS' })
+    if (path === '/upload/resumable/sign' && req.method === 'POST') {
       if (req.headers['tus-resumable'] !== '1.0.0') return send(res, 412, { message: 'Tus-Resumable required' })
       const meta = decodeMeta(req.headers['upload-metadata'])
       const signature = state.tokens.get(String(req.headers['x-signature'] || ''))
       if (!signature || signature.bucket !== meta.bucketName || signature.path !== meta.objectName || signature.exp < Date.now()) return send(res, 403, { statusCode: '403', error: 'Unauthorized', message: 'invalid upload signature' })
       const id = randomBytes(8).toString('hex')
       state.uploads.set(id, { key: `${meta.bucketName}/${meta.objectName}`, contentType: meta.contentType || 'application/octet-stream', length: Number(req.headers['upload-length']), chunks: [], offset: 0, done: false })
-      return send(res, 201, '', { Location: `${base()}/storage/v1/upload/resumable/${id}` })
+      return send(res, 201, '', { Location: `${base()}/storage/v1/upload/resumable/sign/${id}` })
     }
-    match = /^\/upload\/resumable\/([a-f0-9]+)$/.exec(path)
+    match = /^\/upload\/resumable\/sign\/([a-f0-9]+)$/.exec(path)
     if (match) {
       const upload = state.uploads.get(match[1])
       if (!upload) return send(res, 404, { message: 'upload not found' })

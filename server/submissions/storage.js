@@ -19,14 +19,15 @@ export function storageConfig(env = process.env) {
 }
 
 // عنوان الرفع المباشر: Supabase يوصي بالمضيف <ref>.storage.supabase.co للرفع القابل للاستئناف.
+// التوكن الموقّع (x-signature) يُقبل فقط على المسار /upload/resumable/sign؛ المسار بلا /sign يتحقق من Authorization كـ JWT ويرفض.
 export function resumableEndpoint(projectUrl, uploadBase = null) {
-  if (uploadBase) return `${uploadBase.replace(/\/$/, '')}/upload/resumable`
+  if (uploadBase) return `${uploadBase.replace(/\/$/, '')}/upload/resumable/sign`
   try {
     const url = new URL(projectUrl)
     const match = /^([a-z0-9-]+)\.supabase\.co$/i.exec(url.hostname)
-    if (match) return `https://${match[1]}.storage.supabase.co/storage/v1/upload/resumable`
+    if (match) return `https://${match[1]}.storage.supabase.co/storage/v1/upload/resumable/sign`
   } catch { /* عنوان محلي */ }
-  return `${projectUrl.replace(/\/$/, '')}/storage/v1/upload/resumable`
+  return `${projectUrl.replace(/\/$/, '')}/storage/v1/upload/resumable/sign`
 }
 
 export function createStorage(config) {

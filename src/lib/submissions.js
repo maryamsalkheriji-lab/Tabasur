@@ -77,11 +77,12 @@ function request({ method, url, headers, body, signal, timeout, onUploadProgress
 }
 
 /* ─── الرفع القابل للاستئناف (TUS 1.0.0) إلى Supabase Storage ───
- * السيرفر يعطي توكنًا موقّعًا لمسار واحد (x-signature). القطع 6 ميغابايت بالضبط كما يشترط Supabase.
+ * السيرفر يعطي توكنًا موقّعًا لمسار واحد (x-signature) على المسار /upload/resumable/sign، بلا ترويسة Authorization
+ * (كما في مثال Supabase الرسمي). القطع 6 ميغابايت بالضبط كما يشترط Supabase.
  * عند انقطاع الشبكة نسأل الخادم عن الإزاحة (HEAD) ونكمل من حيث وقف. يعيد { uploadUrl } عند الاكتمال. */
 export function uploadResumable({ file, endpoint, token, anonKey, bucket, objectPath, chunkSize = TUS_CHUNK_SIZE, uploadUrl = null, onProgress, onUploadUrl, onRetry, signal, maxRetries = 6 }) {
   const size = file.size
-  const common = { 'Tus-Resumable': '1.0.0', 'x-signature': token, 'x-upsert': 'true', ...(anonKey ? { authorization: `Bearer ${anonKey}`, apikey: anonKey } : {}) }
+  const common = { 'Tus-Resumable': '1.0.0', 'x-signature': token, 'x-upsert': 'true', ...(anonKey ? { apikey: anonKey } : {}) }
 
   const create = async () => {
     const response = await request({

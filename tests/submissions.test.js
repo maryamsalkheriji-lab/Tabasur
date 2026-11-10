@@ -59,8 +59,8 @@ test('keys: mobiles, names and display file names normalize predictably', () => 
   assert.equal(teamNameKey(' فريق  النُّور '), 'فريق النور')
   assert.equal(driveFileName('TB-007', 'فريق النور/الإبداع', 'أسواق: المدينة؟', 'mp4'), 'TB-007 - فريق النور الإبداع - أسواق المدينة؟.mp4')
   assert.equal(CHUNK_SIZE, TUS_CHUNK_SIZE)
-  assert.equal(resumableEndpoint('https://hmxnubgqtygipxuxyuqt.supabase.co'), 'https://hmxnubgqtygipxuxyuqt.storage.supabase.co/storage/v1/upload/resumable')
-  assert.equal(resumableEndpoint('http://127.0.0.1:5000'), 'http://127.0.0.1:5000/storage/v1/upload/resumable')
+  assert.equal(resumableEndpoint('https://hmxnubgqtygipxuxyuqt.supabase.co'), 'https://hmxnubgqtygipxuxyuqt.storage.supabase.co/storage/v1/upload/resumable/sign')
+  assert.equal(resumableEndpoint('http://127.0.0.1:5000'), 'http://127.0.0.1:5000/storage/v1/upload/resumable/sign')
 })
 
 test('full flow: lookup, register a team, resumable upload of one video, replace it, and read the receipt', async () => {
@@ -85,7 +85,7 @@ test('full flow: lookup, register a team, resumable upload of one video, replace
   const upload = start.body.upload
   assert.match(upload.objectPath, /^life\/TB-001\/TB-001-[a-z0-9]+\.mp4$/)
   assert.equal(upload.displayName, 'TB-001 - فريق النور - أسواق المدينة.mp4')
-  assert.equal(upload.endpoint, `${fake.base}/storage/v1/upload/resumable`)
+  assert.equal(upload.endpoint, `${fake.base}/storage/v1/upload/resumable/sign`)
   assert.equal(upload.bucket, 'submissions')
   assert.ok(upload.token)
 
