@@ -30,7 +30,8 @@ as $$
     else regexp_replace(regexp_replace(p, '\D', '', 'g'), '^00', '')
   end
 $$;
-revoke all on function public.tb_mobile_key(text) from public, anon, authenticated;
+-- العمود المحسوب mobile_key في registrations يستدعي هذه الدالة عند كل إدخال بدور anon (نموذج التسجيل)، فيجب أن تبقى قابلة للتنفيذ لهم.
+grant execute on function public.tb_mobile_key(text) to anon, authenticated, service_role;
 
 -- عمود محسوب في جدول التسجيلات حتى يبحث السيرفر برقم الجوال مباشرة.
 alter table public.registrations
