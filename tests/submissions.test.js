@@ -1,5 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { MAX_MEMBERS } from '../server/submissions/keys.js'
 import { startFakeStorage } from './helpers/fake-storage.mjs'
 import { mobileKeyFromStored, nameKey, teamNameKey, driveFileName, parseMobile } from '../server/submissions/keys.js'
 import { createDevDatabase } from '../server/submissions/dev-db.js'
@@ -166,8 +167,11 @@ test('governance: one person in one team only, by mobile and by name, and no two
   assert.equal(duplicateInForm.body.code, 'DUPLICATE_MEMBER')
   const unregistered = await call(handler, { action: 'start', team: { mode: 'new', name: 'فريق ثالث', track: 'life', mobiles: ['0502222222', '0598765432'] }, video: video(), consent })
   assert.deepEqual([unregistered.status, unregistered.body.code, unregistered.body.mobile], [400, 'NOT_REGISTERED', '0598765432'])
-  const tooMany = await call(handler, { action: 'start', team: { mode: 'new', name: 'فريق ثالث', track: 'life', mobiles: ['0502222222', '0503333333', '0507777777', '0508888888', '0509999999', '0500000000'] }, video: video(), consent })
+  // لا عدد محدد للفريق؛ يبقى سقف تقني (MAX_MEMBERS) لا يُعرض للمشاركين
+  const tooMany = await call(handler, { action: 'start', team: { mode: 'new', name: 'فريق ثالث', track: 'life', mobiles: Array.from({ length: MAX_MEMBERS + 1 }, (_, i) => `05${String(10000000 + i).padStart(8, '0')}`) }, video: video(), consent })
   assert.equal(tooMany.body.code, 'INVALID_MEMBERS')
+  const sixMembers = await call(handler, { action: 'start', team: { mode: 'new', name: 'فريق ثالث', track: 'life', mobiles: ['0502222222', '0503333333', '0507777777', '0508888888', '0509999999', '0500000000'] }, video: video(), consent })
+  assert.notEqual(sixMembers.body.code, 'INVALID_MEMBERS', 'six members are no longer refused for their number')
 
   const notMember = await call(handler, { action: 'start', team: { mode: 'existing', code: 'TB-001', mobile: '0502222222' }, video: video(), consent })
   assert.equal(notMember.body.code, 'NOT_A_MEMBER')

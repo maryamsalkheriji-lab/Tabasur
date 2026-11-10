@@ -126,7 +126,7 @@ export const SUBMIT_COPY = {
     },
     members: {
       sectionTitle: 'Members', leaderLabel: 'Your mobile number (team leader)', memberLabel: n => `Mobile number of member ${n}`,
-      add: 'Add member', remove: 'Remove member', max: 'Five members at most',
+      add: 'Add member', remove: 'Remove member', max: 'Maximum number of members reached',
       hint: 'Enter the mobile number each member registered with on the website; their registered name will appear so you can confirm it.',
       checking: 'Checking…', ok: 'Registered', notRegistered: 'This number is not registered in the camp', inTeam: 'This number is already in another team',
       invalid: 'Invalid mobile number', duplicate: 'This number is repeated in the list', registerLink: 'Register for the camp',
