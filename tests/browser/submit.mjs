@@ -77,7 +77,7 @@ try {
     // الموافقة مطلوبة
     await page.locator('#submit-new').click()
     await page.locator('[role="alert"]').waitFor()
-    assert.match(await page.locator('[role="alert"]').innerText(), /إذن النشر/)
+    assert.match(await page.locator('[role="alert"]').innerText(), /الإقرار/)
     await page.locator('input[type="checkbox"]').check()
     if (shots) await page.screenshot({ path: `${shots}/submit-form-ar-390.png`, fullPage: true })
     await page.locator('#submit-new').click()

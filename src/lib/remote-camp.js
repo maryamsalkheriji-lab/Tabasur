@@ -17,28 +17,30 @@ export const remoteTracks = [
   { id: 'identity', title: 'الهوية والسردية', description: 'اروي روح المكان وقصص الناس.', image: '/assets/track-04.png', number: '04' },
 ]
 
-// Draft terms for the local preview; production must retain consent on the server.
+// نص «إقرار وموافقة على استخدام ونشر الأعمال الإبداعية» المعتمد من أمانة منطقة المدينة المنورة (2026-11-10). تغيير النص يستلزم رفع الإصدار.
 export const PUBLICATION_POLICY = Object.freeze({
-  version: '2026-11-01.2',
-  beneficiary: 'أمانة منطقة المدينة المنورة',
-  summary: 'تسري هذه الموافقة على جميع الفيديوهات التي أرفقها، سواء فازت في المعسكر أو لم تفز.',
+  version: '2026-11-10.1',
+  beneficiary: 'أمانة منطقة المدينة المنورة وهيئة تطوير منطقة المدينة المنورة',
+  summary: 'يسري هذا الإقرار على جميع الأعمال والفيديوهات التي أرفقها ضمن المعسكر، سواء فازت أو لم تفز.',
   terms: Object.freeze([
-    'أسمح لأمانة منطقة المدينة المنورة بنشر الفيديوهات التي أرفقها وعرضها على حساباتها الرسمية ومنصاتها الإعلامية، داخل المملكة وخارجها، مع إمكانية تحريرها أو اقتباس مقاطع منها بما يناسب النشر.',
-    'هذه الموافقة إذن بالنشر فقط؛ لا تتضمن نقل أي حقوق مالية، ولا يترتب عليها مقابل مادي، وتبقى حقوقي الأدبية في العمل محفوظة.',
-    'أؤكد أن الفيديو من عملي، وأن المواد التي استخدمتها فيه مرخّصة ولا تمس حقوق الغير.',
+    'أقرّ، بصفتي مشاركًا في «معسكر تَبصَّر»، بموافقتي على منح أمانة منطقة المدينة المنورة وهيئة تطوير منطقة المدينة المنورة الإذن باستخدام الأعمال والمخرجات الإبداعية التي أقدمها ضمن المعسكر، ونشرها وعرضها وإعادة نشرها عبر منصاتهما الإعلامية ومواقعهما الإلكترونية، بما في ذلك منصة «روح المدينة»، وفي الفعاليات والمعارض والبرامج والأنشطة والحملات الإعلامية والتسويقية التي تنظمانها أو تشاركان فيها، وذلك لأغراض التعريف والترويج للمدينة المنورة ومبادراتها ومشروعاتها.',
+    'كما أوافق على إجراء التعديلات الفنية والتحريرية اللازمة على هذه الأعمال، بما في ذلك الاختصار وإعادة التنسيق والإنتاج وتكييفها بما يتناسب مع متطلبات النشر والعرض، مع مراعاة سلامة المحتوى وعدم الإخلال بجوهر العمل، ومع احتفاظي بحقوق الملكية الفكرية المتعلقة بأعمالي.',
+    'وأقرّ بأن الأعمال المقدمة من إنتاجي، وأنني أمتلك الحقوق والتصاريح اللازمة لاستخدام عناصرها ومشاركتها، بما لا يتعارض مع حقوق الآخرين.',
+    'هذا الإقرار إذن بالاستخدام والنشر؛ لا يترتب عليه مقابل مادي، وتبقى حقوقي الأدبية والملكية الفكرية في أعمالي محفوظة.',
   ]),
-  acknowledgement: 'قرأت الشروط وأوافق على نشر جميع الفيديوهات التي سأرفقها.',
+  acknowledgement: 'قرأت الإقرار وأوافق على ما ورد فيه.',
 })
 
 // English rendering of the same policy version, shown when the visitor switches the site to English.
 export const PUBLICATION_POLICY_EN = Object.freeze({
-  summary: 'This consent applies to every video I attach, whether or not it wins in the camp.',
+  summary: 'This declaration applies to every work and video I attach within the camp, whether or not it wins.',
   terms: Object.freeze([
-    'I allow Madinah Regional Municipality to publish and display the videos I attach on its official accounts and media platforms, inside and outside the Kingdom, including editing them or using excerpts as suits publication.',
-    'This consent is a permission to publish only. It does not transfer any financial rights, involves no payment, and my moral rights in the work remain reserved.',
-    'I confirm the video is my own work, and that any material used in it is licensed and does not infringe the rights of others.',
+    'As a participant in Tabsur Camp, I grant Madinah Regional Municipality and the Madinah Region Development Authority permission to use the creative works and outputs I submit within the camp, and to publish, display and republish them on their media platforms and websites, including the “Spirit of Madinah” platform, and in the events, exhibitions, programs, activities and media and marketing campaigns they organize or take part in, for the purpose of promoting Madinah and its initiatives and projects.',
+    'I also agree to the technical and editorial changes needed for these works, including shortening, reformatting, production and adaptation to publishing and display requirements, while preserving the integrity of the content and the essence of the work, and while I retain the intellectual property rights to my works.',
+    'I declare that the submitted works are my own production, and that I hold the rights and permissions needed to use and share their elements without infringing the rights of others.',
+    'This declaration is a permission to use and publish. It involves no payment, and my moral and intellectual property rights in my works remain reserved.',
   ]),
-  acknowledgement: 'I have read the terms and agree to the publication of all videos I will attach.',
+  acknowledgement: 'I have read the declaration and agree to its terms.',
 })
 
 const CONSENT_LANGUAGES = ['ar', 'en']

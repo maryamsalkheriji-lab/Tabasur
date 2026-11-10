@@ -53,7 +53,7 @@ export default function Submit() {
   const [file, setFile] = useState(null)
   const [fileError, setFileError] = useState('')
   const [consent, setConsent] = useState(false)
-  const [showTerms, setShowTerms] = useState(false)
+  const [showTerms, setShowTerms] = useState(true)
   // فريق موجود
   const [codeInput, setCodeInput] = useState('')
   const [memberPhone, setMemberPhone] = useState({ country: DEFAULT_COUNTRY, number: '' })
@@ -139,7 +139,7 @@ export default function Submit() {
     setFile(selected)
   }
 
-  function resetVideoForm() { setTitle(''); setFile(null); setFileError(''); setConsent(false); setShowTerms(false) }
+  function resetVideoForm() { setTitle(''); setFile(null); setFileError(''); setConsent(false); setShowTerms(true) }
 
   /* ─── الرفع ─── */
   async function runUpload(startPayload, { resumeFrom } = {}) {
@@ -277,17 +277,12 @@ export default function Submit() {
     } catch (err) { showError(err.code || 'UNKNOWN', err.extra || {}) } finally { setBusy(false) }
   }
 
-  function resetAll() {
-    setView('choose'); setError(''); setNotice(''); setTeam(null); setReplacing(false); setUploadFailure(null); uploadRef.current = null
-    setTeamName(''); setMembers([newMember()]); resetVideoForm(); setCodeInput(''); setMemberPhone({ country: DEFAULT_COUNTRY, number: '' })
-  }
-
   async function copyCode() {
     try { await navigator.clipboard.writeText(team.code); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch { /* الحافظة غير متاحة */ }
   }
 
-  /* ─── أجزاء الواجهة ─── */
-  const Status = () => (
+  /* ─── أجزاء الواجهة: دوال عرض لا مكوّنات داخلية، حتى لا يُعاد تركيب الحقول (وفقدان التركيز) مع كل حرف ─── */
+  const renderStatus = () => (
     <div className={`${styles.statusBar} ${config && ready ? styles.statusOpen : ''}`} role="status">
       <div className={styles.wrap}><Icon name={config && ready ? 'upload' : 'lock'} /><span>{statusText}</span>
         {config && ready && config.deadline && <span className={styles.statusMeta}>{copy.status.deadline(fmtDate(config.deadline, lang))}</span>}
@@ -296,7 +291,7 @@ export default function Submit() {
     </div>
   )
 
-  const TeamCard = ({ data, compact = false }) => (
+  const renderTeamCard = (data, compact = false) => (
     <div className={styles.card} id="team-card">
       <div className={styles.cardHead}>
         <div><span className={styles.eyebrow}>{copy.card.code}</span><strong className={styles.code} dir="ltr">{data.code}</strong></div>
@@ -316,7 +311,7 @@ export default function Submit() {
     </div>
   )
 
-  const VideoFields = ({ idPrefix }) => (
+  const renderVideoFields = idPrefix => (
     <>
       <div className="field">
         <label htmlFor={`${idPrefix}-title`}>{copy.video.title}<span className="req">•</span></label>
@@ -349,7 +344,7 @@ export default function Submit() {
   const percent = progress.total ? Math.min(100, Math.round((progress.done / progress.total) * 100)) : 0
 
   return <div className={styles.page}>
-    <Status />
+    {renderStatus()}
     <div className={styles.wrap}>
       <header className={styles.header}>
         <Link to="/tabsur" className={styles.breadcrumb}>{copy.breadcrumbCamp} <span>/</span> {copy.breadcrumb}</Link>
@@ -418,7 +413,7 @@ export default function Submit() {
 
         <section className={styles.section}>
           <div className={styles.sectionHead}><span className={styles.step}>3</span><h2>{copy.video.sectionTitle}</h2></div>
-          <VideoFields idPrefix="new" />
+          {renderVideoFields('new')}
         </section>
 
         {error && <div className="form-error-banner" role="alert">{error}</div>}
@@ -452,7 +447,7 @@ export default function Submit() {
         </form>
 
         {team && <div className={styles.section}>
-          <TeamCard data={team} />
+          {renderTeamCard(team)}
           {notice && <div className={styles.notice} role="status">{notice}</div>}
           {error && <div className="form-error-banner" role="alert">{error}</div>}
           {!replacing && <div className={styles.actions}>
@@ -461,7 +456,7 @@ export default function Submit() {
           </div>}
           {replacing && <form onSubmit={submitReplacement} noValidate className={styles.replaceForm} id="replace-form">
             {team.video && <p className={styles.hintText}><strong>{copy.video.replaceTitle}:</strong> {copy.video.replaceText}</p>}
-            <VideoFields idPrefix="replace" />
+            {renderVideoFields('replace')}
             <div className={styles.actions}>
               <button type="submit" className={styles.primary} disabled={busy || !ready} id="submit-replace"><Icon name="upload" /> {busy ? copy.actions.working : team.video ? copy.actions.submitReplace : copy.actions.submitFirst}</button>
               <button type="button" className={styles.ghost} onClick={() => { setReplacing(false); setError('') }}>{copy.actions.back}</button>
@@ -495,13 +490,12 @@ export default function Submit() {
         <div className={styles.successIcon}><Icon name="check" /></div>
         <h2>{copy.success.title}</h2>
         <p>{copy.success.text} <strong>{outcome === 'replaced' ? copy.success.replaced : copy.success.created}</strong></p>
-        <TeamCard data={team} compact />
+        {renderTeamCard(team, true)}
         <p className={styles.keepCode}><Icon name="info" /> {copy.card.keepCode}</p>
         <div className={styles.actions}>
           <button type="button" className={styles.primary} onClick={copyCode} id="copy-code"><Icon name="copy" /> {copied ? copy.actions.copied : copy.actions.copyCode}</button>
           <a className={styles.whatsapp} href={whatsappShareUrl(receiptText(team, lang))} target="_blank" rel="noopener noreferrer" id="share-whatsapp"><Icon name="whatsapp" /> {copy.actions.whatsapp} <Icon name="external" /></a>
           <Link to="/tabsur" className={styles.ghost}>{copy.actions.home}</Link>
-          <button type="button" className={styles.ghost} onClick={resetAll}>{copy.actions.another}</button>
         </div>
       </section>}
     </div>
