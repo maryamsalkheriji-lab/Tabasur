@@ -7,7 +7,8 @@ export class RegisterTeamError extends Error {
   constructor(code, mobileKey = '') { super(code); this.code = code; this.mobileKey = mobileKey }
 }
 
-const TEAM_COLUMNS = 'id,code,name,name_key,track,created_at,updated_at,video_file_id,video_name,video_title,video_size,video_mime,video_md5,video_web_link,video_uploaded_at,consent_version,consent_lang,consent_at,pending_upload'
+// كل أعمدة الفريق: لو أُضيف عمود في الكود قبل تشغيل ملف SQL على القاعدة لا يتعطل التسليم العام، والواجهة العامة (teamCard) تختار حقولها صراحةً.
+const TEAM_COLUMNS = '*'
 const MEMBER_COLUMNS = 'id,team_id,mobile,mobile_key,name_key,full_name,registration_id,is_leader,position,created_at'
 
 function translateRegisterError(message, detail) {
@@ -79,6 +80,11 @@ export function supabaseRepo(sb) {
     },
     async deleteTeam(id) { unwrap(await sb.from('tb_teams').delete().eq('id', id)) },
     async removeMember(memberId) { unwrap(await sb.from('tb_team_members').delete().eq('id', memberId)) },
+    // هل شُغّل ملف review-2026-11-12.sql؟ (أعمدة القرار موجودة)
+    async hasReviewColumns() {
+      const { error } = await sb.from('tb_teams').select('review_status').limit(1)
+      return !error
+    },
     async getMember(memberId) { return unwrap(await sb.from('tb_team_members').select(MEMBER_COLUMNS).eq('id', memberId).maybeSingle()) },
     async countInperson() {
       const { count, error } = await sb.from('tb_inperson').select('email', { count: 'exact', head: true })
@@ -149,6 +155,9 @@ export function pgliteRepo(db) {
       return teams.map(team => ({ ...team, members: members.filter(member => member.team_id === team.id) }))
     },
     async deleteTeam(id) { await db.query('delete from public.tb_teams where id = $1', [id]) },
+    async hasReviewColumns() {
+      try { await db.query('select review_status from public.tb_teams limit 1'); return true } catch { return false }
+    },
     async removeMember(memberId) { await db.query('delete from public.tb_team_members where id = $1', [memberId]) },
     async getMember(memberId) { return one('select * from public.tb_team_members where id = $1', [memberId]) },
     async countInperson() { return Number((await one('select count(*)::int as n from public.tb_inperson')).n) },

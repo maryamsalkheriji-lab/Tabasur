@@ -205,7 +205,7 @@
 .searchInput:focus { border-color:var(--green-500); box-shadow:0 0 0 3px rgba(52,168,118,.14); background:#fff; }
 
 .filterSelect {
-  padding:9px 36px 9px 14px; border-radius:10px;
+  padding:9px 14px 9px 36px; border-radius:10px; /* السهم على اليسار في الاتجاه RTL */
   border:1.5px solid var(--ink-200); background:var(--paper-tint);
   font:inherit; font-size:13px; color:var(--ink-800); outline:none;
   appearance:none;
@@ -478,3 +478,58 @@
 .dangerBtn:hover { background:rgba(227,146,122,.12); }
 .okBanner { background:rgba(52,168,118,.12); border:1px solid rgba(52,168,118,.35); color:var(--green-700); padding:12px 16px; border-radius:12px; font-size:14px; font-weight:600; margin-bottom:18px; }
 @media (max-width:900px) { .subGrid { grid-template-columns:1fr; } }
+
+/* ─── قرار التأهّل (لوحة الإدارة فقط) ─── */
+.pillOk { background:rgba(52,168,118,.18); color:var(--green-700); }
+.pillNo { background:rgba(74,111,120,.14); color:var(--ink-500); }
+.decideBox { display:flex; flex-direction:column; gap:6px; align-items:flex-start; }
+.decideRow { display:flex; gap:6px; flex-wrap:wrap; }
+.okBtn, .noBtn { border-radius:10px; padding:8px 14px; font:inherit; font-size:13px; font-weight:800; cursor:pointer; border:1.5px solid transparent; white-space:nowrap; transition:background .2s, color .2s, border-color .2s; }
+.okBtn { background:var(--green-600); color:#fff; }
+.okBtn:hover { background:var(--green-700); }
+.noBtn { background:transparent; border-color:var(--ink-200); color:var(--ink-700); }
+.noBtn:hover { border-color:var(--ink-400); background:var(--bg-alt); }
+.okBtn:disabled, .noBtn:disabled, .linkBtn:disabled { opacity:.5; cursor:not-allowed; }
+.linkBtn { background:none; border:0; padding:0; font:inherit; font-size:12px; font-weight:700; color:var(--ink-500); text-decoration:underline; cursor:pointer; }
+.linkBtn:hover { color:var(--green-700); }
+.staleNote { font-size:12px; color:#92400e; line-height:1.6; max-width:260px; }
+.tableHint { margin:0; padding:10px 20px; font-size:13px; color:var(--ink-500); line-height:1.8; border-bottom:1px solid var(--rule); background:var(--paper-tint); }
+.warnBanner { background:rgba(234,179,8,.14); border:1px solid rgba(234,179,8,.45); color:#92400e; padding:12px 16px; border-radius:12px; font-size:14px; font-weight:600; margin-bottom:18px; line-height:1.8; }
+.warnBanner code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; background:rgba(255,255,255,.6); padding:2px 6px; border-radius:6px; direction:ltr; unicode-bidi:embed; }
+@media (max-width:640px) {
+  .cardTable td.cellDecide { grid-column:1 / -1; }
+  .decideBox, .decideRow { width:100%; }
+  .okBtn, .noBtn { flex:1; padding:10px; }
+  .tableHint { padding:10px 12px; }
+}
+
+/* الشاشات الضيقة جدًا: أربعة تبويبات في عمودَين دون تمدد الصفحة أفقيًا */
+@media (max-width:420px) {
+  .sidebar { grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  .sideItem { grid-template-columns:24px minmax(0,1fr) auto; padding:9px 8px; gap:6px; font-size:13px; min-width:0; }
+  .sideItem > span:not(.sideIcon) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .sideIcon { width:24px; height:24px; border-radius:7px; }
+  .sideIcon svg { width:15px; height:15px; }
+}
+
+/* جدولا التسليمات والمتأهلين: حشو أقل والتفاف للنص حتى تظهر كل الأعمدة على شاشة 1280 دون تمرير أفقي */
+.denseTable th, .denseTable td { padding:12px 10px; }
+.denseTable td { white-space:normal; }
+.denseTable td.cellName { min-width:150px; }
+.denseTable .codeTag, .denseTable .dateCell { white-space:nowrap; }
+.videoBox { display:flex; flex-direction:column; gap:7px; align-items:flex-start; min-width:200px; }
+.videoBox strong { line-height:1.5; }
+.videoMeta { font-size:11.5px; color:var(--ink-500); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+@media (max-width:640px) {
+  .denseTable th, .denseTable td { padding:0; }
+  .cardTable td.cellVideo { grid-column:1 / -1; }
+  .videoBox { width:100%; min-width:0; }
+  .videoBox .decideRow { width:100%; }
+  .videoBox .detailBtn { flex:1; }
+}
+@media (max-width:360px) {
+  .sideItem { font-size:12px; padding:8px 6px; gap:5px; }
+  .sideItem strong { min-width:24px; height:22px; font-size:11px; }
+}
+.dangerBtn { white-space:nowrap; }
+.decideBox .videoMeta { white-space:nowrap; }

@@ -17,6 +17,8 @@ export const TRACK_FOLDER_NAMES = Object.freeze({
 export const ROOT_FOLDER_NAME = 'تسليمات معسكر تَبصَّر'
 export const MAX_MEMBERS = 50 // سقف تقني فقط؛ لا يُعرض للمشاركين ولا يُذكر في النصوص (قرار المنظّمة: لا عدد محدد للفريق)
 export const TEAM_CODE_PATTERN = /^TB-\d{3,6}$/
+// قرار المنظّمة على فيديو الفريق (لوحة الإدارة فقط)
+export const REVIEW_STATUSES = Object.freeze(['pending', 'qualified', 'rejected'])
 
 // الصيغة المحفوظة في قاعدة البيانات (05xxxxxxxx أو +code...) إلى مفتاح أرقام دولي بلا +.
 export function mobileKeyFromStored(stored) {

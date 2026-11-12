@@ -5,7 +5,7 @@ import { serviceClient, DbError } from './db.js'
 import { supabaseRepo, RegisterTeamError } from './repo.js'
 import { createStorage, storageConfig, StorageError, TUS_CHUNK_SIZE, SIGNED_UPLOAD_TTL_MS } from './storage.js'
 import {
-  TRACKS, TRACK_LABELS, MAX_MEMBERS, TEAM_CODE_PATTERN,
+  TRACKS, TRACK_LABELS, MAX_MEMBERS, TEAM_CODE_PATTERN, REVIEW_STATUSES,
   parseMobile, nameKey, teamNameKey, cleanText, videoExtension, isVideoFile, driveFileName,
 } from './keys.js'
 import { PUBLICATION_POLICY } from '../../src/lib/remote-camp.js'
@@ -238,6 +238,25 @@ async function requireAdmin(ctx) {
   return admin
 }
 
+// قرار المنظّمة على الفيديو. القرار مربوط بمسار الفيديو الذي اتُّخذ عليه: إذا استُبدل الفيديو أو حُذف عاد الفريق إلى «بلا قرار»
+// مع الإشارة إلى القرار السابق، حتى لا يبقى في قائمة المتأهلين فيديو لم تشاهده المنظّمة.
+function reviewView(team) {
+  const stored = REVIEW_STATUSES.includes(team.review_status) ? team.review_status : 'pending'
+  const applies = stored !== 'pending' && Boolean(team.video_file_id) && team.review_video === team.video_file_id
+  return {
+    status: applies ? stored : 'pending',
+    at: applies ? team.review_at || null : null,
+    by: applies ? team.review_by || null : null,
+    previous: !applies && stored !== 'pending' ? stored : null,
+  }
+}
+
+// PostgREST (PGRST204 / 42703) أو Postgres مباشرة: أعمدة القرار غير موجودة لأن ملف review-2026-11-12.sql لم يُشغَّل بعد.
+function isMissingReviewColumn(error) {
+  const code = String(error?.code || '')
+  return (code === 'PGRST204' || code === '42703') && /review_/.test(String(error?.message || '') + String(error?.details || ''))
+}
+
 function adminTeamView(team) {
   const inPerson = team.members.filter(member => member.in_person).length
   const type = team.members.length === 0 || inPerson === 0 ? 'online' : inPerson === team.members.length ? 'inperson' : 'mixed'
@@ -248,6 +267,7 @@ function adminTeamView(team) {
       ? { path: team.video_file_id, name: team.video_name, title: team.video_title, size: Number(team.video_size), mimeType: team.video_mime, uploadedAt: team.video_uploaded_at, consentVersion: team.consent_version, consentAt: team.consent_at }
       : null,
     pending: team.pending_upload ? { fileName: team.pending_upload.fileName, size: team.pending_upload.size, startedAt: team.pending_upload.startedAt } : null,
+    review: reviewView(team),
   }
 }
 
@@ -395,11 +415,16 @@ const ACTIONS = {
     const settings = await loadSettings(repo)
     const teams = (await repo.listTeamsWithMembers()).map(adminTeamView)
     const usedBytes = teams.reduce((sum, team) => sum + (team.video ? team.video.size : 0), 0)
+    const withVideo = teams.filter(team => team.video)
     return {
       settings, teams,
       storage: { configured: Boolean(storage), bucket: storage?.bucket || null, usedBytes, includedBytes: INCLUDED_STORAGE_BYTES },
+      review: { ready: await repo.hasReviewColumns() },
       stats: {
-        teams: teams.length, withVideo: teams.filter(team => team.video).length, members: teams.reduce((sum, team) => sum + team.members.length, 0),
+        teams: teams.length, withVideo: withVideo.length, members: teams.reduce((sum, team) => sum + team.members.length, 0),
+        qualified: withVideo.filter(team => team.review.status === 'qualified').length,
+        rejected: withVideo.filter(team => team.review.status === 'rejected').length,
+        undecided: withVideo.filter(team => team.review.status === 'pending').length,
         inperson: await repo.countInperson(), registrations: await repo.countRegistrations(),
       },
     }
@@ -432,6 +457,27 @@ const ACTIONS = {
     const url = await storage.signedViewUrl(team.video_file_id, VIEW_URL_SECONDS)
     const downloadUrl = await storage.signedViewUrl(team.video_file_id, VIEW_URL_SECONDS, team.video_name || 'video.mp4')
     return { url, downloadUrl, expiresIn: VIEW_URL_SECONDS }
+  },
+
+  // قرار المنظّمة على فيديو الفريق: qualified / rejected، أو pending للتراجع. لا يصل منه شيء إلى المشاركين.
+  async admin_review({ repo, body, admin, nowMs }) {
+    const status = String(body.status || '')
+    if (!REVIEW_STATUSES.includes(status)) throw new HttpError(400, 'INVALID_REVIEW')
+    const team = await repo.getTeamById(cleanText(body.teamId, 64))
+    if (!team) throw new HttpError(404, 'TEAM_NOT_FOUND')
+    if (status !== 'pending' && !team.video_file_id) throw new HttpError(409, 'VIDEO_NOT_FOUND')
+    const patch = status === 'pending'
+      ? { review_status: 'pending', review_at: null, review_by: null, review_video: null }
+      : { review_status: status, review_at: iso(nowMs), review_by: admin.email || admin.id, review_video: team.video_file_id }
+    let updated
+    try {
+      updated = await repo.updateTeam(team.id, patch)
+    } catch (error) {
+      if (isMissingReviewColumn(error)) throw new HttpError(503, 'REVIEW_NOT_MIGRATED')
+      throw error
+    }
+    await repo.logUpload({ team_id: team.id, team_code: team.code, action: `review_${status}`, file_id: team.video_file_id, file_name: team.video_name, detail: { by: admin.email || admin.id, previous: reviewView(team) } })
+    return { review: reviewView(updated) }
   },
 
   async admin_delete_team({ repo, body, storage }) {

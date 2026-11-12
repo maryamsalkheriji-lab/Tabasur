@@ -93,6 +93,15 @@ create table if not exists public.tb_teams (
 alter table public.tb_teams enable row level security;
 revoke all on table public.tb_teams from anon, authenticated;
 
+-- قرار المنظّمة على فيديو الفريق (داخلي تمامًا، لا يراه المشاركون): pending / qualified / rejected.
+-- review_video يحفظ مسار الفيديو الذي اتُّخذ عليه القرار؛ إذا استُبدل الفيديو عاد الفريق تلقائيًا إلى «بلا قرار».
+alter table public.tb_teams add column if not exists review_status text not null default 'pending';
+alter table public.tb_teams add column if not exists review_at     timestamptz;
+alter table public.tb_teams add column if not exists review_by     text;
+alter table public.tb_teams add column if not exists review_video  text;
+alter table public.tb_teams drop constraint if exists tb_teams_review_status_check;
+alter table public.tb_teams add constraint tb_teams_review_status_check check (review_status in ('pending', 'qualified', 'rejected'));
+
 create table if not exists public.tb_team_members (
   id              uuid primary key default gen_random_uuid(),
   team_id         uuid not null references public.tb_teams (id) on delete cascade,
