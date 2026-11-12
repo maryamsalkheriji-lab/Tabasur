@@ -12,6 +12,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.133.0",
     "@supabase/supabase-js": "^2.45.4",
+    "@vercel/analytics": "^2.0.1",
     "canvas-confetti": "^1.9.3",
     "fflate": "^0.8.3",
     "gsap": "^3.15.0",
