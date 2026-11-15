@@ -5,10 +5,9 @@ import { serviceClient, DbError } from './db.js'
 import { supabaseRepo, RegisterTeamError } from './repo.js'
 import { createStorage, storageConfig, StorageError, TUS_CHUNK_SIZE, SIGNED_UPLOAD_TTL_MS } from './storage.js'
 import {
-  TRACKS, TRACK_LABELS, MAX_MEMBERS, TEAM_CODE_PATTERN, REVIEW_STATUSES,
-  parseMobile, nameKey, teamNameKey, cleanText, videoExtension, isVideoFile, driveFileName,
+  TRACKS, TRACK_LABELS, MAX_MEMBERS, TEAM_CODE_PATTERN, REVIEW_STATUSES, CONSENT_FORM_VERSION, CONSENT_MAX_BYTES,
+  parseMobile, nameKey, teamNameKey, cleanText, videoExtension, isVideoFile, driveFileName, consentExtension, consentMime, normalizeNationalId, consentFileName,
 } from './keys.js'
-import { PUBLICATION_POLICY } from '../../src/lib/remote-camp.js'
 
 export const CHUNK_SIZE = TUS_CHUNK_SIZE
 export const DEFAULT_MAX_BYTES = 2 * 1024 * 1024 * 1024
@@ -16,8 +15,8 @@ export const INCLUDED_STORAGE_BYTES = 100 * 1024 * 1024 * 1024 // المضمّن
 const SESSION_REUSE_MS = SIGNED_UPLOAD_TTL_MS - 15 * 60 * 1000 // نعيد استخدام التوكن ما دام صالحًا بهامش
 const MAX_BODY_BYTES = 16384
 const RATE_LIMIT_PER_MINUTE = 90
-const LANGS = ['ar', 'en']
 const VIEW_URL_SECONDS = 60 * 60
+const CONSENT_URL_BATCH = 200
 
 export class HttpError extends Error {
   constructor(status, code, extra = {}) { super(code); this.status = status; this.code = code; this.extra = extra }
@@ -129,11 +128,38 @@ function maskMobile(stored) {
   return `${head}•••••${value.slice(-3)}`
 }
 
+// الإقرارات: الجدول قد لا يكون موجودًا بعد إن لم يُشغَّل consents-2026-11-15.sql؛ عندها يعمل التسليم كالسابق ويظهر تنبيه في لوحة الإدارة.
+function isMissingConsentsTable(error) {
+  const code = String(error?.code || '')
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''}`
+  return code === 'PGRST205' || code === '42P01' || (/tb_consents/.test(text) && /not find|does not exist|schema cache/i.test(text))
+}
+
+async function loadConsents(repo, teamId) {
+  try { return { ready: true, rows: await repo.listConsents(teamId) } } catch (error) {
+    if (isMissingConsentsTable(error)) return { ready: false, rows: [] }
+    throw error
+  }
+}
+
+function consentSummary(members, consents) {
+  const done = members.filter(member => consents.rows.some(row => row.member_id === member.id)).length
+  return { ready: consents.ready, required: members.length, done, complete: !consents.ready || done === members.length }
+}
+
 async function teamCard(repo, team) {
   const members = await repo.listMembers(team.id)
+  const consents = await loadConsents(repo, team.id)
   return {
     code: team.code, name: team.name, track: team.track, trackLabel: TRACK_LABELS[team.track], createdAt: team.created_at,
-    members: members.map(member => ({ name: member.full_name, mobile: maskMobile(member.mobile), leader: Boolean(member.is_leader) })),
+    members: members.map(member => {
+      const consent = consents.rows.find(row => row.member_id === member.id)
+      return {
+        id: member.id, name: member.full_name, mobile: maskMobile(member.mobile), leader: Boolean(member.is_leader),
+        consent: consent ? { fileName: consent.file_name, size: Number(consent.file_size) || 0, uploadedAt: consent.uploaded_at } : null,
+      }
+    }),
+    consents: consentSummary(members, consents),
     video: team.video_file_id
       ? { title: team.video_title, fileName: team.video_name, size: Number(team.video_size), uploadedAt: team.video_uploaded_at }
       : null,
@@ -192,15 +218,61 @@ function validateVideo(video, maxBytes) {
   return { fileName, size, title, ext, mimeType: /^video\//.test(mimeType) ? mimeType : MIME_BY_EXT[ext] || 'video/mp4' }
 }
 
-function validateConsent(consent) {
-  if (!consent || consent.accepted !== true) throw new HttpError(400, 'CONSENT_REQUIRED')
-  if (consent.version !== PUBLICATION_POLICY.version) throw new HttpError(409, 'CONSENT_OUTDATED', { version: PUBLICATION_POLICY.version })
-  return { version: PUBLICATION_POLICY.version, lang: LANGS.includes(consent.lang) ? consent.lang : 'ar' }
+// ملف الإقرار الموقّع: PDF أو صورة، حتى 15 ميغابايت
+function validateConsentFile(file) {
+  if (!file || typeof file !== 'object') throw new HttpError(400, 'INVALID_CONSENT_FILE')
+  const fileName = cleanText(file.fileName, 180)
+  const size = Number(file.size)
+  const mimeType = cleanText(file.mimeType, 80).toLowerCase()
+  const ext = consentExtension(fileName, mimeType)
+  if (!fileName || !ext) throw new HttpError(400, 'INVALID_CONSENT_FILE')
+  if (!Number.isSafeInteger(size) || size <= 0) throw new HttpError(400, 'INVALID_CONSENT_FILE')
+  if (size > CONSENT_MAX_BYTES) throw new HttpError(413, 'CONSENT_TOO_LARGE', { maxBytes: CONSENT_MAX_BYTES })
+  return { fileName, size, ext, mimeType: consentMime(ext) }
 }
 
 // مسار الكائن داخل الحاوية بأحرف ASCII فقط؛ الاسم العربي المقروء يُحفظ في قاعدة البيانات ويُستخدم عند التنزيل.
 function objectPath(team, ext, nowMs) {
   return `${team.track}/${team.code}/${team.code}-${nowMs.toString(36)}.${ext}`
+}
+function consentPrefix(team) { return `consents/${team.track}/${team.code}/` }
+function consentObjectPath(team, position, ext, nowMs) {
+  return `${consentPrefix(team)}${team.code}-${position}-${nowMs.toString(36)}.${ext}`
+}
+
+// إنشاء فريق جديد من بيانات النموذج (يُستخدم في register)
+async function createTeam(repo, teamInput) {
+  const name = cleanText(teamInput.name, 60)
+  if (name.length < 2) throw new HttpError(400, 'INVALID_TEAM_NAME')
+  const track = String(teamInput.track || '')
+  if (!TRACKS.includes(track)) throw new HttpError(400, 'INVALID_TRACK')
+  const members = await resolveMembers(repo, teamInput.mobiles)
+  const bad = members.find(member => member.status !== 'ok')
+  if (bad) {
+    const code = { invalid: 'INVALID_MOBILE', not_registered: 'NOT_REGISTERED', in_team: 'MOBILE_TAKEN' }[bad.status]
+    throw new HttpError(bad.status === 'in_team' ? 409 : 400, code, { mobile: bad.input, ...(bad.team_code ? { teamCode: bad.team_code } : {}) })
+  }
+  const names = new Set()
+  for (const member of members) {
+    if (names.has(member.name_key)) throw new HttpError(400, 'DUPLICATE_MEMBER', { mobile: member.input })
+    names.add(member.name_key)
+  }
+  const team = await repo.registerTeam({
+    name, nameKey: teamNameKey(name), track,
+    members: members.map(member => ({ mobile: member.stored, mobile_key: member.key, name_key: member.name_key, full_name: member.full_name, registration_id: member.registration.id })),
+  })
+  await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'team_created', detail: { track, members: members.length } })
+  return team
+}
+
+// الفريق والعضو المستهدف بالإقرار، بعد التحقق من أن الطالب عضو في الفريق
+async function consentTarget(repo, body) {
+  const team = await findTeam(repo, { code: body.code })
+  const requester = await assertMember(repo, team, body.mobile, body.country)
+  const members = await repo.listMembers(team.id)
+  const member = members.find(row => row.id === cleanText(body.memberId, 64))
+  if (!member) throw new HttpError(404, 'MEMBER_NOT_FOUND')
+  return { team, requester, member, position: members.indexOf(member) + 1 }
 }
 
 function uploadInfo(pending, team, storage) {
@@ -257,12 +329,21 @@ function isMissingReviewColumn(error) {
   return (code === 'PGRST204' || code === '42703') && /review_/.test(String(error?.message || '') + String(error?.details || ''))
 }
 
-function adminTeamView(team) {
+function adminConsentView(row) {
+  return row ? { id: row.id, nationalId: row.national_id, fileName: row.file_name, path: row.file_id, size: Number(row.file_size) || 0, mimeType: row.file_mime, uploadedAt: row.uploaded_at, uploadedBy: row.uploaded_by } : null
+}
+
+function adminTeamView(team, consents) {
   const inPerson = team.members.filter(member => member.in_person).length
   const type = team.members.length === 0 || inPerson === 0 ? 'online' : inPerson === team.members.length ? 'inperson' : 'mixed'
+  const rows = consents.rows.filter(row => row.team_id === team.id)
   return {
     id: team.id, code: team.code, name: team.name, track: team.track, trackLabel: TRACK_LABELS[team.track], type, createdAt: team.created_at,
-    members: team.members.map(member => ({ id: member.id, name: member.full_name, mobile: member.mobile, leader: Boolean(member.is_leader), inPerson: Boolean(member.in_person) })),
+    members: team.members.map(member => ({
+      id: member.id, name: member.full_name, mobile: member.mobile, leader: Boolean(member.is_leader), inPerson: Boolean(member.in_person),
+      consent: adminConsentView(rows.find(row => row.member_id === member.id)),
+    })),
+    consents: consentSummary(team.members, { ready: consents.ready, rows }),
     video: team.video_file_id
       ? { path: team.video_file_id, name: team.video_name, title: team.video_title, size: Number(team.video_size), mimeType: team.video_mime, uploadedAt: team.video_uploaded_at, consentVersion: team.consent_version, consentAt: team.consent_at }
       : null,
@@ -274,7 +355,7 @@ function adminTeamView(team) {
 const ACTIONS = {
   async config({ repo, storage }) {
     const settings = await loadSettings(repo)
-    return { open: settings.open, deadline: settings.deadline, maxBytes: settings.maxBytes, uploadReady: Boolean(storage), chunkSize: CHUNK_SIZE, policyVersion: PUBLICATION_POLICY.version, maxMembers: MAX_MEMBERS }
+    return { open: settings.open, deadline: settings.deadline, maxBytes: settings.maxBytes, uploadReady: Boolean(storage), chunkSize: CHUNK_SIZE, consentForm: CONSENT_FORM_VERSION, consentMaxBytes: CONSENT_MAX_BYTES, consentsReady: await repo.hasConsentsTable(), maxMembers: MAX_MEMBERS }
   },
 
   async lookup({ repo, body }) {
@@ -293,63 +374,85 @@ const ACTIONS = {
     return { team: await teamCard(repo, team) }
   },
 
+  // الخطوة الأولى لفريق جديد: التسجيل فقط (بلا فيديو)، ثم ترفع إقرارات الأعضاء، ثم الفيديو.
+  async register({ repo, body, nowMs }) {
+    const settings = await loadSettings(repo)
+    assertOpen(settings, nowMs)
+    const team = await createTeam(repo, body.team && typeof body.team === 'object' ? body.team : {})
+    return { team: await teamCard(repo, team), created: true }
+  },
+
+  /* ─── إقرار العضو الموقّع: يطلب رابط رفع موقّعًا لمسار واحد ثم يؤكد بعد الرفع ─── */
+  async consent_start({ repo, body, storage, nowMs }) {
+    const nationalId = normalizeNationalId(body.nationalId)
+    if (!nationalId) throw new HttpError(400, 'INVALID_NATIONAL_ID')
+    const file = validateConsentFile(body.file)
+    const { team, member, position } = await consentTarget(repo, body)
+    if (!storage) throw new HttpError(503, 'STORAGE_NOT_CONFIGURED')
+    if (!(await repo.hasConsentsTable())) throw new HttpError(503, 'CONSENTS_NOT_MIGRATED')
+    const path = consentObjectPath(team, position, file.ext, nowMs)
+    const token = await storage.signUpload(path)
+    await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'consent_upload_started', file_id: path, file_name: file.fileName, file_size: file.size, detail: { member: member.full_name } })
+    return { upload: { objectPath: path, uploadUrl: storage.signedUploadUrl(path, token), mimeType: file.mimeType, size: file.size, expiresAt: iso(nowMs + SIGNED_UPLOAD_TTL_MS) }, member: { id: member.id, name: member.full_name } }
+  },
+
+  async consent_complete({ repo, body, storage, nowMs }) {
+    const nationalId = normalizeNationalId(body.nationalId)
+    if (!nationalId) throw new HttpError(400, 'INVALID_NATIONAL_ID')
+    const { team, requester, member } = await consentTarget(repo, body)
+    if (!storage) throw new HttpError(503, 'STORAGE_NOT_CONFIGURED')
+    const path = cleanText(body.objectPath, 200)
+    const ext = consentExtension(path, '')
+    if (!path.startsWith(consentPrefix(team)) || !ext || /\.\./.test(path)) throw new HttpError(400, 'INVALID_CONSENT_FILE')
+    const info = await storage.info(path)
+    if (!info) throw new HttpError(409, 'UPLOAD_INCOMPLETE')
+    if (info.size !== null && (info.size <= 0 || info.size > CONSENT_MAX_BYTES)) throw new HttpError(413, 'CONSENT_TOO_LARGE', { maxBytes: CONSENT_MAX_BYTES })
+    let previous = null
+    try { previous = (await repo.listConsents(team.id)).find(row => row.member_id === member.id) || null } catch (error) { if (isMissingConsentsTable(error)) throw new HttpError(503, 'CONSENTS_NOT_MIGRATED'); throw error }
+    const row = await repo.upsertConsent({
+      team_id: team.id, member_id: member.id, full_name: member.full_name, national_id: nationalId, mobile: member.mobile,
+      file_id: path, file_name: consentFileName(team.code, member.full_name, ext), file_size: info.size ?? null, file_mime: consentMime(ext), uploaded_by: requester.mobile_key, uploaded_at: iso(nowMs),
+    })
+    await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'consent_uploaded', file_id: path, file_name: row.file_name, file_size: info.size ?? null, detail: { member: member.full_name, replaced: previous?.file_id || null } })
+    if (previous && previous.file_id !== path) {
+      try { await storage.remove([previous.file_id]) } catch { /* يبقى الملف القديم يتيمًا في الحاوية ولا يؤثر */ }
+    }
+    return { team: await teamCard(repo, team), consent: { memberId: member.id, fileName: row.file_name, uploadedAt: row.uploaded_at } }
+  },
+
+  // بدء رفع الفيديو لفريق مسجّل. شرطه: إقرار موقّع لكل عضو (إن كان جدول الإقرارات مفعّلًا).
   async start(ctx) {
     const { repo, body, nowMs, storage } = ctx
     const settings = await loadSettings(repo)
     assertOpen(settings, nowMs)
     const video = validateVideo(body.video, settings.maxBytes)
-    const consent = validateConsent(body.consent)
     if (!storage) throw new HttpError(503, 'STORAGE_NOT_CONFIGURED')
 
     const teamInput = body.team && typeof body.team === 'object' ? body.team : {}
-    let team, created = false
-    if (teamInput.mode === 'existing') {
-      team = await findTeam(repo, { code: teamInput.code })
-      await assertMember(repo, team, teamInput.mobile, teamInput.country)
-    } else {
-      const name = cleanText(teamInput.name, 60)
-      if (name.length < 2) throw new HttpError(400, 'INVALID_TEAM_NAME')
-      const track = String(teamInput.track || '')
-      if (!TRACKS.includes(track)) throw new HttpError(400, 'INVALID_TRACK')
-      const members = await resolveMembers(repo, teamInput.mobiles)
-      const bad = members.find(member => member.status !== 'ok')
-      if (bad) {
-        const code = { invalid: 'INVALID_MOBILE', not_registered: 'NOT_REGISTERED', in_team: 'MOBILE_TAKEN' }[bad.status]
-        throw new HttpError(bad.status === 'in_team' ? 409 : 400, code, { mobile: bad.input, ...(bad.team_code ? { teamCode: bad.team_code } : {}) })
-      }
-      const names = new Set()
-      for (const member of members) {
-        if (names.has(member.name_key)) throw new HttpError(400, 'DUPLICATE_MEMBER', { mobile: member.input })
-        names.add(member.name_key)
-      }
-      team = await repo.registerTeam({
-        name, nameKey: teamNameKey(name), track,
-        members: members.map(member => ({ mobile: member.stored, mobile_key: member.key, name_key: member.name_key, full_name: member.full_name, registration_id: member.registration.id })),
-      })
-      created = true
-      await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'team_created', detail: { track, members: members.length } })
+    if (teamInput.mode !== 'existing') throw new HttpError(400, 'INVALID_REQUEST')
+    let team = await findTeam(repo, { code: teamInput.code })
+    await assertMember(repo, team, teamInput.mobile, teamInput.country)
+    const members = await repo.listMembers(team.id)
+    const consents = await loadConsents(repo, team.id)
+    if (consents.ready) {
+      const missing = members.filter(member => !consents.rows.some(row => row.member_id === member.id)).map(member => member.full_name)
+      if (missing.length) throw new HttpError(409, 'CONSENTS_MISSING', { missing })
     }
 
     const pending = team.pending_upload
     if (pending && pending.fileName === video.fileName && pending.size === video.size && pending.token && Date.parse(pending.startedAt) > nowMs - SESSION_REUSE_MS) {
-      return { team: await teamCard(repo, team), created, upload: uploadInfo(pending, team, storage) }
+      return { team: await teamCard(repo, team), created: false, upload: uploadInfo(pending, team, storage) }
     }
     const path = objectPath(team, video.ext, nowMs)
-    let token
-    try {
-      token = await storage.signUpload(path)
-    } catch (error) {
-      if (created) throw new HttpError(502, 'STORAGE_SIGN_FAILED', { teamCode: team.code, created: true })
-      throw error
-    }
+    const token = await storage.signUpload(path)
     const upload = {
       uploadId: randomBytes(16).toString('hex'), objectPath: path, token, bucket: storage.bucket, endpoint: storage.uploadEndpoint,
       fileName: video.fileName, displayName: driveFileName(team.code, team.name, video.title, video.ext), size: video.size, mimeType: video.mimeType, title: video.title,
-      startedAt: iso(nowMs), expiresAt: iso(nowMs + SIGNED_UPLOAD_TTL_MS), consent: { version: consent.version, lang: consent.lang, acceptedAt: iso(nowMs) }, replaces: team.video_file_id || null,
+      startedAt: iso(nowMs), expiresAt: iso(nowMs + SIGNED_UPLOAD_TTL_MS), consent: { version: CONSENT_FORM_VERSION, members: consents.rows.length }, replaces: team.video_file_id || null,
     }
     team = await repo.updateTeam(team.id, { pending_upload: upload })
     await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'upload_started', file_id: path, file_name: upload.displayName, file_size: video.size, detail: { uploadId: upload.uploadId, replaces: upload.replaces } })
-    return { team: await teamCard(repo, team), created, upload: uploadInfo(upload, team, storage) }
+    return { team: await teamCard(repo, team), created: false, upload: uploadInfo(upload, team, storage) }
   },
 
   async status({ repo, body, storage }) {
@@ -371,7 +474,7 @@ const ACTIONS = {
     const updated = await repo.updateTeam(team.id, {
       video_file_id: pending.objectPath, video_name: pending.displayName, video_title: pending.title, video_size: pending.size, video_mime: pending.mimeType,
       video_md5: null, video_web_link: null, video_uploaded_at: iso(nowMs),
-      consent_version: pending.consent?.version || PUBLICATION_POLICY.version, consent_lang: pending.consent?.lang || 'ar', consent_at: pending.consent?.acceptedAt || iso(nowMs),
+      consent_version: pending.consent?.version || CONSENT_FORM_VERSION, consent_lang: null, consent_at: iso(nowMs),
       pending_upload: null,
     })
     await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'upload_completed', file_id: pending.objectPath, file_name: pending.displayName, file_size: pending.size, detail: { uploadId: pending.uploadId, replaced: previous } })
@@ -413,21 +516,42 @@ const ACTIONS = {
   /* ─── إجراءات الأدمن (جلسة Supabase لمستخدم في admin_users) ─── */
   async admin_overview({ repo, storage }) {
     const settings = await loadSettings(repo)
-    const teams = (await repo.listTeamsWithMembers()).map(adminTeamView)
+    let consents
+    try { consents = { ready: true, rows: await repo.listAllConsents() } } catch (error) { if (!isMissingConsentsTable(error)) throw error; consents = { ready: false, rows: [] } }
+    const teams = (await repo.listTeamsWithMembers()).map(team => adminTeamView(team, consents))
     const usedBytes = teams.reduce((sum, team) => sum + (team.video ? team.video.size : 0), 0)
     const withVideo = teams.filter(team => team.video)
     return {
       settings, teams,
       storage: { configured: Boolean(storage), bucket: storage?.bucket || null, usedBytes, includedBytes: INCLUDED_STORAGE_BYTES },
       review: { ready: await repo.hasReviewColumns() },
+      consents: { ready: consents.ready, files: consents.rows.length, bytes: consents.rows.reduce((sum, row) => sum + (Number(row.file_size) || 0), 0) },
       stats: {
         teams: teams.length, withVideo: withVideo.length, members: teams.reduce((sum, team) => sum + team.members.length, 0),
         qualified: withVideo.filter(team => team.review.status === 'qualified').length,
         rejected: withVideo.filter(team => team.review.status === 'rejected').length,
         undecided: withVideo.filter(team => team.review.status === 'pending').length,
+        consentFiles: consents.rows.length,
+        consentsComplete: consents.ready ? teams.filter(team => team.consents.done === team.consents.required).length : 0,
+        consentsMissing: consents.ready ? teams.reduce((sum, team) => sum + (team.consents.required - team.consents.done), 0) : 0,
         inperson: await repo.countInperson(), registrations: await repo.countRegistrations(),
       },
     }
+  },
+
+  // روابط مؤقتة (ساعة) لملفات الإقرارات: ملف واحد أو دفعة لتنزيلها معًا
+  async admin_consent_urls({ repo, body, storage }) {
+    const ids = (Array.isArray(body.consentIds) ? body.consentIds : [body.consentId]).map(id => cleanText(id, 64)).filter(Boolean)
+    if (!ids.length || ids.length > CONSENT_URL_BATCH) throw new HttpError(400, 'INVALID_REQUEST')
+    if (!storage) throw new HttpError(503, 'STORAGE_NOT_CONFIGURED')
+    let rows
+    try { rows = await repo.listConsentsByIds(ids) } catch (error) { if (isMissingConsentsTable(error)) throw new HttpError(503, 'CONSENTS_NOT_MIGRATED'); throw error }
+    if (!rows.length) throw new HttpError(404, 'CONSENT_NOT_FOUND')
+    const files = []
+    for (const row of rows) {
+      files.push({ id: row.id, fileName: row.file_name, mimeType: row.file_mime, size: Number(row.file_size) || 0, url: await storage.signedViewUrl(row.file_id, VIEW_URL_SECONDS), downloadUrl: await storage.signedViewUrl(row.file_id, VIEW_URL_SECONDS, row.file_name) })
+    }
+    return { files, expiresIn: VIEW_URL_SECONDS }
   },
 
   async admin_settings({ repo, body }) {
@@ -483,20 +607,25 @@ const ACTIONS = {
   async admin_delete_team({ repo, body, storage }) {
     const team = await repo.getTeamById(cleanText(body.teamId, 64))
     if (!team) throw new HttpError(404, 'TEAM_NOT_FOUND')
-    if (team.video_file_id && storage) {
-      try { await storage.remove([team.video_file_id]) } catch { /* نسجّل ونكمل */ }
+    const consents = await loadConsents(repo, team.id)
+    const paths = [team.video_file_id, ...consents.rows.map(row => row.file_id)].filter(Boolean)
+    if (paths.length && storage) {
+      try { await storage.remove(paths) } catch { /* نسجّل ونكمل */ }
     }
     await repo.logUpload({ team_id: null, team_code: team.code, action: 'team_deleted_by_admin', file_id: team.video_file_id, file_name: team.video_name, detail: { name: team.name, track: team.track } })
     await repo.deleteTeam(team.id)
     return {}
   },
 
-  async admin_remove_member({ repo, body }) {
+  async admin_remove_member({ repo, body, storage }) {
     const member = await repo.getMember(cleanText(body.memberId, 64))
     if (!member) throw new HttpError(404, 'MEMBER_NOT_FOUND')
     const members = await repo.listMembers(member.team_id)
     if (members.length <= 1) throw new HttpError(409, 'LAST_MEMBER')
+    const consents = await loadConsents(repo, member.team_id)
+    const consent = consents.rows.find(row => row.member_id === member.id)
     await repo.removeMember(member.id)
+    if (consent && storage) { try { await storage.remove([consent.file_id]) } catch { /* يبقى يتيمًا */ } }
     const team = await repo.getTeamById(member.team_id)
     await repo.logUpload({ team_id: member.team_id, team_code: team?.code || null, action: 'member_removed_by_admin', detail: { name: member.full_name, mobile: member.mobile } })
     return {}

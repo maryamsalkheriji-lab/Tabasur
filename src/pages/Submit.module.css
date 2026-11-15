@@ -79,10 +79,26 @@
 .fileCard strong { font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .fileCard small { font-size:13px;color:var(--ink-500); }
 .linkButton { background:none;border:0;padding:0;color:var(--green-700);font:inherit;font-size:14px;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px; }
-.consent { display:grid;gap:8px;padding:14px 16px;border-radius:12px;background:var(--paper-tint);border:1px solid var(--rule);font-size:14px;line-height:1.8;color:var(--ink-700); }
-.consentLabel { display:flex;gap:12px;align-items:flex-start;cursor:pointer; }
-.consentLabel input { width:18px;height:18px;margin-top:5px;flex-shrink:0;accent-color:#0ABD70; }
-.terms { margin:0;padding-inline-start:22px;display:grid;gap:6px;font-size:13.5px;color:var(--ink-600); }
+
+/* إقرارات الأعضاء */
+.consentIntro { display:grid;gap:12px;padding:16px 18px;border-radius:12px;background:var(--green-50);border:1px solid var(--rule); }
+.consentIntro p { margin:0;font-size:15px;line-height:1.85;color:var(--ink-700); }
+.consentSteps { margin:0;padding-inline-start:22px;display:grid;gap:6px;font-size:14.5px;color:var(--ink-700);line-height:1.8; }
+.consentProgress { margin:0;font-size:14.5px;font-weight:700;color:var(--green-700); }
+.consentList { list-style:none;margin:0;padding:0;display:grid;gap:12px; }
+.consentRow { padding:14px;border-radius:12px;border:1px solid var(--rule);background:var(--paper-tint);display:grid;gap:12px; }
+.consentRowDone { border-color:rgba(10,189,112,.55); }
+.consentHead { display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-size:15px; }
+.consentHead strong { font-size:16px; }
+.consentHead em { font-style:normal;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--green-100);color:var(--green-700); }
+.consentHead small { font-size:13px;color:var(--ink-500); }
+.consentForm { display:grid;gap:12px; }
+.consentGrid { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px;align-items:start; }
+.consentGrid .dropLabel { padding:18px 12px; }
+.consentActions { display:flex;flex-wrap:wrap;gap:10px;align-items:center; }
+.consentActions .primary { min-height:46px;padding:10px 20px;font-size:15px; }
+.gateNote { display:flex;align-items:center;gap:8px;margin:0;font-size:14.5px;color:var(--coral-500);font-weight:600;line-height:1.7; }
+.gateNote svg { width:18px;height:18px; }
 
 /* الأزرار */
 .actions { display:flex;flex-wrap:wrap;gap:12px;align-items:center; }
@@ -118,6 +134,8 @@
 .memberList li { display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:15px; }
 .memberList small { color:var(--ink-500);font-size:13px; }
 .memberList em { font-style:normal;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--green-100);color:var(--green-700); }
+.memberList .consentOk { font-size:12px;color:var(--green-700);font-weight:700; }
+.memberList .consentNo { font-size:12px;color:var(--coral-500);font-weight:700; }
 .videoMeta { display:flex;flex-direction:column;gap:2px; }
 .videoMeta strong { font-size:15px; }
 .videoMeta small { font-size:13px;color:var(--ink-500);word-break:break-word; }
@@ -145,7 +163,7 @@
 
 @media (max-width:760px) {
   .trackGrid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .lookupRow,.cardBody { grid-template-columns:1fr; }
+  .lookupRow,.cardBody,.consentGrid { grid-template-columns:1fr; }
   .cardTitle { text-align:start; }
 }
 @media (max-width:600px) {
@@ -164,6 +182,7 @@
   .trackCard small { display:none; }
   .actions { flex-direction:column;align-items:stretch; }
   .primary,.ghost,.danger,.whatsapp { width:100%; }
+  .consentActions { flex-direction:column;align-items:stretch; }
   .code { font-size:26px; }
   .removeMember { width:30px;height:30px; }
   .fileCard > div { flex-basis:calc(100% - 50px); }

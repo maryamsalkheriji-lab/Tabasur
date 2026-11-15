@@ -14,16 +14,19 @@ const expiresAt = Math.floor(Date.now() / 1000) + 3600
 const token = [Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url'), Buffer.from(JSON.stringify({ sub: user.id, exp: expiresAt, role: 'authenticated' })).toString('base64url'), 'test-signature'].join('.')
 
 function makeState(ready = true) {
-  const member = (id, name, mobile, leader = false, inPerson = false) => ({ id, name, mobile, leader, inPerson })
-  const video = (title, path) => ({ path, name: `${path.split('/')[1]} - ${title}.mp4`, title, size: 87 * 1024 * 1024, mimeType: 'video/mp4', uploadedAt: '2026-11-11T18:00:00.000Z', consentVersion: '2026-11-10.1', consentAt: '2026-11-11T17:59:00.000Z' })
+  // إقرار موقّع لعضو (ملف PDF أو صورة في الحاوية)
+  const consent = (id, nationalId, ext = 'pdf') => ({ id, nationalId, fileName: `إقرار ${id}.${ext}`, path: `consents/x/TB/${id}.${ext}`, size: 180 * 1024, mimeType: ext === 'pdf' ? 'application/pdf' : 'image/jpeg', uploadedAt: '2026-11-15T09:00:00.000Z', uploadedBy: '966501111111' })
+  const member = (id, name, mobile, leader = false, inPerson = false, signed = null) => ({ id, name, mobile, leader, inPerson, consent: signed })
+  const video = (title, path) => ({ path, name: `${path.split('/')[1]} - ${title}.mp4`, title, size: 87 * 1024 * 1024, mimeType: 'video/mp4', uploadedAt: '2026-11-11T18:00:00.000Z', consentVersion: 'iqrar-2026-11-15', consentAt: '2026-11-11T17:59:00.000Z' })
   const pending = { status: 'pending', at: null, by: null, previous: null }
+  const team = fields => ({ ...fields, consents: { ready, required: fields.members.length, done: fields.members.filter(m => m.consent).length, complete: !ready || fields.members.every(m => m.consent) } })
   return {
     ready,
     teams: [
-      { id: 't1', code: 'TB-001', name: 'عدسة المدينة', track: 'life', trackLabel: 'جودة الحياة', type: 'mixed', createdAt: '2026-11-11T10:00:00.000Z', members: [member('m1', 'سارة محمد الحربي', '0501111111', true, true), member('m2', 'Hadeel Mohammed', '+201001234567')], video: video('أسواق المدينة', 'life/TB-001/TB-001-a.mp4'), pending: null, review: { ...pending } },
-      { id: 't2', code: 'TB-002', name: 'نبض الحرم', track: 'identity', trackLabel: 'الهوية والسردية', type: 'inperson', createdAt: '2026-11-11T11:00:00.000Z', members: [member('m3', 'نورة سعد الجهني', '0503333333', true, true)], video: video('حكاية الطريق', 'identity/TB-002/TB-002-b.mp4'), pending: null, review: { ...pending } },
-      { id: 't3', code: 'TB-003', name: 'بلا فيديو', track: 'destination', trackLabel: 'الوجهة وتجربة الزائر', type: 'online', createdAt: '2026-11-11T12:00:00.000Z', members: [member('m4', 'ريم فهد القحطاني', '0505555555', true)], video: null, pending: null, review: { ...pending } },
-      { id: 't4', code: 'TB-004', name: 'نسخة مستبدلة', track: 'investment', trackLabel: 'الاستثمار والفرص', type: 'online', createdAt: '2026-11-11T13:00:00.000Z', members: [member('m5', 'عبدالله خالد العمري', '0502222222', true)], video: video('نسخة أحدث', 'investment/TB-004/TB-004-c.mp4'), pending: null, review: { status: 'pending', at: null, by: null, previous: 'qualified' } },
+      team({ id: 't1', code: 'TB-001', name: 'عدسة المدينة', track: 'life', trackLabel: 'جودة الحياة', type: 'mixed', createdAt: '2026-11-11T10:00:00.000Z', members: [member('m1', 'سارة محمد الحربي', '0501111111', true, true, consent('c1', '1023456789')), member('m2', 'Hadeel Mohammed', '+201001234567', false, false, consent('c2', 'A1234567', 'jpg'))], video: video('أسواق المدينة', 'life/TB-001/TB-001-a.mp4'), pending: null, review: { ...pending } }),
+      team({ id: 't2', code: 'TB-002', name: 'نبض الحرم', track: 'identity', trackLabel: 'الهوية والسردية', type: 'inperson', createdAt: '2026-11-11T11:00:00.000Z', members: [member('m3', 'نورة سعد الجهني', '0503333333', true, true)], video: video('حكاية الطريق', 'identity/TB-002/TB-002-b.mp4'), pending: null, review: { ...pending } }),
+      team({ id: 't3', code: 'TB-003', name: 'بلا فيديو', track: 'destination', trackLabel: 'الوجهة وتجربة الزائر', type: 'online', createdAt: '2026-11-11T12:00:00.000Z', members: [member('m4', 'ريم فهد القحطاني', '0505555555', true, false, consent('c3', '2098765432'))], video: null, pending: null, review: { ...pending } }),
+      team({ id: 't4', code: 'TB-004', name: 'نسخة مستبدلة', track: 'investment', trackLabel: 'الاستثمار والفرص', type: 'online', createdAt: '2026-11-11T13:00:00.000Z', members: [member('m5', 'عبدالله خالد العمري', '0502222222', true)], video: video('نسخة أحدث', 'investment/TB-004/TB-004-c.mp4'), pending: null, review: { status: 'pending', at: null, by: null, previous: 'qualified' } }),
     ],
     log: [],
   }
@@ -32,11 +35,17 @@ function makeState(ready = true) {
 function overview(state) {
   const withVideo = state.teams.filter(t => t.video)
   const by = status => withVideo.filter(t => t.review.status === status).length
+  const files = state.teams.flatMap(t => t.members.filter(m => m.consent))
   return {
     ok: true, settings: { open: true, deadline: '2026-11-21T20:59:00.000Z', maxBytes: 2 * 1024 ** 3 }, teams: state.teams,
     storage: { configured: true, bucket: 'submissions', usedBytes: withVideo.reduce((s, t) => s + t.video.size, 0), includedBytes: 100 * 1024 ** 3 },
     review: { ready: state.ready },
-    stats: { teams: state.teams.length, withVideo: withVideo.length, members: state.teams.reduce((s, t) => s + t.members.length, 0), qualified: by('qualified'), rejected: by('rejected'), undecided: by('pending'), inperson: 148, registrations: 740 },
+    consents: { ready: state.ready, files: files.length, bytes: files.reduce((s, m) => s + m.consent.size, 0) },
+    stats: {
+      teams: state.teams.length, withVideo: withVideo.length, members: state.teams.reduce((s, t) => s + t.members.length, 0), qualified: by('qualified'), rejected: by('rejected'), undecided: by('pending'),
+      consentFiles: files.length, consentsComplete: state.teams.filter(t => t.consents.done === t.consents.required).length, consentsMissing: state.teams.reduce((s, t) => s + t.consents.required - t.consents.done, 0),
+      inperson: 148, registrations: 740,
+    },
   }
 }
 
@@ -70,8 +79,15 @@ async function openAdmin(width, state) {
         team.review = body.status === 'pending' ? { status: 'pending', at: null, by: null, previous: null } : { status: body.status, at: new Date().toISOString(), by: user.email, previous: null }
         return fulfill({ ok: true, review: team.review })
       }
+      if (body.action === 'admin_consent_urls') {
+        const ids = body.consentIds || [body.consentId]
+        const found = state.teams.flatMap(t => t.members).filter(m => m.consent && ids.includes(m.consent.id))
+        if (!found.length) return fulfill({ ok: false, code: 'CONSENT_NOT_FOUND' }, 404)
+        return fulfill({ ok: true, expiresIn: 3600, files: found.map(m => ({ id: m.consent.id, fileName: m.consent.fileName, mimeType: m.consent.mimeType, size: m.consent.size, url: `${base}/__mock-consent/${m.consent.id}`, downloadUrl: `${base}/__mock-consent/${m.consent.id}?download=1` })) })
+      }
       return fulfill({ ok: false, code: 'UNKNOWN_ACTION' }, 400)
     }
+    if (url.pathname.startsWith('/__mock-consent/')) return route.fulfill({ status: 200, contentType: 'application/pdf', body: Buffer.from(`%PDF-1.4 mock ${url.pathname}`) })
     if (!['GET', 'HEAD'].includes(request.method())) return abort()
     if (![new URL(base).hostname, 'fonts.googleapis.com', 'fonts.gstatic.com'].includes(url.hostname)) return abort()
     return route.continue()
@@ -155,17 +171,52 @@ try {
     await page.locator('#teams-card').waitFor()
     assert.equal(await row(page, 'TB-001').getByRole('button', { name: 'يتأهل', exact: true }).count(), 1)
     await noOverflow(page)
+
+    // علامات الإقرار عند الأعضاء، وتنبيه الفيديو الذي رُفع قبل اكتمال الإقرارات
+    assert.equal(await row(page, 'TB-001').getByRole('button', { name: 'إقرار ✓' }).count(), 2)
+    assert.match(await row(page, 'TB-002').innerText(), /بلا إقرار/)
+    assert.match(await row(page, 'TB-002').innerText(), /الإقرارات ناقصة \(0 من 1\)/)
+    assert.equal(await page.locator('#tab-consents strong').innerText(), '3')
+
+    // تبويب «الإقرارات»: صف لكل عضو، الملفات قابلة للتنزيل، وملف ZIP واحد للكل
+    await page.locator('#tab-consents').click()
+    await page.locator('#consents-card').waitFor()
+    assert.equal(await page.locator('#consents-card tbody tr').count(), 5)
+    assert.match(await page.locator('#consents-card').innerText(), /1023456789/)
+    assert.match(await page.locator('#consents-card').innerText(), /A1234567/)
+    assert.equal(await page.locator('#consents-card tbody').getByText('لم يُرفع', { exact: true }).count(), 2)
+    await page.locator('select[aria-label="حالة الإقرار"]').selectOption('missing')
+    assert.deepEqual(await page.locator('#consents-card tbody tr [class*="codeTag"]').allInnerTexts(), ['TB-004', 'TB-002'], 'sorted by track order, then code')
+    await page.locator('select[aria-label="حالة الإقرار"]').selectOption('')
+    await page.locator('#consents-card input[class*="searchInput"]').fill('TB-001')
+    assert.equal(await page.locator('#consents-card tbody tr').count(), 2)
+    const popup = page.waitForEvent('popup')
+    await page.locator('#consents-card tbody tr').first().getByRole('button', { name: 'مشاهدة' }).click()
+    const opened = await popup
+    assert.match(opened.url(), /__mock-consent\/c1/)
+    await opened.close()
+    const download = page.waitForEvent('download')
+    await page.locator('#download-consents-zip').click()
+    const zip = await download
+    assert.match(zip.suggestedFilename(), /^tabasur-consents-\d{4}-\d{2}-\d{2}\.zip$/)
+    await page.locator('[role="status"]', { hasText: 'نُزّل ملف ZIP يحوي 2 إقرارًا' }).waitFor()
+    assert.deepEqual(state.log.filter(b => b.action === 'admin_consent_urls').map(b => (b.consentIds || []).join('+')), ['c1', 'c1+c2'])
+    if (shots) await page.screenshot({ path: `${shots}/admin-consents-1280.png`, fullPage: true })
+    await fits('#consents-card [class*="tableWrap"]')
+    await noOverflow(page)
     assert.ok(aborted.every(entry => !entry.includes('/api/')), `an app request was blocked: ${aborted.join(', ')}`)
     console.log('blocked third-party requests:', [...new Set(aborted)].join(', ') || 'none')
     assert.deepEqual(errors, [], errors.join('\n'))
     await page.close()
-    console.log('PASS review: decide, filter, move to qualified tab, undo with confirm, replaced-video notice')
+    console.log('PASS review: decide, filter, move to qualified tab, undo with confirm, replaced-video notice, declarations tab with view + ZIP')
   }
   // ─── 2) قبل تشغيل ملف SQL: تنبيه واضح والأزرار معطّلة ───
   {
     const state = makeState(false)
     const { page, errors } = await openAdmin(1280, state)
     assert.match(await page.locator('#review-not-ready').innerText(), /review-2026-11-12\.sql/)
+    assert.match(await page.locator('#consents-not-ready').innerText(), /consents-2026-11-15\.sql/)
+    assert.equal(await row(page, 'TB-001').getByRole('button', { name: 'إقرار ✓' }).count(), 0, 'no consent marks before the SQL ran')
     assert.equal(await row(page, 'TB-001').getByRole('button', { name: 'يتأهل', exact: true }).isDisabled(), true)
     await page.locator('#tab-qualified').click()
     await page.locator('#qualified-card').waitFor()
@@ -187,6 +238,10 @@ try {
     assert.equal(await page.locator('#qualified-card tbody tr').count(), 1)
     await noOverflow(page)
     if (shots) await page.screenshot({ path: `${shots}/admin-qualified-${width}.png`, fullPage: true })
+    await page.locator('#tab-consents').click()
+    await page.locator('#consents-card').waitFor()
+    await noOverflow(page)
+    if (shots) await page.screenshot({ path: `${shots}/admin-consents-${width}.png`, fullPage: true })
     assert.deepEqual(errors, [], errors.join('\n'))
     await page.close()
   }

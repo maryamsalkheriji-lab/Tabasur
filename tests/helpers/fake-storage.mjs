@@ -39,6 +39,24 @@ export async function startFakeStorage({ failChunks = 0 } = {}) {
       state.tokens.set(token, { bucket: match[1], path: decodeURIComponent(match[2]), exp: Date.now() + 2 * 3600 * 1000 })
       return send(res, 200, { url: `/object/upload/sign/${match[1]}/${match[2]}?token=${token}` })
     }
+    // رفع عادي (PUT) إلى الرابط الموقّع: ملف واحد صغير مثل إقرار العضو
+    if (match && req.method === 'PUT') {
+      const signature = state.tokens.get(url.searchParams.get('token') || '')
+      const objectPath = decodeURIComponent(match[2])
+      if (!signature || signature.bucket !== match[1] || signature.path !== objectPath || signature.exp < Date.now()) return send(res, 403, { statusCode: '403', error: 'Unauthorized', message: 'invalid upload signature' })
+      const key = `${match[1]}/${objectPath}`
+      state.objects.set(key, { id: randomBytes(8).toString('hex'), size: body.length, contentType: String(req.headers['content-type'] || 'application/octet-stream').split(';')[0], md5: createHash('md5').update(body).digest('hex'), createdAt: new Date().toISOString(), data: body })
+      return send(res, 200, { Key: key })
+    }
+    // تنزيل بالرابط الموقّع (المتصفح، بلا مفتاح)
+    match = /^\/object\/sign\/([^/]+)\/(.+)$/.exec(path)
+    if (match && req.method === 'GET' && url.searchParams.get('token')) {
+      const key = `${match[1]}/${decodeURIComponent(match[2])}`
+      const obj = state.objects.get(key)
+      if (!obj) return send(res, 404, { statusCode: '404', error: 'not_found', message: 'Object not found' })
+      res.writeHead(200, { ...CORS, 'Content-Type': obj.contentType, 'Content-Length': String(obj.size) })
+      return res.end(obj.data)
+    }
 
     // TUS: إنشاء جلسة رفع بتوكن موقّع
     // المسار غير الموقّع يتحقق من Authorization كـ JWT ويتجاهل x-signature، تمامًا كخادم Supabase الحقيقي.
@@ -102,7 +120,8 @@ export async function startFakeStorage({ failChunks = 0 } = {}) {
     get base() { return base() },
     env: () => ({ SUBMISSIONS_STORAGE_URL: base(), SUBMISSIONS_STORAGE_KEY: FAKE_SERVICE_KEY }),
     config: () => ({ projectUrl: base(), serviceKey: FAKE_SERVICE_KEY, bucket: 'submissions' }),
-    videos: () => [...state.objects.entries()].map(([key, obj]) => ({ key, ...obj })),
+    videos: () => [...state.objects.entries()].filter(([key]) => !key.startsWith('submissions/consents/')).map(([key, obj]) => ({ key, ...obj })),
+    consents: () => [...state.objects.entries()].filter(([key]) => key.startsWith('submissions/consents/')).map(([key, obj]) => ({ key, ...obj })),
     close: () => new Promise(resolve => server.close(resolve)),
   }
 }

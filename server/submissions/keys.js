@@ -91,3 +91,26 @@ export function driveFileName(code, teamName, title, ext) {
   const parts = [code, safe(teamName), safe(title)].filter(Boolean)
   return `${parts.join(' - ')}.${ext}`
 }
+
+/* ─── إقرار العضو الموقّع (نموذج PDF يعبّئه ويوقّعه كل عضو ثم يُرفع صورةً أو PDF) ─── */
+export const CONSENT_FORM_VERSION = 'iqrar-2026-11-15'
+export const CONSENT_MAX_BYTES = 15 * 1024 * 1024
+const CONSENT_MIME_BY_EXT = Object.freeze({ pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' })
+const CONSENT_EXT_BY_MIME = Object.freeze({ 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' })
+export function consentExtension(fileName, mimeType) {
+  const match = /\.([a-z0-9]{2,5})$/i.exec(String(fileName || '').trim())
+  const ext = match ? match[1].toLowerCase() : ''
+  if (CONSENT_MIME_BY_EXT[ext]) return ext === 'jpeg' ? 'jpg' : ext
+  return CONSENT_EXT_BY_MIME[String(mimeType || '').toLowerCase()] || ''
+}
+export function consentMime(ext) { return CONSENT_MIME_BY_EXT[ext] || 'application/octet-stream' }
+// رقم الهوية أو الإقامة أو جواز السفر: أرقام وحروف لاتينية فقط بعد تحويل الأرقام العربية، من 5 إلى 20 خانة
+export function normalizeNationalId(value) {
+  const text = arabicToAscii(String(value || '')).replace(/[\s-]/g, '').toUpperCase()
+  return /^[A-Z0-9]{5,20}$/.test(text) ? text : ''
+}
+// اسم ملف الإقرار عند التنزيل: الكود - اسم العضو - إقرار.ext
+export function consentFileName(code, memberName, ext) {
+  const safe = value => cleanText(value, 60).replace(/[\\/:*?"<>|#%{}$~]/g, ' ').replace(/\s+/g, ' ').trim()
+  return `${code} - ${safe(memberName)} - إقرار.${ext}`
+}

@@ -8,6 +8,7 @@
 --   • tb_secrets: أسرار السيرفر إن لزمت مستقبلًا (يقرأها السيرفر فقط بمفتاح service_role).
 --   • tb_inperson: قائمة المقبولين حضوريًا (لتصنيف الفريق: حضوري / أونلاين / مختلط).
 --   • tb_upload_log: سجل كل عملية رفع أو حذف.
+--   • tb_consents: إقرار موقّع لكل عضو (PDF/صورة) شرطٌ لرفع الفيديو (أُضيف 2026-11-15).
 --   • لا توجد أي سياسة قراءة أو كتابة للزوار أو للمستخدمين المسجّلين: كل شيء عبر /api/submissions.
 -- =====================================================================
 
@@ -140,6 +141,26 @@ create table if not exists public.tb_upload_log (
 );
 alter table public.tb_upload_log enable row level security;
 revoke all on table public.tb_upload_log from anon, authenticated;
+
+-- إقرار العضو الموقّع (2026-11-15): نموذج «إقرار وموافقة على استخدام ونشر الأعمال الإبداعية» لكل عضو، شرطٌ لرفع الفيديو.
+create table if not exists public.tb_consents (
+  id           uuid primary key default gen_random_uuid(),
+  team_id      uuid not null references public.tb_teams (id) on delete cascade,
+  member_id    uuid not null unique references public.tb_team_members (id) on delete cascade,
+  full_name    text not null,
+  national_id  text not null,
+  mobile       text not null,
+  file_id      text not null,
+  file_name    text not null,
+  file_size    bigint,
+  file_mime    text,
+  uploaded_by  text,
+  uploaded_at  timestamptz not null default now(),
+  created_at   timestamptz not null default now()
+);
+create index if not exists tb_consents_team_idx on public.tb_consents (team_id);
+alter table public.tb_consents enable row level security;
+revoke all on table public.tb_consents from anon, authenticated;
 
 -- ---------------------------------------------------------------------
 -- 4) تسجيل فريق كامل في عملية واحدة (إما ينجح كله أو لا شيء)

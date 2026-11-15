@@ -10,6 +10,7 @@ export class RegisterTeamError extends Error {
 // كل أعمدة الفريق: لو أُضيف عمود في الكود قبل تشغيل ملف SQL على القاعدة لا يتعطل التسليم العام، والواجهة العامة (teamCard) تختار حقولها صراحةً.
 const TEAM_COLUMNS = '*'
 const MEMBER_COLUMNS = 'id,team_id,mobile,mobile_key,name_key,full_name,registration_id,is_leader,position,created_at'
+const CONSENT_COLUMNS = 'id,team_id,member_id,full_name,national_id,mobile,file_id,file_name,file_size,file_mime,uploaded_by,uploaded_at'
 
 function translateRegisterError(message, detail) {
   const code = String(message || '').trim()
@@ -96,6 +97,18 @@ export function supabaseRepo(sb) {
       if (error) throw new DbError(error)
       return count || 0
     },
+    /* إقرارات الأعضاء (جدول tb_consents من consents-2026-11-15.sql) */
+    async listConsents(teamId) { return unwrap(await sb.from('tb_consents').select(CONSENT_COLUMNS).eq('team_id', teamId)) },
+    async listAllConsents() { return unwrap(await sb.from('tb_consents').select(CONSENT_COLUMNS).order('uploaded_at', { ascending: false })) },
+    async listConsentsByIds(ids) { return ids.length ? unwrap(await sb.from('tb_consents').select(CONSENT_COLUMNS).in('id', ids)) : [] },
+    async getConsent(id) { return unwrap(await sb.from('tb_consents').select(CONSENT_COLUMNS).eq('id', id).maybeSingle()) },
+    async upsertConsent(row) { return unwrap(await sb.from('tb_consents').upsert(row, { onConflict: 'member_id' }).select(CONSENT_COLUMNS).single()) },
+    async deleteConsentByMember(memberId) { unwrap(await sb.from('tb_consents').delete().eq('member_id', memberId)) },
+    // هل شُغّل ملف consents-2026-11-15.sql؟
+    async hasConsentsTable() {
+      const { error } = await sb.from('tb_consents').select('id').limit(1)
+      return !error
+    },
   }
   return repo
 }
@@ -162,5 +175,21 @@ export function pgliteRepo(db) {
     async getMember(memberId) { return one('select * from public.tb_team_members where id = $1', [memberId]) },
     async countInperson() { return Number((await one('select count(*)::int as n from public.tb_inperson')).n) },
     async countRegistrations() { return Number((await one('select count(*)::int as n from public.registrations')).n) },
+    async listConsents(teamId) { return rows('select * from public.tb_consents where team_id = $1', [teamId]) },
+    async listAllConsents() { return rows('select * from public.tb_consents order by uploaded_at desc') },
+    async listConsentsByIds(ids) { return ids.length ? rows('select * from public.tb_consents where id = any($1)', [ids]) : [] },
+    async getConsent(id) { return one('select * from public.tb_consents where id = $1', [id]) },
+    async upsertConsent(row) {
+      return one(`insert into public.tb_consents (team_id, member_id, full_name, national_id, mobile, file_id, file_name, file_size, file_mime, uploaded_by, uploaded_at)
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, coalesce($11::timestamptz, now()))
+        on conflict (member_id) do update set full_name = excluded.full_name, national_id = excluded.national_id, mobile = excluded.mobile, file_id = excluded.file_id,
+          file_name = excluded.file_name, file_size = excluded.file_size, file_mime = excluded.file_mime, uploaded_by = excluded.uploaded_by, uploaded_at = excluded.uploaded_at
+        returning *`,
+      [row.team_id, row.member_id, row.full_name, row.national_id, row.mobile, row.file_id, row.file_name, row.file_size ?? null, row.file_mime ?? null, row.uploaded_by ?? null, row.uploaded_at ?? null])
+    },
+    async deleteConsentByMember(memberId) { await db.query('delete from public.tb_consents where member_id = $1', [memberId]) },
+    async hasConsentsTable() {
+      try { await db.query('select id from public.tb_consents limit 1'); return true } catch { return false }
+    },
   }
 }

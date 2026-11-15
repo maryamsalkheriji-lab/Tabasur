@@ -36,9 +36,14 @@ export function createStorage(config) {
   const bucket = config.bucket || DEFAULT_BUCKET
   const files = () => client.storage.from(bucket)
   const notFound = error => /not.?found|does not exist/i.test(String(error?.message || '')) || String(error?.statusCode || error?.status || '') === '404'
+  const apiBase = `${config.projectUrl.replace(/\/$/, '')}/storage/v1`
   return {
     bucket,
     uploadEndpoint: resumableEndpoint(config.projectUrl, config.uploadBase),
+    // رفع عادي (ملف صغير مثل إقرار العضو) بطلب PUT واحد إلى رابط موقّع لمسار واحد
+    signedUploadUrl(path, token) {
+      return `${apiBase}/object/upload/sign/${bucket}/${path.split('/').map(encodeURIComponent).join('/')}?token=${encodeURIComponent(token)}`
+    },
     async signUpload(path) {
       const { data, error } = await files().createSignedUploadUrl(path, { upsert: true })
       if (error || !data?.token) throw new StorageError('STORAGE_SIGN_FAILED', 502, error?.message || 'no token')

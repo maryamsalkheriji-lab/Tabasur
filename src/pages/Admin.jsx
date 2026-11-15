@@ -167,7 +167,7 @@ export default function Admin() {
   const [authError, setAuthError] = useState('')
   const [authInfo, setAuthInfo] = useState('')
   const [activeTab, setActiveTab] = useState(() => {
-    try { const tab = new URLSearchParams(window.location.search).get('tab'); return ['submissions', 'qualified'].includes(tab) ? tab : 'participants' } catch { return 'participants' }
+    try { const tab = new URLSearchParams(window.location.search).get('tab'); return ['submissions', 'qualified', 'consents'].includes(tab) ? tab : 'participants' } catch { return 'participants' }
   })
   const [submissionStats, setSubmissionStats] = useState(null)
   const [rows, setRows]         = useState([])
@@ -475,7 +475,7 @@ export default function Admin() {
           </div>
           <div>
             <div className={styles.headerTitle}>لوحة إدارة تَبصَّر</div>
-            <div className={styles.headerSub}>{{ participants: 'PARTICIPANTS', sponsors: 'SPONSORS', submissions: 'SUBMISSIONS', qualified: 'QUALIFIED' }[activeTab]} · ADMIN DASHBOARD</div>
+            <div className={styles.headerSub}>{{ participants: 'PARTICIPANTS', sponsors: 'SPONSORS', submissions: 'SUBMISSIONS', qualified: 'QUALIFIED', consents: 'DECLARATIONS' }[activeTab]} · ADMIN DASHBOARD</div>
           </div>
         </div>
         <div className={styles.headerActions}>
@@ -485,7 +485,7 @@ export default function Admin() {
             </svg>
             تحديث
           </button>
-          {!['submissions', 'qualified'].includes(activeTab) && <button
+          {!['submissions', 'qualified', 'consents'].includes(activeTab) && <button
             className={styles.exportBtn}
             onClick={() => activeTab === 'participants' ? exportCSV(filtered) : exportSponsorsCSV(filteredSponsors)}
             disabled={!isSupabaseActive || (activeTab === 'participants' ? filtered.length===0 : filteredSponsors.length===0)}
@@ -554,6 +554,19 @@ export default function Admin() {
             </span>
             <span>المتأهلون</span>
             <strong>{submissionStats ? submissionStats.qualified : '—'}</strong>
+          </button>
+          <button
+            className={`${styles.sideItem} ${activeTab === 'consents' ? styles.sideItemActive : ''}`}
+            onClick={() => setActiveTab('consents')}
+            id="tab-consents"
+          >
+            <span className={styles.sideIcon}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+                <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>
+              </svg>
+            </span>
+            <span>الإقرارات</span>
+            <strong>{submissionStats ? submissionStats.consentFiles : '—'}</strong>
           </button>
         </aside>
 
@@ -921,8 +934,8 @@ export default function Admin() {
             </div>
           </>
         )}
-        {isSupabaseActive && (activeTab === 'submissions' || activeTab === 'qualified') && (
-          <SubmissionsTab token={auth.session?.access_token || ''} onLoaded={setSubmissionStats} view={activeTab === 'qualified' ? 'qualified' : 'all'} />
+        {isSupabaseActive && ['submissions', 'qualified', 'consents'].includes(activeTab) && (
+          <SubmissionsTab token={auth.session?.access_token || ''} onLoaded={setSubmissionStats} view={activeTab === 'submissions' ? 'all' : activeTab} />
         )}
         </main>
       </div>

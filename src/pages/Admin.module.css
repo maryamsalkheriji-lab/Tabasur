@@ -467,7 +467,7 @@
 .pillOn { background:rgba(99,102,241,.14); color:#4f46e5; }
 .pillMix { background:rgba(234,179,8,.18); color:#92400e; }
 .memberChips { display:flex; flex-wrap:wrap; gap:6px; }
-.chip { display:inline-flex; align-items:center; gap:6px; padding:4px 9px; border-radius:999px; background:var(--bg-alt); font-size:12.5px; line-height:1.4; }
+.chip { display:inline-flex; flex-wrap:wrap; align-items:center; gap:4px 6px; padding:4px 9px; border-radius:999px; background:var(--bg-alt); font-size:12.5px; line-height:1.4; }
 .chip i { width:7px; height:7px; border-radius:50%; background:var(--ink-300); }
 .chipIn i { background:var(--green-600); }
 .chip b { font-weight:700; }
@@ -533,3 +533,11 @@
 }
 .dangerBtn { white-space:nowrap; }
 .decideBox .videoMeta { white-space:nowrap; }
+
+/* علامة إقرار العضو داخل شريحة الاسم (تبويب التسليمات) */
+.consentMark { font:inherit; font-size:11px; font-weight:700; line-height:1.4; padding:1px 7px; border-radius:999px; border:0; white-space:nowrap; }
+.consentMarkOk { background:rgba(52,168,118,.18); color:var(--green-700); cursor:pointer; }
+.consentMarkOk:hover { background:var(--green-600); color:#fff; }
+.consentMarkOk:disabled { opacity:.6; cursor:wait; }
+.consentMarkNo { background:rgba(227,146,122,.2); color:#9a3412; }
+.cellName .subNote { display:block; margin-top:2px; }

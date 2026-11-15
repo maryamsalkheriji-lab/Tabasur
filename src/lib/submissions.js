@@ -4,6 +4,10 @@ export const MAX_MEMBERS = 50 // سقف تقني فقط، لا يُعرض للم
 export const TEAM_CODE_PATTERN = /^TB-\d{3,6}$/
 export const VIDEO_EXTENSIONS = ['mp4', 'mov', 'm4v', 'webm', 'mkv', 'avi']
 export const TUS_CHUNK_SIZE = 6 * 1024 * 1024
+// إقرار العضو الموقّع: نموذج PDF يُنزَّل ويُعبّأ ويُوقَّع ثم يُرفع صورةً أو PDF (ملف لكل عضو)
+export const CONSENT_TEMPLATE_URL = '/assets/tabsur-iqrar.pdf'
+export const CONSENT_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp']
+export const CONSENT_MAX_BYTES = 15 * 1024 * 1024
 
 export class SubmissionError extends Error {
   constructor(code, extra = {}, status = 0) { super(code); this.code = code; this.extra = extra; this.status = status }
@@ -41,6 +45,12 @@ export function isVideoFile(file) {
   return VIDEO_EXTENSIONS.includes(ext) || /^video\//.test(file.type || '')
 }
 
+export function isConsentFile(file) {
+  if (!file) return false
+  const ext = (/\.([a-z0-9]{2,5})$/i.exec(file.name || '') || [])[1]?.toLowerCase()
+  return CONSENT_EXTENSIONS.includes(ext) || ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].includes(file.type || '')
+}
+
 // نص الإيصال الذي يحفظه الفريق في واتساب (بلا أي رابط خاص).
 export function receiptText(team, lang = 'ar') {
   const members = team.members.map(member => member.name).join(lang === 'ar' ? '، ' : ', ')
@@ -74,6 +84,29 @@ function request({ method, url, headers, body, signal, timeout, onUploadProgress
     }
     xhr.send(body === undefined ? null : body)
   })
+}
+
+/* ─── رفع ملف صغير (إقرار العضو) بطلب PUT واحد إلى رابط موقّع لمسار واحد ─── */
+export async function uploadSigned({ file, url, mimeType, anonKey, signal, onProgress, maxRetries = 2 }) {
+  let attempt = 0
+  for (;;) {
+    try {
+      const response = await request({
+        method: 'PUT', url, signal, timeout: 5 * 60 * 1000,
+        headers: { 'x-upsert': 'true', 'Content-Type': mimeType || file.type || 'application/octet-stream', ...(anonKey ? { apikey: anonKey } : {}) },
+        body: file, onUploadProgress: loaded => onProgress?.(Math.min(file.size, loaded), file.size),
+      })
+      if (response.status >= 200 && response.status < 300) { onProgress?.(file.size, file.size); return }
+      if (response.status === 401 || response.status === 403) throw new SubmissionError('UPLOAD_EXPIRED', { status: response.status })
+      if (response.status >= 500 || response.status === 429) throw new SubmissionError('UPLOAD_RETRY', { status: response.status })
+      throw new SubmissionError('CONSENT_UPLOAD_FAILED', { status: response.status })
+    } catch (error) {
+      if (error?.name === 'AbortError') throw error
+      if (error?.code !== 'UPLOAD_RETRY') throw error
+      if (++attempt > maxRetries) throw new SubmissionError('CONSENT_UPLOAD_FAILED', error.extra || {})
+      await new Promise(resolve => setTimeout(resolve, 1500 * attempt))
+    }
+  }
 }
 
 /* ─── الرفع القابل للاستئناف (TUS 1.0.0) إلى Supabase Storage ───
