@@ -19,6 +19,7 @@ function Icon({ name }) {
     users: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></>,
     key: <><circle cx="8" cy="15" r="4" /><path d="M10.9 12.1 21 2M15 8l3 3M18 5l3 3" /></>,
     check: <path d="M20 6 9 17l-5-5" />,
+    edit: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></>,
     x: <path d="M18 6 6 18M6 6l12 12" />,
     plus: <path d="M12 5v14M5 12h14" />,
     film: <><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M7 4v16M17 4v16M3 9h4M3 15h4M17 9h4M17 15h4" /></>,
@@ -62,6 +63,8 @@ export default function Submit() {
   const [memberPhone, setMemberPhone] = useState({ country: DEFAULT_COUNTRY, number: '' })
   const [team, setTeam] = useState(null)
   const [replacing, setReplacing] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const [newName, setNewName] = useState('')
   // إقرارات الأعضاء: نموذج لكل عضو (رقم الهوية + الملف)
   const [consentForms, setConsentForms] = useState({})
   // الرفع
@@ -291,7 +294,7 @@ export default function Submit() {
 
   async function lookupTeam(event) {
     event.preventDefault()
-    setError(''); setNotice(''); setTeam(null); setReplacing(false); setConsentForms({}); setBusy(true)
+    setError(''); setNotice(''); setTeam(null); setReplacing(false); setRenaming(false); setConsentForms({}); setBusy(true)
     try {
       const code = normalizeTeamCode(codeInput)
       const payload = code ? { code } : { mobile: memberPhone.number, country: memberPhone.country }
@@ -320,6 +323,19 @@ export default function Submit() {
     try {
       const data = await callSubmissions('remove_video', { code: team.code, mobile: memberPhone.number, country: memberPhone.country })
       setTeam(data.team); setNotice(copy.success.removed)
+    } catch (err) { showError(err.code || 'UNKNOWN', err.extra || {}) } finally { setBusy(false) }
+  }
+
+  async function renameTeam(event) {
+    event.preventDefault()
+    setError(''); setNotice('')
+    const name = newName.trim()
+    if (name.length < 2) return showError('INVALID_TEAM_NAME')
+    if (!validateMobile(memberPhone.country, memberPhone.number).ok) return showError('INVALID_MOBILE')
+    setBusy(true)
+    try {
+      const data = await callSubmissions('rename_team', { code: team.code, mobile: memberPhone.number, country: memberPhone.country, name })
+      setTeam(data.team); setRenaming(false); setNotice(copy.success.renamed)
     } catch (err) { showError(err.code || 'UNKNOWN', err.extra || {}) } finally { setBusy(false) }
   }
 
@@ -556,6 +572,20 @@ export default function Submit() {
             {renderTeamCard(team)}
             {notice && <div className={styles.notice} role="status">{notice}</div>}
             {error && <div className="form-error-banner" role="alert">{error}</div>}
+            {!renaming && <div className={styles.actions}>
+              <button type="button" className={styles.ghost} onClick={() => { setNewName(team.name); setRenaming(true); setError(''); setNotice('') }} disabled={busy || !ready} id="rename-team"><Icon name="edit" /> {copy.actions.rename}</button>
+            </div>}
+            {renaming && <form onSubmit={renameTeam} noValidate className={styles.replaceForm} id="rename-form">
+              <div className="field">
+                <label htmlFor="new-team-name">{copy.team.newName}<span className="req">•</span></label>
+                <input className="input" id="new-team-name" type="text" maxLength={60} value={newName} onChange={event => setNewName(event.target.value)} autoFocus required />
+                <div className="hint">{copy.team.renameHint} {copy.team.nameHint}</div>
+              </div>
+              <div className={styles.actions}>
+                <button type="submit" className={styles.primary} disabled={busy || !ready} id="save-team-name"><Icon name="check" /> {busy ? copy.actions.working : copy.actions.saveName}</button>
+                <button type="button" className={styles.ghost} onClick={() => { setRenaming(false); setError('') }}>{copy.actions.cancel}</button>
+              </div>
+            </form>}
           </div>
 
           {renderConsents(team)}

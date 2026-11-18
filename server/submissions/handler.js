@@ -498,6 +498,31 @@ const ACTIONS = {
     return {}
   },
 
+  // تعديل اسم الفريق فقط (الكود والمسار والأعضاء ثابتة). متاح لأي عضو في الفريق ما دام التسليم مفتوحًا.
+  async rename_team({ repo, body, nowMs }) {
+    const settings = await loadSettings(repo)
+    assertOpen(settings, nowMs)
+    const team = await findTeam(repo, { code: body.code })
+    const member = await assertMember(repo, team, body.mobile, body.country)
+    const name = cleanText(body.name, 60)
+    if (name.length < 2) throw new HttpError(400, 'INVALID_TEAM_NAME')
+    if (name === team.name) return { team: await teamCard(repo, team), renamed: false }
+    const extOf = path => (/\.([a-z0-9]{2,5})$/i.exec(String(path || '')) || [])[1]?.toLowerCase() || 'mp4'
+    const patch = { name, name_key: teamNameKey(name) }
+    // اسم ملف الفيديو المقروء (عند التنزيل) يحمل اسم الفريق، فيتبع الاسم الجديد
+    if (team.video_file_id) patch.video_name = driveFileName(team.code, name, team.video_title, extOf(team.video_file_id))
+    if (team.pending_upload) patch.pending_upload = { ...team.pending_upload, displayName: driveFileName(team.code, name, team.pending_upload.title, extOf(team.pending_upload.objectPath)) }
+    let updated
+    try {
+      updated = await repo.updateTeam(team.id, patch)
+    } catch (error) {
+      if (error?.code === '23505' || /tb_teams_name_key_key/.test(`${error?.message || ''} ${error?.details || ''}`)) throw new HttpError(409, 'TEAM_NAME_TAKEN')
+      throw error
+    }
+    await repo.logUpload({ team_id: team.id, team_code: team.code, action: 'team_renamed', detail: { from: team.name, to: name, by: member.full_name } })
+    return { team: await teamCard(repo, updated), renamed: true }
+  },
+
   async remove_video({ repo, body, storage, nowMs }) {
     const settings = await loadSettings(repo)
     assertOpen(settings, nowMs)

@@ -140,6 +140,10 @@ test('full flow: lookup, register, a signed declaration per member, resumable up
   // الحذف للقائد فقط
   const denied = await call(handler, { action: 'remove_video', code: 'TB-001', mobile: '0504444444' })
   assert.equal(denied.body.code, 'LEADER_ONLY')
+  // تعديل الاسم بعد رفع الفيديو: اسم الملف المقروء يتبع الاسم الجديد والفيديو نفسه يبقى
+  const renamedWithVideo = await call(handler, { action: 'rename_team', code: 'TB-001', mobile: '0504444444', name: 'فريق الضياء' })
+  assert.deepEqual([renamedWithVideo.status, renamedWithVideo.body.team.name, renamedWithVideo.body.team.video.fileName], [200, 'فريق الضياء', 'TB-001 - فريق الضياء - نسخة أفضل.mov'])
+  assert.deepEqual(fake.videos().map(v => v.key), [`submissions/${replace.body.upload.objectPath}`])
   const removed = await call(handler, { action: 'remove_video', code: 'TB-001', mobile: '0501111111' })
   assert.equal(removed.status, 200)
   assert.equal(removed.body.team.video, null)
@@ -154,7 +158,7 @@ test('full flow: lookup, register, a signed declaration per member, resumable up
   assert.deepEqual(resigned.team.consents, { ready: true, required: 2, done: 2, complete: true })
 
   const log = (await repo.db.query('select action from public.tb_upload_log order by id')).rows.map(r => r.action)
-  assert.deepEqual(log, ['team_created', 'consent_upload_started', 'consent_uploaded', 'consent_upload_started', 'consent_uploaded', 'upload_started', 'upload_completed', 'upload_started', 'upload_completed', 'previous_removed', 'video_removed', 'consent_upload_started', 'consent_uploaded'])
+  assert.deepEqual(log, ['team_created', 'consent_upload_started', 'consent_uploaded', 'consent_upload_started', 'consent_uploaded', 'upload_started', 'upload_completed', 'upload_started', 'upload_completed', 'previous_removed', 'team_renamed', 'video_removed', 'consent_upload_started', 'consent_uploaded'])
 })
 
 test('governance: one person in one team only, by mobile and by name, and no two teams share a name', async () => {
@@ -194,6 +198,24 @@ test('governance: one person in one team only, by mobile and by name, and no two
   assert.equal((await call(handler, { action: 'team', code: 'TB-999' })).body.code, 'TEAM_NOT_FOUND')
   assert.equal((await call(handler, { action: 'team', code: 'nope' })).body.code, 'INVALID_CODE')
   assert.equal((await repo.db.query('select count(*)::int as n from public.tb_teams')).rows[0].n, 1)
+
+  // تعديل اسم الفريق: لأي عضو في الفريق، الاسم فقط، ولا يتكرر مع فريق آخر
+  const second = await register({ name: 'فريق ثانٍ', track: 'life', mobiles: ['0504444444'] })
+  assert.equal(second.status, 200, JSON.stringify(second.body))
+  const rename = payload => call(handler, { action: 'rename_team', code: 'TB-001', mobile: '0505555555', ...payload })
+  const renamed = await rename({ name: '  عدسة   طيبة ' })
+  assert.deepEqual([renamed.status, renamed.body.renamed, renamed.body.team.name, renamed.body.team.code, renamed.body.team.members.length], [200, true, 'عدسة طيبة', 'TB-001', 2])
+  assert.equal((await call(handler, { action: 'team', code: 'TB-001' })).body.team.name, 'عدسة طيبة')
+  assert.deepEqual([(await rename({ name: ' فريقُ  ثانٍ ' })).status, (await rename({ name: 'فريق ثانٍ' })).body.code], [409, 'TEAM_NAME_TAKEN'])
+  assert.equal((await rename({ name: 'ع' })).body.code, 'INVALID_TEAM_NAME')
+  assert.equal((await rename({ name: 'اسم جديد', mobile: '0504444444' })).body.code, 'NOT_A_MEMBER')
+  assert.equal((await rename({ name: 'عدسة طيبة' })).body.renamed, false)
+  // الاسم القديم صار متاحًا لفريق آخر
+  const freed = await call(handler, { action: 'rename_team', code: 'TB-002', mobile: '0504444444', name: 'الفريق الأول' })
+  assert.deepEqual([freed.status, freed.body.team.name], [200, 'الفريق الأول'])
+  const back = await call(handler, { action: 'rename_team', code: 'TB-002', mobile: '0504444444', name: 'فريق ثانٍ' })
+  assert.equal(back.status, 200)
+  assert.equal((await repo.db.query("select count(*)::int as n from public.tb_upload_log where action = 'team_renamed'")).rows[0].n, 3)
 })
 
 test('validation: video, closed state, deadline, storage not configured, size limit, bad token', async () => {

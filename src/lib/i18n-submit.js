@@ -27,6 +27,7 @@ export const SUBMIT_COPY = {
     },
     team: {
       sectionTitle: 'بيانات الفريق', name: 'اسم الفريق', namePlaceholder: 'مثال: عدسة المدينة',
+      newName: 'اسم الفريق الجديد', renameHint: 'يتغيّر اسم الفريق فقط؛ الكود والأعضاء والفيديو تبقى كما هي.',
       nameHint: 'اسم لا يتكرر مع فريق آخر، من حرفين إلى ستين حرفًا.', track: 'المسار', trackHint: 'يُختار مسار واحد يناسب فكرة الفيديو.',
     },
     members: {
@@ -66,6 +67,7 @@ export const SUBMIT_COPY = {
       back: 'رجوع', replace: 'استبدال الفيديو', remove: 'حذف الفيديو', removeConfirm: 'هل تريدون حذف الفيديو الحالي؟ يمكن رفع غيره بعد الحذف.',
       cancelUpload: 'إلغاء الرفع', retry: 'متابعة الرفع', copyCode: 'نسخ الكود', copied: 'تم النسخ', whatsapp: 'حفظ الإيصال في واتساب',
       home: 'العودة إلى الرئيسية', working: 'لحظة…',
+      rename: 'تعديل اسم الفريق', saveName: 'حفظ الاسم', cancel: 'إلغاء',
     },
     existing: {
       code: 'كود الفريق', codePlaceholder: 'TB-000', mobile: 'رقم جوال أحد الأعضاء',
@@ -83,7 +85,7 @@ export const SUBMIT_COPY = {
     },
     success: {
       title: 'تم استلام فيديو الفريق', text: 'سُجّل الفيديو باسم الفريق ووصل إلى المنظّمين، وهذا هو الإيصال.',
-      created: 'تم رفع الفيديو بنجاح.', replaced: 'تم استبدال الفيديو بنجاح.', removed: 'تم حذف الفيديو، ويمكن رفع غيره.',
+      created: 'تم رفع الفيديو بنجاح.', replaced: 'تم استبدال الفيديو بنجاح.', removed: 'تم حذف الفيديو، ويمكن رفع غيره.', renamed: 'تم تعديل اسم الفريق.',
     },
     errors: {
       NETWORK: 'تعذّر الاتصال بالخادم. يُرجى التحقق من الإنترنت ثم إعادة المحاولة.',
@@ -147,6 +149,7 @@ export const SUBMIT_COPY = {
     },
     team: {
       sectionTitle: 'Team details', name: 'Team name', namePlaceholder: 'e.g. City Lens',
+      newName: 'New team name', renameHint: 'Only the team name changes; the code, members and video stay as they are.',
       nameHint: 'A name no other team uses, two to sixty characters.', track: 'Track', trackHint: 'Choose the one track that fits your video.',
     },
     members: {
@@ -186,6 +189,7 @@ export const SUBMIT_COPY = {
       back: 'Back', replace: 'Replace video', remove: 'Delete video', removeConfirm: 'Delete the current video? You can upload another one afterwards.',
       cancelUpload: 'Cancel upload', retry: 'Resume upload', copyCode: 'Copy code', copied: 'Copied', whatsapp: 'Save receipt to WhatsApp',
       home: 'Back to home', working: 'One moment…',
+      rename: 'Edit team name', saveName: 'Save name', cancel: 'Cancel',
     },
     existing: {
       code: 'Team code', codePlaceholder: 'TB-000', mobile: 'Mobile number of any member',
@@ -203,7 +207,7 @@ export const SUBMIT_COPY = {
     },
     success: {
       title: 'Your team video was received', text: 'The video is registered under your team and has reached the organizers. This is your receipt.',
-      created: 'Video uploaded successfully.', replaced: 'Video replaced successfully.', removed: 'Video deleted; you can upload another one.',
+      created: 'Video uploaded successfully.', replaced: 'Video replaced successfully.', removed: 'Video deleted; you can upload another one.', renamed: 'Team name updated.',
     },
     errors: {
       NETWORK: 'Could not reach the server. Check your connection and try again.',
