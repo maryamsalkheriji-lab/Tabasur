@@ -77,8 +77,8 @@ export const translations = {
       prizes: {
         eyebrow: 'الجوائز', title: 'جوائز معسكر تَبصَّر',
         lead: 'تُمنح الجوائز المالية للمراكز الثلاثة الأولى في كل مسار من مساري المشاركة: المسار الحضوري والمسار عن بُعد.',
-        totalLabel: 'مجموع الجوائز', totalNote: 'إجمالي الجوائز المالية للمسار الحضوري والمسار عن بُعد', currency: 'ريال سعودي',
-        tracks: { inperson: { name: 'المسار الحضوري', tag: 'جوائز المشاركين حضوريًا في المدينة المنورة' }, remote: { name: 'المسار عن بُعد', tag: 'جوائز المشاركين عن بُعد (أونلاين)' } },
+        totalLabel: 'مجموع الجوائز', totalNote: 'إجمالي الجوائز المالية للمسارين', valueLabel: 'قيمة الجائزة', currency: 'ريال سعودي',
+        tracks: { inperson: { name: 'المسار الحضوري' }, remote: { name: 'المسار عن بُعد' } },
         places: ['المركز الأول', 'المركز الثاني', 'المركز الثالث'],
         notes: ['تُقيَّم الأعمال في المسارين بالمعايير نفسها', 'تُمنح شهادات مشاركة للمشاركين'],
       },
@@ -298,8 +298,8 @@ export const translations = {
       prizes: {
         eyebrow: 'Prizes', title: 'Tabsur Camp prizes',
         lead: 'Cash prizes are awarded to the top three places in each of the two participation tracks: the in-person track and the remote track.',
-        totalLabel: 'Prize pool', totalNote: 'Total cash prizes across the in-person and remote tracks', currency: 'Saudi riyals',
-        tracks: { inperson: { name: 'In-person track', tag: 'Prizes for participants attending in Madinah' }, remote: { name: 'Remote track', tag: 'Prizes for participants taking part remotely (online)' } },
+        totalLabel: 'Prize pool', totalNote: 'Total cash prizes across both tracks', valueLabel: 'Prize value', currency: 'Saudi riyals',
+        tracks: { inperson: { name: 'In-person track' }, remote: { name: 'Remote track' } },
         places: ['First place', 'Second place', 'Third place'],
         notes: ['Entries in both tracks are judged by the same criteria', 'Participants receive certificates of participation'],
       },

@@ -341,29 +341,25 @@ function Prizes() {
       gsap.to(total, { opacity: 1, y: 0, scale: 1, duration: 0.9, ease: 'power3.out', scrollTrigger: { trigger: total, start: 'top 88%', once: true, onEnter: () => countUp(total.querySelector('[data-count]'), 2.2) } })
 
       section.querySelectorAll('[data-prize-track]').forEach((track, trackIndex) => {
-        const bars = track.querySelectorAll('[data-prize-bar]')
-        const tops = track.querySelectorAll('[data-prize-top]')
-        const counts = track.querySelectorAll('[data-prize-top] [data-count]')
-        gsap.set(track, { opacity: 0, y: 40 })
-        gsap.set(bars, { scaleY: 0, transformOrigin: '50% 100%' })
-        gsap.set(tops, { opacity: 0, y: 26, scale: 0.9 })
-        // الترتيب في الصفحة: الأول ثم الثاني ثم الثالث؛ الصعود يبدأ من الثالث لينتهي عند الأول
-        const order = [2, 1, 0]
-        const timeline = gsap.timeline({ scrollTrigger: { trigger: track, start: 'top 78%', once: true }, delay: trackIndex * 0.12 })
-        timeline.to(track, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' })
-        order.forEach((place, step) => {
-          const at = 0.25 + step * 0.28
-          timeline.to(bars[place], { scaleY: 1, duration: 0.9, ease: 'back.out(1.25)' }, at)
-          timeline.to(tops[place], { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'back.out(1.6)' }, at + 0.35)
-          timeline.add(() => countUp(counts[place], place === 0 ? 1.6 : 1.2), at + 0.3)
+        const head = track.querySelector('[data-prize-head]')
+        const cards = track.querySelectorAll('[data-prize-card]')
+        const counts = track.querySelectorAll('[data-prize-card] [data-count]')
+        gsap.set(head, { opacity: 0, y: 20 })
+        gsap.set(cards, { opacity: 0, y: 46, scale: 0.94 })
+        const timeline = gsap.timeline({ scrollTrigger: { trigger: track, start: 'top 80%', once: true } })
+        timeline.to(head, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' })
+        cards.forEach((card, place) => {
+          const at = 0.15 + place * 0.2
+          timeline.to(card, { opacity: 1, y: 0, scale: 1, duration: 0.85, ease: 'back.out(1.3)', clearProps: 'transform' }, at)
+          timeline.add(() => countUp(counts[place], place === 0 ? 1.8 : 1.3), at + 0.15)
         })
         if (trackIndex === 0) timeline.add(() => {
           import('canvas-confetti').then(({ default: confetti }) => {
-            const box = track.getBoundingClientRect()
-            const origin = { x: (box.left + box.width / 2) / window.innerWidth, y: Math.min(0.9, Math.max(0.2, (box.top + box.height * 0.35) / window.innerHeight)) }
+            const box = cards[0].getBoundingClientRect()
+            const origin = { x: (box.left + box.width / 2) / window.innerWidth, y: Math.min(0.9, Math.max(0.2, (box.top + box.height * 0.4) / window.innerHeight)) }
             confetti({ particleCount: 90, spread: 78, startVelocity: 38, scalar: 0.9, ticks: 160, origin, colors: PRIZE_COLORS, disableForReducedMotion: true })
           }).catch(() => {})
-        }, 1.35)
+        }, 1.1)
       })
       gsap.from(section.querySelectorAll('[data-prize-note]'), { opacity: 0, y: 16, duration: 0.6, stagger: 0.12, ease: 'power2.out', scrollTrigger: { trigger: section.querySelector('[data-prize-notes]'), start: 'top 92%', once: true } })
     }, section)
@@ -393,29 +389,25 @@ function Prizes() {
           </span>
         </div>
 
-        <div className={styles.prizesGrid}>
-          {PRIZE_TRACKS.map(track => (
-            <article key={track.id} className={`${styles.prizeTrack} ${track.id === 'remote' ? styles.prizeTrackRemote : ''}`} data-prize-track>
-              <header className={styles.prizeTrackHead}>
-                <h3>{p.tracks[track.id].name}</h3>
-                <span className={styles.prizeTag}>{p.tracks[track.id].tag}</span>
-              </header>
-              <ol className={styles.podium}>
-                {track.amounts.map((amount, place) => (
-                  <li key={place} className={`${styles.place} ${styles[`place${place + 1}`]}`}>
-                    <div className={styles.placeTop} data-prize-top>
-                      <strong className={styles.amount} dir="ltr"><Riyal className={styles.riyal} label={p.currency} /><bdi data-count={amount}>{money(amount)}</bdi></strong>
-                    </div>
-                    <div className={styles.bar} data-prize-bar>
-                      <span className={styles.rank}>{place + 1}</span>
-                      <span className={styles.placeLabel}>{p.places[place]}</span>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </article>
-          ))}
-        </div>
+        {PRIZE_TRACKS.map(track => (
+          <div key={track.id} className={`${styles.prizeTrack} ${track.id === 'remote' ? styles.prizeTrackRemote : ''}`} data-prize-track>
+            <h3 className={styles.prizeTrackHead} data-prize-head><span>{p.tracks[track.id].name}</span></h3>
+            <ol className={styles.prizeCards}>
+              {track.amounts.map((amount, place) => (
+                <li key={place} className={`${styles.prizeCard} ${place === 0 ? styles.prizeCardFirst : ''}`} data-prize-card>
+                  <span className={styles.prizeGhost} aria-hidden="true">{place + 1}</span>
+                  {place === 0
+                    ? <div className={styles.prizeCardTop}><span className={styles.prizeBadge}>{p.places[0]}</span></div>
+                    : <span className={styles.prizeRank} aria-hidden="true">{place + 1}</span>}
+                  <div className={styles.prizeCardBottom}>
+                    <span className={styles.prizeCardLabel}>{place === 0 ? p.valueLabel : p.places[place]}</span>
+                    <strong className={styles.amount} dir="ltr"><Riyal className={styles.riyal} label={p.currency} /><bdi data-count={amount}>{money(amount)}</bdi></strong>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
 
         <ul className={styles.prizeNotes} data-prize-notes>
           {p.notes.map(note => <li key={note} data-prize-note>{note}</li>)}
