@@ -217,20 +217,20 @@
 .prizes :global(.eyebrow) { color:#7FDEB2; }
 /* لافتة مجموع الجوائز */
 .prizePool { position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px;overflow:hidden;
-  padding:clamp(24px,4vw,52px) clamp(22px,4.5vw,64px);margin-bottom:clamp(22px,3vw,34px);color:#04130F;
-  background:linear-gradient(100deg,#77EDB0 0%,#7DEED6 55%,#86EAF7 100%);background-size:160% 100%;animation:poolSheen 8s ease-in-out infinite alternate;
+  padding:clamp(24px,4vw,52px) clamp(22px,4.5vw,64px);margin-bottom:clamp(22px,3vw,34px);color:#FFFFFF;
+  background:linear-gradient(100deg,#0ABD70 0%,#07935A 50%,#027286 100%);background-size:160% 100%;animation:poolSheen 8s ease-in-out infinite alternate;
   clip-path:polygon(0 0,100% 0,100% calc(100% - 26px),calc(100% - 26px) 100%,0 100%); }
 :global([dir='rtl']) .prizePool { clip-path:polygon(0 0,100% 0,100% 100%,26px 100%,0 calc(100% - 26px)); }
 @keyframes poolSheen { from { background-position:0% 0; } to { background-position:100% 0; } }
-.prizePoolShape { position:absolute;inset-block:8%;inset-inline-end:9%;width:30%;background:rgba(2,49,58,.08);clip-path:polygon(0 0,100% 0,100% 62%,60% 100%,0 100%,0 42%,52% 42%);pointer-events:none; }
+.prizePoolShape { position:absolute;inset-block:8%;inset-inline-end:9%;width:30%;background:rgba(255,255,255,.1);clip-path:polygon(0 0,100% 0,100% 62%,60% 100%,0 100%,0 42%,52% 42%);pointer-events:none; }
 .prizePoolText { position:relative;display:flex;flex-direction:column;gap:clamp(6px,1vw,12px);min-width:0; }
 .prizePoolLabel { font-size:clamp(14px,1.5vw,19px);font-weight:800;letter-spacing:.04em; }
 .prizePoolAmount { display:inline-flex;align-items:center;gap:.16em;align-self:flex-start;font-size:clamp(46px,10.5vw,132px);line-height:1;font-weight:900;letter-spacing:-.04em;font-variant-numeric:tabular-nums; }
 :global([dir='rtl']) .prizePoolAmount { align-self:flex-end; }
 :global([dir='rtl']) .prizePoolText { align-items:flex-start; }
 .riyalBig { height:.74em;width:auto;flex:none; }
-.prizePoolNote { font-size:clamp(14px,1.45vw,19px);font-weight:600;color:#0B3138;line-height:1.6; }
-.prizePoolTrophy { position:relative;flex:none;display:grid;place-items:center;width:clamp(64px,11vw,150px);aspect-ratio:1;background:#04130F;color:#77EDB0;
+.prizePoolNote { font-size:clamp(14px,1.45vw,19px);font-weight:600;color:rgba(255,255,255,.92);line-height:1.6; }
+.prizePoolTrophy { position:relative;flex:none;display:grid;place-items:center;width:clamp(64px,11vw,150px);aspect-ratio:1;background:#FFFFFF;color:#07935A;
   clip-path:polygon(0 0,100% 0,100% calc(100% - 16%),calc(100% - 16%) 100%,0 100%); }
 .prizePoolTrophy svg { width:44%;height:44%;animation:trophyPulse 2.8s ease-in-out infinite; }
 @keyframes trophyPulse { 0%,100% { transform:scale(1) rotate(0); } 50% { transform:scale(1.12) rotate(-5deg); } }
@@ -254,7 +254,8 @@
 @keyframes prizeShine { 0% { inset-inline-start:-40%; } 60%,100% { inset-inline-start:125%; } }
 .prizeGhost { position:absolute;inset-inline-end:-.04em;bottom:-.3em;font-size:clamp(150px,17vw,230px);line-height:1;font-weight:900;color:transparent;-webkit-text-stroke:1.5px rgba(2,49,58,.07);pointer-events:none;user-select:none; }
 .prizeMotif { position:absolute;inset-inline-end:-7%;top:50%;height:150%;width:auto;aspect-ratio:1;transform:translateY(-50%);opacity:.2;pointer-events:none; }
-@media (max-width:859px) { .prizeMotif { height:125%;inset-inline-end:-22%; } }
+@media (max-width:859px) { .prizeMotif { height:135%;inset-inline-end:-4%; } }
+@media (max-width:520px) { .prizeMotif { height:125%;inset-inline-end:-22%; } }
 .prizeCardTop { position:relative;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between; }
 .prizeBadge { display:inline-flex;padding:8px 18px;border-radius:999px;background:rgba(255,255,255,.2);backdrop-filter:blur(6px);font-size:clamp(14px,1.4vw,17px);font-weight:800; }
 .prizeRank { position:relative;font-size:clamp(46px,6vw,76px);line-height:.9;font-weight:900;color:var(--accent-ink); }
