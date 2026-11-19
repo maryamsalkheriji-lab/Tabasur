@@ -74,6 +74,14 @@ export const translations = {
           { time: 'اليوم 04 — الختام الحضوري', day: 'اليوم 04', title: 'الختام الحضوري ومرحلة الإنجاز', items: ['آخر يوم حضوري، ومراجعة تقدّم كل فريق مع المدرّبين', 'تواصل الفرق العمل عن بُعد حتى الموعد النهائي للتسليم: 21 نوفمبر', 'يُعلن موعد حفل عرض الأعمال والتكريم لاحقًا'] },
         ],
       },
+      prizes: {
+        eyebrow: 'الجوائز', title: 'مساران للمشاركة، وجوائز لكليهما',
+        lead: 'لكل مسار جوائزه الخاصة: ثلاثة مراكز في المسار الحضوري، وثلاثة في المسار عن بُعد، وتُقيَّم الأعمال بالمعايير نفسها في المسارين.',
+        totalLabel: 'إجمالي الجوائز', currency: 'ريال', trackTotal: 'مجموع جوائز المسار',
+        tracks: { inperson: { name: 'المسار الحضوري', tag: 'في المدينة المنورة' }, remote: { name: 'المسار عن بُعد', tag: 'من أي مكان' } },
+        places: ['المركز الأول', 'المركز الثاني', 'المركز الثالث'],
+        notes: ['المعايير نفسها للمسارين', 'شهادات مشاركة للمشاركين'],
+      },
       outputs: {
         eyebrow: 'مخرجات المعسكر', title: 'مصنع محتوى رقمي للمدينة',
         lead: 'تنتهي الرحلة بأعمال حقيقية قابلة للنشر، تجمع بين السرد القصصي البصري والذكاء الاصطناعي والحملات الموجّهة.',
@@ -286,6 +294,14 @@ export const translations = {
           { time: 'DAY 03 — Production', day: 'DAY 03', title: 'From Script to Prototype', items: ['Scriptwriting and story building', 'Filming, design, and editing', 'Enhancing outputs with AI'] },
           { time: 'DAY 04 — In-Person Wrap-Up', day: 'DAY 04', title: 'In-Person Wrap-Up & Completion Phase', items: ['Final in-person day, with a progress review for every team', 'Teams keep working remotely until the submission deadline: 21 November', 'The showcase and awards ceremony date will be announced later'] },
         ],
+      },
+      prizes: {
+        eyebrow: 'Prizes', title: 'Two ways to take part, and prizes for both',
+        lead: 'Each track has its own prizes: three places in the in-person track and three in the remote track, judged by the same criteria.',
+        totalLabel: 'Total prizes', currency: 'SAR', trackTotal: 'Track prize pool',
+        tracks: { inperson: { name: 'In-person track', tag: 'In Madinah' }, remote: { name: 'Remote track', tag: 'From anywhere' } },
+        places: ['First place', 'Second place', 'Third place'],
+        notes: ['Same criteria for both tracks', 'Participation certificates for participants'],
       },
       outputs: {
         eyebrow: 'Camp Outputs', title: 'A digital content factory for the city',

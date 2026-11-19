@@ -1,7 +1,7 @@
 import { Fragment, useCallback, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import CTATorus from '../components/CTATorus'
-import { useHomeAnimations } from '../lib/animations'
+import { useHomeAnimations, gsap } from '../lib/animations'
 import { registrationStatus, sponsors } from '../lib/camp'
 import { useLanguage } from '../lib/language'
 import styles from './Home.module.css'
@@ -301,6 +301,117 @@ function Timeline() {
   )
 }
 
+/* ─── Prizes ─── */
+const PRIZE_TRACKS = [
+  { id: 'inperson', amounts: [10000, 7000, 5000] },
+  { id: 'remote', amounts: [4000, 3000, 2000] },
+]
+const PRIZE_TOTAL = PRIZE_TRACKS.reduce((sum, track) => sum + track.amounts.reduce((a, b) => a + b, 0), 0)
+const PRIZE_COLORS = ['#0ABD70', '#7FDEB2', '#C4AEDC', '#FFFFFF', '#45CE90']
+const money = value => Math.round(value).toLocaleString('en-US')
+
+function Prizes() {
+  const { t } = useLanguage()
+  const p = t.home.prizes
+  const sectionRef = useRef(null)
+
+  // الحركة: عدّاد المبالغ وصعود منصّة التتويج عند ظهور القسم، ثم قصاصات احتفالية مرة واحدة.
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const countUp = (el, duration, delay = 0) => {
+      const target = Number(el.dataset.count)
+      const state = { value: 0 }
+      el.textContent = '0'
+      return gsap.to(state, { value: target, duration, delay, ease: 'power2.out', onUpdate: () => { el.textContent = money(state.value) }, onComplete: () => { el.textContent = money(target) } })
+    }
+    const ctx = gsap.context(() => {
+      const total = section.querySelector('[data-prize-total]')
+      gsap.set(total, { opacity: 0, y: 24 })
+      gsap.to(total, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', scrollTrigger: { trigger: total, start: 'top 88%', once: true, onEnter: () => countUp(total.querySelector('[data-count]'), 2.2) } })
+
+      section.querySelectorAll('[data-prize-track]').forEach((track, trackIndex) => {
+        const bars = track.querySelectorAll('[data-prize-bar]')
+        const tops = track.querySelectorAll('[data-prize-top]')
+        const counts = track.querySelectorAll('[data-prize-top] [data-count]')
+        gsap.set(track, { opacity: 0, y: 40 })
+        gsap.set(bars, { scaleY: 0, transformOrigin: '50% 100%' })
+        gsap.set(tops, { opacity: 0, y: 26, scale: 0.9 })
+        // الترتيب في الصفحة: الأول ثم الثاني ثم الثالث؛ الصعود يبدأ من الثالث لينتهي عند الأول
+        const order = [2, 1, 0]
+        const timeline = gsap.timeline({ scrollTrigger: { trigger: track, start: 'top 78%', once: true }, delay: trackIndex * 0.12 })
+        timeline.to(track, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' })
+        order.forEach((place, step) => {
+          const at = 0.25 + step * 0.28
+          timeline.to(bars[place], { scaleY: 1, duration: 0.9, ease: 'back.out(1.25)' }, at)
+          timeline.to(tops[place], { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'back.out(1.6)' }, at + 0.35)
+          timeline.add(() => countUp(counts[place], place === 0 ? 1.6 : 1.2), at + 0.3)
+        })
+        if (trackIndex === 0) timeline.add(() => {
+          import('canvas-confetti').then(({ default: confetti }) => {
+            const box = track.getBoundingClientRect()
+            const origin = { x: (box.left + box.width / 2) / window.innerWidth, y: Math.min(0.9, Math.max(0.2, (box.top + box.height * 0.35) / window.innerHeight)) }
+            confetti({ particleCount: 90, spread: 78, startVelocity: 38, scalar: 0.9, ticks: 160, origin, colors: PRIZE_COLORS, disableForReducedMotion: true })
+          }).catch(() => {})
+        }, 1.35)
+      })
+      gsap.from(section.querySelectorAll('[data-prize-note]'), { opacity: 0, y: 16, duration: 0.6, stagger: 0.12, ease: 'power2.out', scrollTrigger: { trigger: section.querySelector('[data-prize-notes]'), start: 'top 92%', once: true } })
+    }, section)
+    return () => ctx.revert()
+  }, [])
+
+  return (
+    <section ref={sectionRef} className={`section ${styles.prizes}`} id="prizes">
+      <span className={styles.prizesGlow} aria-hidden="true" />
+      <div className="container">
+        <div className={styles.prizesHead}>
+          <div className="section-head reveal">
+            <span className="eyebrow">{p.eyebrow}</span>
+            <h2>{p.title}</h2>
+            <p className="lead">{p.lead}</p>
+            <div className="divider" />
+          </div>
+          <div className={styles.prizesTotal} data-prize-total>
+            <span>{p.totalLabel}</span>
+            <strong><bdi data-count={PRIZE_TOTAL}>{money(PRIZE_TOTAL)}</bdi> <small>{p.currency}</small></strong>
+          </div>
+        </div>
+
+        <div className={styles.prizesGrid}>
+          {PRIZE_TRACKS.map(track => (
+            <article key={track.id} className={`${styles.prizeTrack} ${track.id === 'remote' ? styles.prizeTrackRemote : ''}`} data-prize-track>
+              <header className={styles.prizeTrackHead}>
+                <span className={styles.prizeTag}>{p.tracks[track.id].tag}</span>
+                <h3>{p.tracks[track.id].name}</h3>
+              </header>
+              <ol className={styles.podium}>
+                {track.amounts.map((amount, place) => (
+                  <li key={place} className={`${styles.place} ${styles[`place${place + 1}`]}`}>
+                    <div className={styles.placeTop} data-prize-top>
+                      {place === 0 && <svg className={styles.crown} viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18l1.2-10.2-5.4 4.1L12 4.5 7.2 11.9 1.8 7.8 3 18Zm0 1.6h18v1.9H3v-1.9Z" fill="currentColor" /></svg>}
+                      <strong className={styles.amount}><bdi data-count={amount}>{money(amount)}</bdi></strong>
+                      <small>{p.currency}</small>
+                    </div>
+                    <div className={styles.bar} data-prize-bar>
+                      <span className={styles.rank}>{place + 1}</span>
+                      <span className={styles.placeLabel}>{p.places[place]}</span>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <p className={styles.trackTotal}>{p.trackTotal} <strong><bdi>{money(track.amounts.reduce((a, b) => a + b, 0))}</bdi> {p.currency}</strong></p>
+            </article>
+          ))}
+        </div>
+
+        <ul className={styles.prizeNotes} data-prize-notes>
+          {p.notes.map(note => <li key={note} data-prize-note>{note}</li>)}
+        </ul>
+      </div>
+    </section>
+  )
+}
+
 /* ─── Outputs ─── */
 function Outputs() {
   const { t } = useLanguage()
@@ -516,6 +627,7 @@ export default function Home() {
       <Pillars />
       <Who />
       <Timeline />
+      <Prizes />
       <Outputs />
       <Partners />
       <Sponsors />
