@@ -404,7 +404,6 @@ function Prizes() {
                 {track.amounts.map((amount, place) => (
                   <li key={place} className={`${styles.place} ${styles[`place${place + 1}`]}`}>
                     <div className={styles.placeTop} data-prize-top>
-                      {place === 0 && <svg className={styles.crown} viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18l1.2-10.2-5.4 4.1L12 4.5 7.2 11.9 1.8 7.8 3 18Zm0 1.6h18v1.9H3v-1.9Z" fill="currentColor" /></svg>}
                       <strong className={styles.amount} dir="ltr"><Riyal className={styles.riyal} label={p.currency} /><bdi data-count={amount}>{money(amount)}</bdi></strong>
                     </div>
                     <div className={styles.bar} data-prize-bar>
@@ -414,7 +413,6 @@ function Prizes() {
                   </li>
                 ))}
               </ol>
-              <p className={styles.trackTotal}>{p.trackTotal} <strong dir="ltr"><Riyal className={styles.riyal} label={p.currency} /><bdi>{money(track.amounts.reduce((a, b) => a + b, 0))}</bdi></strong></p>
             </article>
           ))}
         </div>
