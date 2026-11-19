@@ -395,7 +395,9 @@ function Prizes() {
             <ol className={styles.prizeCards}>
               {track.amounts.map((amount, place) => (
                 <li key={place} className={`${styles.prizeCard} ${place === 0 ? styles.prizeCardFirst : ''}`} data-prize-card>
-                  <span className={styles.prizeGhost} aria-hidden="true">{place + 1}</span>
+                  {place === 0
+                    ? <svg className={styles.prizeMotif} viewBox="-180 -180 360 360" aria-hidden="true"><g fill="#fff"><rect x="-50" y="-50" width="100" height="100" />{[[0, -109], [109, 0], [0, 109], [-109, 0]].map(([x, y]) => <rect key={`${x},${y}`} x={x - 48.8} y={y - 48.8} width="97.6" height="97.6" transform={`rotate(45 ${x} ${y})`} />)}</g></svg>
+                    : <span className={styles.prizeGhost} aria-hidden="true">{place + 1}</span>}
                   {place === 0
                     ? <div className={styles.prizeCardTop}><span className={styles.prizeBadge}>{p.places[0]}</span></div>
                     : <span className={styles.prizeRank} aria-hidden="true">{place + 1}</span>}
