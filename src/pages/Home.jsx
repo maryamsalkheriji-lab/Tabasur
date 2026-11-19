@@ -310,6 +310,16 @@ const PRIZE_TOTAL = PRIZE_TRACKS.reduce((sum, track) => sum + track.amounts.redu
 const PRIZE_COLORS = ['#0ABD70', '#7FDEB2', '#C4AEDC', '#FFFFFF', '#45CE90']
 const money = value => Math.round(value).toLocaleString('en-US')
 
+// رمز الريال السعودي الرسمي (البنك المركزي السعودي)
+function Riyal({ className, label }) {
+  return (
+    <svg className={className} viewBox="0 0 1124.14 1256.39" role="img" aria-label={label} fill="currentColor">
+      <path d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z" />
+      <path d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z" />
+    </svg>
+  )
+}
+
 function Prizes() {
   const { t } = useLanguage()
   const p = t.home.prizes
@@ -327,8 +337,8 @@ function Prizes() {
     }
     const ctx = gsap.context(() => {
       const total = section.querySelector('[data-prize-total]')
-      gsap.set(total, { opacity: 0, y: 24 })
-      gsap.to(total, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out', scrollTrigger: { trigger: total, start: 'top 88%', once: true, onEnter: () => countUp(total.querySelector('[data-count]'), 2.2) } })
+      gsap.set(total, { opacity: 0, y: 30, scale: 0.97 })
+      gsap.to(total, { opacity: 1, y: 0, scale: 1, duration: 0.9, ease: 'power3.out', scrollTrigger: { trigger: total, start: 'top 88%', once: true, onEnter: () => countUp(total.querySelector('[data-count]'), 2.2) } })
 
       section.querySelectorAll('[data-prize-track]').forEach((track, trackIndex) => {
         const bars = track.querySelectorAll('[data-prize-bar]')
@@ -364,33 +374,38 @@ function Prizes() {
     <section ref={sectionRef} className={`section ${styles.prizes}`} id="prizes">
       <span className={styles.prizesGlow} aria-hidden="true" />
       <div className="container">
-        <div className={styles.prizesHead}>
-          <div className="section-head reveal">
-            <span className="eyebrow">{p.eyebrow}</span>
-            <h2>{p.title}</h2>
-            <p className="lead">{p.lead}</p>
-            <div className="divider" />
+        <div className="section-head reveal">
+          <span className="eyebrow">{p.eyebrow}</span>
+          <h2>{p.title}</h2>
+          <p className="lead">{p.lead}</p>
+          <div className="divider" />
+        </div>
+
+        <div className={styles.prizePool} data-prize-total>
+          <span className={styles.prizePoolShape} aria-hidden="true" />
+          <div className={styles.prizePoolText}>
+            <span className={styles.prizePoolLabel}>{p.totalLabel}</span>
+            <strong className={styles.prizePoolAmount} dir="ltr"><Riyal className={styles.riyalBig} label={p.currency} /><bdi data-count={PRIZE_TOTAL}>{money(PRIZE_TOTAL)}</bdi></strong>
+            <span className={styles.prizePoolNote}>{p.totalNote}</span>
           </div>
-          <div className={styles.prizesTotal} data-prize-total>
-            <span>{p.totalLabel}</span>
-            <strong><bdi data-count={PRIZE_TOTAL}>{money(PRIZE_TOTAL)}</bdi> <small>{p.currency}</small></strong>
-          </div>
+          <span className={styles.prizePoolTrophy} aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" /><path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5a3.5 3.5 0 0 1-3.5 3.5M12 14v4M8.5 20h7v-2h-7v2Z" /></svg>
+          </span>
         </div>
 
         <div className={styles.prizesGrid}>
           {PRIZE_TRACKS.map(track => (
             <article key={track.id} className={`${styles.prizeTrack} ${track.id === 'remote' ? styles.prizeTrackRemote : ''}`} data-prize-track>
               <header className={styles.prizeTrackHead}>
-                <span className={styles.prizeTag}>{p.tracks[track.id].tag}</span>
                 <h3>{p.tracks[track.id].name}</h3>
+                <span className={styles.prizeTag}>{p.tracks[track.id].tag}</span>
               </header>
               <ol className={styles.podium}>
                 {track.amounts.map((amount, place) => (
                   <li key={place} className={`${styles.place} ${styles[`place${place + 1}`]}`}>
                     <div className={styles.placeTop} data-prize-top>
                       {place === 0 && <svg className={styles.crown} viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18h18l1.2-10.2-5.4 4.1L12 4.5 7.2 11.9 1.8 7.8 3 18Zm0 1.6h18v1.9H3v-1.9Z" fill="currentColor" /></svg>}
-                      <strong className={styles.amount}><bdi data-count={amount}>{money(amount)}</bdi></strong>
-                      <small>{p.currency}</small>
+                      <strong className={styles.amount} dir="ltr"><Riyal className={styles.riyal} label={p.currency} /><bdi data-count={amount}>{money(amount)}</bdi></strong>
                     </div>
                     <div className={styles.bar} data-prize-bar>
                       <span className={styles.rank}>{place + 1}</span>
@@ -399,7 +414,7 @@ function Prizes() {
                   </li>
                 ))}
               </ol>
-              <p className={styles.trackTotal}>{p.trackTotal} <strong><bdi>{money(track.amounts.reduce((a, b) => a + b, 0))}</bdi> {p.currency}</strong></p>
+              <p className={styles.trackTotal}>{p.trackTotal} <strong dir="ltr"><Riyal className={styles.riyal} label={p.currency} /><bdi>{money(track.amounts.reduce((a, b) => a + b, 0))}</bdi></strong></p>
             </article>
           ))}
         </div>
