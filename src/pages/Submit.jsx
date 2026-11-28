@@ -90,7 +90,7 @@ export default function Submit() {
   }, [])
 
   const ready = Boolean(config && config.open && config.uploadReady && !(config.deadline && Date.parse(config.deadline) < Date.now()))
-  const maxBytes = config?.maxBytes || 2 * 1024 * 1024 * 1024
+  const maxBytes = config?.maxBytes || 3 * 1024 * 1024 * 1024
   const maxLabel = formatBytes(maxBytes, lang)
   const statusText = config === null ? copy.status.loading
     : config === false ? copy.status.notReady

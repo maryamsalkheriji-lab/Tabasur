@@ -236,7 +236,7 @@ test('validation: video, closed state, deadline, storage not configured, size li
   const existing = { mode: 'existing', code: 'TB-001', mobile: '0502222222' }
   await signAll(handler, registered.body.team, '0502222222')
   assert.equal((await call(handler, { action: 'start', team: existing, video: video({ fileName: 'deck.pdf', mimeType: 'application/pdf' }) })).body.code, 'INVALID_VIDEO_TYPE')
-  assert.equal((await call(handler, { action: 'start', team: existing, video: video({ size: 3 * 1024 ** 3 }) })).body.code, 'VIDEO_TOO_LARGE')
+  assert.equal((await call(handler, { action: 'start', team: existing, video: video({ size: 3 * 1024 ** 3 + 1 }) })).body.code, 'VIDEO_TOO_LARGE')
   assert.equal((await call(handler, { action: 'start', team: existing, video: video({ title: 'x' }) })).body.code, 'INVALID_TITLE')
   assert.equal((await call(handler, { action: 'start', team: newTeam, video: video() })).body.code, 'INVALID_REQUEST', 'start no longer creates teams; register does')
   assert.equal((await call(handler, { action: 'register', team: { ...newTeam, name: 'فريق ثانٍ', track: 'food' } })).body.code, 'INVALID_TRACK')

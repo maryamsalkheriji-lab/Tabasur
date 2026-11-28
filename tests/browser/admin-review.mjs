@@ -37,7 +37,7 @@ function overview(state) {
   const by = status => withVideo.filter(t => t.review.status === status).length
   const files = state.teams.flatMap(t => t.members.filter(m => m.consent))
   return {
-    ok: true, settings: { open: true, deadline: '2026-11-21T20:59:00.000Z', maxBytes: 2 * 1024 ** 3 }, teams: state.teams,
+    ok: true, settings: { open: true, deadline: '2026-11-21T20:59:00.000Z', maxBytes: 3 * 1024 ** 3 }, teams: state.teams,
     storage: { configured: true, bucket: 'submissions', usedBytes: withVideo.reduce((s, t) => s + t.video.size, 0), includedBytes: 100 * 1024 ** 3 },
     review: { ready: state.ready },
     consents: { ready: state.ready, files: files.length, bytes: files.reduce((s, m) => s + m.consent.size, 0) },

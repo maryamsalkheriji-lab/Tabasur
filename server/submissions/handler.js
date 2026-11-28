@@ -10,7 +10,7 @@ import {
 } from './keys.js'
 
 export const CHUNK_SIZE = TUS_CHUNK_SIZE
-export const DEFAULT_MAX_BYTES = 2 * 1024 * 1024 * 1024
+export const DEFAULT_MAX_BYTES = 3 * 1024 * 1024 * 1024
 export const INCLUDED_STORAGE_BYTES = 100 * 1024 * 1024 * 1024 // المضمّن في خطة Pro قبل الرسوم الإضافية
 const SESSION_REUSE_MS = SIGNED_UPLOAD_TTL_MS - 15 * 60 * 1000 // نعيد استخدام التوكن ما دام صالحًا بهامش
 const MAX_BODY_BYTES = 16384

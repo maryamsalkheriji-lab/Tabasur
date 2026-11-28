@@ -59,7 +59,7 @@ alter table public.tb_secrets enable row level security;
 revoke all on table public.tb_secrets from anon, authenticated;
 
 insert into public.tb_settings (key, value)
-values ('submissions', jsonb_build_object('open', true, 'deadline', null, 'max_bytes', 2147483648))
+values ('submissions', jsonb_build_object('open', true, 'deadline', null, 'max_bytes', 3221225472))
 on conflict (key) do nothing;
 
 -- ---------------------------------------------------------------------
@@ -233,7 +233,7 @@ do $$
 begin
   if exists (select 1 from information_schema.schemata where schema_name = 'storage') then
     insert into storage.buckets (id, name, public, file_size_limit)
-    values ('submissions', 'submissions', false, 2147483648)
+    values ('submissions', 'submissions', false, 3221225472)
     on conflict (id) do update set public = false, file_size_limit = excluded.file_size_limit;
   end if;
 end

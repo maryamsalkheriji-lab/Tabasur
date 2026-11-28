@@ -464,7 +464,7 @@ export default function SubmissionsTab({ token, onLoaded, view = 'all' }) {
                 <label>الموعد النهائي (اختياري)<input className={styles.authInput} type="datetime-local" value={settingsForm.deadline} onChange={e => setSettingsForm(f => ({ ...f, deadline: e.target.value }))} /></label>
                 <label>الحد الأقصى لحجم الفيديو
                   <select className={styles.authInput} value={settingsForm.maxGb} onChange={e => setSettingsForm(f => ({ ...f, maxGb: e.target.value }))}>
-                    {['0.5', '1', '2', '4', '8'].map(gb => <option key={gb} value={gb}>{gb} غيغابايت</option>)}
+                    {['0.5', '1', '2', '3', '4', '8'].map(gb => <option key={gb} value={gb}>{gb} غيغابايت</option>)}
                   </select>
                 </label>
                 <button type="submit" className={styles.authButton} disabled={busy === 'settings'}>{busy === 'settings' ? 'لحظة…' : 'حفظ الإعدادات'}</button>
